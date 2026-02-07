@@ -64,9 +64,6 @@ public class RenderParams extends DhApiRenderParam
 		this.dhClientWorld = SharedApi.tryGetDhClientWorld();
 		if (this.dhClientWorld != null)
 		{
-			// TODO changing to getOrLoadClientLevel() fixes Immersive Portals only rendering the level the user starts in
-			//  however this may break how other level handling is done so James doesn't want to change it.
-			//  Special handling may be necessary when Immersive Portals is present, although additional testing is needed.
 			this.dhClientLevel = (IDhClientLevel) this.dhClientWorld.getLevel(clientLevelWrapper);
 			if (this.dhClientLevel != null)
 			{

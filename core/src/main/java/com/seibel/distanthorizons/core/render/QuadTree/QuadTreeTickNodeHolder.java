@@ -63,7 +63,7 @@ public class QuadTreeTickNodeHolder
 	{
 		if(this.presentNodes.add(node))
 		{
-			// TODO not a big fan of having to check all nodes to prevent overlaps, but it does work
+			// not a big fan of having to check every node to prevent overlaps, but it does work
 			this.nodesToEnable.removeIf((QuadNode<LodRenderSection> checkNode) ->
 			{
 				boolean contained = DhSectionPos.contains(node.sectionPos, checkNode.sectionPos);

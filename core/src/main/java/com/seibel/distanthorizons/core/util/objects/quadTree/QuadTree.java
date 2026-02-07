@@ -23,7 +23,6 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
@@ -87,7 +86,7 @@ public class QuadTree<T>
 		int halfSizeInRootNodes = Math.floorDiv(this.diameterInBlocks, 2) / BitShiftUtil.powerOfTwo(this.treeRootDetailLevel);
 		halfSizeInRootNodes = halfSizeInRootNodes + 1; // always add 1 so nodes will always have a parent, even if the tree's center is offset from the root node grid 
 		
-		Pos2D ringListCenterPos = new Pos2D(
+		MovableGridRingList.Pos2D ringListCenterPos = new MovableGridRingList.Pos2D(
 				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.x, this.treeRootDetailLevel),
 				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.z, this.treeRootDetailLevel));
 		this.topRingList = new MovableGridRingList<>(halfSizeInRootNodes, ringListCenterPos.getX(), ringListCenterPos.getY());
@@ -360,7 +359,7 @@ public class QuadTree<T>
 	{
 		this.centerBlockPos = newCenterPos;
 		
-		Pos2D expectedCenterPos = new Pos2D(
+		MovableGridRingList.Pos2D expectedCenterPos = new MovableGridRingList.Pos2D(
 				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.x, this.treeRootDetailLevel),
 				BitShiftUtil.divideByPowerOfTwo(this.centerBlockPos.z, this.treeRootDetailLevel));
 		

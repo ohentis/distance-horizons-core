@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.pos.Pos2D;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.QuadTree.LodQuadTree;
 import com.seibel.distanthorizons.core.render.QuadTree.LodRenderSection;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
@@ -97,10 +97,10 @@ public class RenderBufferHandler implements AutoCloseable
 	}
 	private int sortBufferContainersNearToFar(LodBufferContainer loadedBufferA, LodBufferContainer loadedBufferB)
 	{
-		Pos2D aPos = DhSectionPos.getCenterBlockPos(loadedBufferA.pos).toPos2D();
-		Pos2D bPos = DhSectionPos.getCenterBlockPos(loadedBufferB.pos).toPos2D();
+		DhBlockPos2D aPos = DhSectionPos.getCenterBlockPos(loadedBufferA.pos);
+		DhBlockPos2D bPos = DhSectionPos.getCenterBlockPos(loadedBufferB.pos);
 		
-		Pos2D centerPos = this.lodQuadTree.getCenterBlockPos().toPos2D();
+		DhBlockPos2D centerPos = this.lodQuadTree.getCenterBlockPos();
 		
 		int aManhattanDistance = aPos.manhattanDist(centerPos);
 		int bManhattanDistance = bPos.manhattanDist(centerPos);
