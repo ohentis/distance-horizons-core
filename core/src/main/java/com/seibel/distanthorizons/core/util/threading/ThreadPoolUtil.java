@@ -114,8 +114,8 @@ public class ThreadPoolUtil
 		fileHandlerThreadPool = taskPicker.createExecutor("IO");
 		renderSectionLoadThreadPool = taskPicker.createExecutor("Render Loader");
 		chunkToLodBuilderThreadPool = taskPicker.createExecutor("LOD Builder");
-		updatePropagatorThreadPool = taskPicker.createExecutor("Update Propagator", ThreadPoolUtil::onlyRunThreadIfCameraMovingSlowly);
-		worldGenThreadPool = taskPicker.createExecutor("World Gen", ThreadPoolUtil::onlyRunThreadIfCameraMovingSlowly);
+		updatePropagatorThreadPool = taskPicker.createExecutor("Update Propagator", ThreadPoolUtil::worldGenThreadsCanRun); // the update propagator isn't necessary when moving through the world, so we'll pause it along with the world generator when moving fast
+		worldGenThreadPool = taskPicker.createExecutor("World Gen", ThreadPoolUtil::worldGenThreadsCanRun);
 		
 		
 		
@@ -168,7 +168,7 @@ public class ThreadPoolUtil
 	 * @see LodUtil#ROCKET_ELYTRA_SPEED_IN_BLOCKS_PER_SEC
 	 * @see LodUtil#MAX_SPECTATOR_SPEED_IN_BLOCKS_PER_SEC
 	 */
-	public static boolean onlyRunThreadIfCameraMovingSlowly()
+	public static boolean worldGenThreadsCanRun()
 	{
 		double cameraSpeed = ClientApi.INSTANCE.cameraSpeedRollingAverage.getAverage();
 		// stop these threads if moving a little bit slower than max elytra speed

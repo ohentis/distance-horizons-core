@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataUpdatePropagatorV2;
 import com.seibel.distanthorizons.core.generation.tasks.DataSourceRetrievalResult;
 import com.seibel.distanthorizons.core.generation.tasks.ERetrievalResultState;
 import com.seibel.distanthorizons.core.level.DhClientServerLevel;
@@ -41,6 +42,7 @@ import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.WorldGenUtil;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -414,7 +416,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		//region
 		
 		// queue full data retrieval (world gen) requests if needed
-		if (this.fullDataSourceProvider.canQueueRetrievalNow()
+		if (threadPoolCanAcceptWorldGenTasks()
+			&& this.fullDataSourceProvider.canQueueRetrievalNow()
 			&& !this.queueThreadRunningRef.get())
 		{
 			this.queueThreadRunningRef.set(true); // don't run multiple threads at once
@@ -821,6 +824,33 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				this.missingGenerationPosSet.add(missingPos);
 			}
 		}
+	}
+	
+	/**
+	 * Prevents DH from
+	 * accidentally starting to queue chunks out of order
+	 * if the thread pool suddenly become (un)available while we're walking
+	 * through the missing positions.
+	 */
+	private static boolean threadPoolCanAcceptWorldGenTasks()
+	{
+		// don't queue additional world gen requests if the render loader is busy
+		PriorityTaskPicker.Executor renderLoadExecutor = ThreadPoolUtil.getRenderLoadingExecutor();
+		if (renderLoadExecutor == null
+			|| renderLoadExecutor.getQueueSize() >= FullDataUpdatePropagatorV2.getMaxPropagateTaskCount() / 2)
+		{
+			return false;
+		}
+		
+		// don't queue additional world gen requests if the file handler is busy
+		PriorityTaskPicker.Executor fileHandlerExecutor = ThreadPoolUtil.getFileHandlerExecutor();
+		if (fileHandlerExecutor == null
+			|| fileHandlerExecutor.getQueueSize() >= FullDataUpdatePropagatorV2.getMaxPropagateTaskCount() / 2)
+		{
+			return false;
+		}
+		
+		return true;
 	}
 	
 	//endregion world gen

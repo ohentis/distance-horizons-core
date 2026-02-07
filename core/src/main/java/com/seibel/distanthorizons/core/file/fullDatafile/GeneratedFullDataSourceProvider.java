@@ -220,46 +220,28 @@ public class GeneratedFullDataSourceProvider extends FullDataSourceProviderV2 im
 		}
 		
 		
+		// we can't queue anything if the world generator isn't set up yet
 		IFullDataSourceRetrievalQueue worldGenQueue = this.worldGenQueueRef.get();
 		if (worldGenQueue == null)
 		{
-			// we can't queue anything if the world generator isn't set up yet
 			return false;
 		}
 		
-		
-		PriorityTaskPicker.Executor renderLoadExecutor = ThreadPoolUtil.getRenderLoadingExecutor();
-		if (renderLoadExecutor == null 
-			|| renderLoadExecutor.getQueueSize() >= FullDataUpdatePropagatorV2.getMaxPropagateTaskCount() / 2)
-		{
-			// don't queue additional world gen requests if the render loader handler is overwhelmed,
-			// otherwise LODs may not load in properly
-			return false;
-		}
-		
-		PriorityTaskPicker.Executor fileHandlerExecutor = ThreadPoolUtil.getFileHandlerExecutor();
-		if (fileHandlerExecutor == null 
-			|| fileHandlerExecutor.getQueueSize() >= FullDataUpdatePropagatorV2.getMaxPropagateTaskCount() / 2)
-		{
-			// don't queue additional world gen requests if the file handler is overwhelmed,
-			// otherwise LODs may not load in properly
-			return false;
-		}
-		
-		
-		// TODO if the number of queued tasks last time was 0 we could increase this by 10?
-		int maxQueuedChunkCount = MAX_WORLD_GEN_REQUESTS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get(); // for now we're just using the same logic as the world gen threads, it works well enough
-		if (SharedApi.INSTANCE.getQueuedChunkUpdateCount() >= maxQueuedChunkCount)
-		{
-			// don't queue additional world gen requests if there are
-			// a lot of chunks waiting to update
-			// (this is done to reduce thread starvation for chunk updates)
-			return false;
-		}
 		
 		
 		int maxWorldGenQueueCount = MAX_WORLD_GEN_REQUESTS_PER_THREAD * Config.Common.MultiThreading.numberOfThreads.get();
-
+		int currentQueueCount = SharedApi.INSTANCE.getQueuedChunkUpdateCount();
+		
+		
+		
+		// don't queue additional world gen requests if there are
+		// a lot of chunks waiting to update
+		if (currentQueueCount >= maxWorldGenQueueCount)
+		{
+			return false;
+		}
+		
+		
 		if (this.delayedFullDataSourceSaveCache.getUnsavedCount() >= maxWorldGenQueueCount)
 		{
 			// don't queue additional world gen requests if there are
