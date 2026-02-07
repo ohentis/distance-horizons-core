@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core.dataObjects.render.columnViews;
 
 
+import com.seibel.distanthorizons.api.enums.config.EDhApiVerticalQuality;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
 import com.seibel.distanthorizons.core.util.RenderDataPointReducingList;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
@@ -28,20 +29,21 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 
-public final class ColumnArrayView implements IColumnDataView
+public final class ColumnArrayView
 {
 	public final LongArrayList data;
 	
 	/** 
 	 * How many data points are currently being represented by this view. <br>
-	 * Will be equal to or less than {@link ColumnArrayView#verticalSize}.
+	 * Will be equal to or less than {@link ColumnArrayView#maxVerticalSliceCount}.
 	 */
 	public final int size;
 	/** 
 	 * Vertical size in data points. <Br>
 	 * Can be 0 if this column was created for an empty data source.
+	 * @see EDhApiVerticalQuality#calculateMaxNumberOfVerticalSlicesAtDetailLevel(byte)
 	 */
-	public final int verticalSize;
+	public final int maxVerticalSliceCount;
 	
 	/**
 	 * Where the relative starting index is in the {@link ColumnArrayView#data} array
@@ -54,14 +56,15 @@ public final class ColumnArrayView implements IColumnDataView
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	/** @throws IllegalArgumentException if the offset is greater than the data's size */
-	public ColumnArrayView(LongArrayList data, int size, int offset, int verticalSize) throws IllegalArgumentException
+	public ColumnArrayView(LongArrayList data, int size, int offset, int maxVerticalSliceCount) throws IllegalArgumentException
 	{
 		this.data = data;
 		this.size = size;
 		this.offset = offset;
-		this.verticalSize = verticalSize;
+		this.maxVerticalSliceCount = maxVerticalSliceCount;
 		
 		if (this.data.size() < this.offset)
 		{
@@ -69,13 +72,15 @@ public final class ColumnArrayView implements IColumnDataView
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//=====================//
 	// getters and setters //
 	//=====================//
+	//region
 	
-	@Override
 	public long get(int index) 
 	{
 		try
@@ -90,99 +95,59 @@ public final class ColumnArrayView implements IColumnDataView
 			throw new ConcurrentModificationException("Potential concurrent modification detected. Make sure the parent ColumnRenderSource isn't being closed before the ColumnArrayView processing is complete.", e);
 		}
 	}
-	public void set(int index, long value) { data.set(index + offset, value); }
+	public void set(int index, long value) { this.data.set(index + this.offset, value); }
 	
-	@Override
-	public int size() { return size; }
-	@Override
-	public int verticalSize() { return verticalSize; }
+	/** can be used to determine sub-view starting indexes */
+	public int subViewCount() { return (this.maxVerticalSliceCount != 0) ? (this.size / this.maxVerticalSliceCount) : 0; }
 	
-	@Override
-	public int dataCount() { return (this.verticalSize != 0) ? (this.size / this.verticalSize) : 0; } // TODO what does the divide by mean?
-	
-	@Override
 	public ColumnArrayView subView(int dataIndexStart, int dataCount)
-	{ return new ColumnArrayView(data, dataCount * verticalSize, offset + dataIndexStart * verticalSize, verticalSize); }
+	{ return new ColumnArrayView(this.data, dataCount * this.maxVerticalSliceCount, this.offset + dataIndexStart * this.maxVerticalSliceCount, this.maxVerticalSliceCount); }
 	
-	public void fill(long value) { Arrays.fill(data.elements(), offset, offset + size, value); }
+	public void fill(long value) { Arrays.fill(this.data.elements(), this.offset, this.offset + this.size, value); }
 	
-	public void copyFrom(IColumnDataView source) { copyFrom(source, 0); }
-	public void copyFrom(IColumnDataView source, int outputDataIndexOffset)
+	public void copyFrom(ColumnArrayView source) { this.copyFrom(source, 0); }
+	public void copyFrom(ColumnArrayView source, int outputDataIndexOffset)
 	{
-		if (source.verticalSize() > verticalSize)
+		if (source.maxVerticalSliceCount > this.maxVerticalSliceCount)
 		{
 			throw new IllegalArgumentException("source verticalSize must be <= self's verticalSize to copy");
 		}
-		else if (source.dataCount() + outputDataIndexOffset > dataCount())
+		else if (source.subViewCount() + outputDataIndexOffset > this.subViewCount())
 		{
 			throw new IllegalArgumentException("dataIndexStart + source.dataCount() must be <= self.dataCount() to copy");
 		}
-		else if (source.verticalSize() != verticalSize)
+		else if (source.maxVerticalSliceCount != this.maxVerticalSliceCount)
 		{
-			for (int i = 0; i < source.dataCount(); i++)
+			for (int i = 0; i < source.subViewCount(); i++)
 			{
-				int outputOffset = offset + outputDataIndexOffset * verticalSize + i * verticalSize;
-				source.subView(i, 1).copyTo(data.elements(), outputOffset, source.verticalSize());
-				Arrays.fill(data.elements(), outputOffset + source.verticalSize(),
-						outputOffset + verticalSize, 0);
+				int outputOffset = this.offset + (outputDataIndexOffset * this.maxVerticalSliceCount) + (i * this.maxVerticalSliceCount);
+				source.subView(i, 1).copyTo(this.data.elements(), outputOffset, source.maxVerticalSliceCount);
+				Arrays.fill(this.data.elements(), outputOffset + source.maxVerticalSliceCount,
+						outputOffset + this.maxVerticalSliceCount, 0);
 			}
 		}
 		else
 		{
-			source.copyTo(data.elements(), offset + outputDataIndexOffset * verticalSize, source.size());
+			source.copyTo(this.data.elements(), this.offset + outputDataIndexOffset * this.maxVerticalSliceCount, source.size);
 		}
 	}
 	
-	@Override
-	public void copyTo(long[] target, int offset, int size) { System.arraycopy(data.elements(), this.offset, target, offset, size); }
+	public void copyTo(long[] target, int offset, int size) { System.arraycopy(this.data.elements(), this.offset, target, offset, size); }
 	
-	public boolean mergeWith(ColumnArrayView source, boolean override)
+	public void changeVerticalSizeFrom(ColumnArrayView source)
 	{
-		if (size != source.size)
-		{
-			throw new IllegalArgumentException("Cannot merge views of different sizes");
-		}
-		if (verticalSize != source.verticalSize)
-		{
-			throw new IllegalArgumentException("Cannot merge views of different vertical sizes");
-		}
-		boolean anyChange = false;
-		for (int o = 0; o < (source.size() * verticalSize); o += verticalSize)
-		{
-			if (override)
-			{
-				if (RenderDataPointUtil.compareDatapointPriority(source.get(o), get(o)) >= 0)
-				{
-					anyChange = true;
-					System.arraycopy(source.data, source.offset + o, data, offset + o, verticalSize);
-				}
-			}
-			else
-			{
-				if (RenderDataPointUtil.compareDatapointPriority(source.get(o), get(o)) > 0)
-				{
-					anyChange = true;
-					System.arraycopy(source.data, source.offset + o, data, offset + o, verticalSize);
-				}
-			}
-		}
-		return anyChange;
-	}
-	
-	public void changeVerticalSizeFrom(IColumnDataView source)
-	{
-		if (this.dataCount() != source.dataCount())
+		if (this.subViewCount() != source.subViewCount())
 		{
 			throw new IllegalArgumentException("Cannot copy and resize to views with different dataCounts");
 		}
 		
-		if (this.verticalSize >= source.verticalSize())
+		if (this.maxVerticalSliceCount >= source.maxVerticalSliceCount)
 		{
 			this.copyFrom(source);
 		}
 		else
 		{
-			for (int i = 0; i < this.dataCount(); i++)
+			for (int i = 0; i < this.subViewCount(); i++)
 			{
 				mergeMultiData(source.subView(i, 1), this.subView(i, 1));
 			}
@@ -194,9 +159,9 @@ public final class ColumnArrayView implements IColumnDataView
 	 * @param sourceData one or more columns of data
 	 * @param output one column of space for the result to be written to
 	 */
-	private static void mergeMultiData(IColumnDataView sourceData, ColumnArrayView output)
+	private static void mergeMultiData(ColumnArrayView sourceData, ColumnArrayView output)
 	{
-		int target = output.verticalSize();
+		int target = output.maxVerticalSliceCount;
 		if (target <= 0)
 		{
 			// I expect this to never be the case,
@@ -207,7 +172,7 @@ public final class ColumnArrayView implements IColumnDataView
 		else if (target == 1)
 		{
 			output.set(0, RenderDataPointReducingList.reduceToOne(sourceData));
-			for (int index = 1, size = output.size(); index < size; index++)
+			for (int index = 1, size = output.size; index < size; index++)
 			{
 				output.set(index, RenderDataPointUtil.EMPTY_DATA);
 			}
@@ -216,24 +181,27 @@ public final class ColumnArrayView implements IColumnDataView
 		{
 			try (RenderDataPointReducingList list = new RenderDataPointReducingList(sourceData))
 			{
-				list.reduce(output.verticalSize());
+				list.reduce(output.maxVerticalSliceCount);
 				list.copyTo(output);
 			}
 		}
 	}
+	
+	//endregion
 	
 	
 	
 	//================//
 	// base overrides //
 	//================//
+	//region
 	
 	@Override
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
 		sb.append("S:").append(this.size);
-		sb.append(" V:").append(this.verticalSize);
+		sb.append(" V:").append(this.maxVerticalSliceCount);
 		sb.append(" O:").append(this.offset);
 		
 		sb.append(" [");
@@ -250,25 +218,7 @@ public final class ColumnArrayView implements IColumnDataView
 		return sb.toString();
 	}
 	
-	
-	public int getDataHash() { return arrayHash(this.data, this.offset, this.size); }
-	private static int arrayHash(LongArrayList a, int offset, int length)
-	{
-		if (a == null)
-		{
-			return 0;
-		}
-		
-		int result = 1;
-		int end = offset + length;
-		for (int i = offset; i < end; i++)
-		{
-			long element = a.getLong(i);
-			int elementHash = (int) (element ^ (element >>> 32));
-			result = 31 * result + elementHash;
-		}
-		return result;
-	}
+	//endregion
 	
 	
 	

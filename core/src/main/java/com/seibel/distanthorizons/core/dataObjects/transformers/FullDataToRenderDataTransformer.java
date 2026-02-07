@@ -108,11 +108,11 @@ public class FullDataToRenderDataTransformer
  		final long pos = fullDataSource.getPos();
 		final byte dataDetail = fullDataSource.getDataDetailLevel();
 		
-		final int vertSize = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxVerticalData(fullDataSource.getDataDetailLevel());
+		final int maxVertSliceCount = Config.Client.Advanced.Graphics.Quality.verticalQuality.get().calculateMaxNumberOfVerticalSlicesAtDetailLevel(fullDataSource.getDataDetailLevel());
 		
 		
 		
-		final ColumnRenderSource columnSource = ColumnRenderSource.createEmpty(pos, vertSize, levelWrapper.getMinHeight());
+		final ColumnRenderSource columnSource = ColumnRenderSource.createEmpty(pos, maxVertSliceCount, levelWrapper.getMinHeight());
 		if (fullDataSource.isEmpty)
 		{
 			return columnSource;
@@ -155,7 +155,7 @@ public class FullDataToRenderDataTransformer
 		}
 		
 		int fullDataLength = fullDataColumn.size();
-		if (fullDataLength <= columnArrayView.verticalSize())
+		if (fullDataLength <= columnArrayView.maxVerticalSliceCount)
 		{
 			// Directly use the arrayView since it fits.
 			setRenderColumnView(levelWrapper, fullDataSource, blockX, blockZ, columnArrayView, fullDataColumn);

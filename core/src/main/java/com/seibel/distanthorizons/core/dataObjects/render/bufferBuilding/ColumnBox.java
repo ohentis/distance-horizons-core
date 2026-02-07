@@ -283,7 +283,7 @@ public class ColumnBox
 		short yMax = (short) (yMin + ySize);
 		
 		
-		int adjCount = adjColumnView.size();
+		int adjCount = adjColumnView.size;
 		
 		// Start with the entire range at max light
 		segments.add(YSegmentUtil.encode(yMin, yMax, LodUtil.MAX_MC_LIGHT));

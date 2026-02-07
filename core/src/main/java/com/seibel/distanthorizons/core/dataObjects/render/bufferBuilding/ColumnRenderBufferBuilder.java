@@ -117,7 +117,7 @@ public class ColumnRenderBufferBuilder
 					// ignore empty/null columns
 					ColumnArrayView columnRenderData = renderSource.getVerticalDataPointView(relX, relZ);
 					if (columnRenderData == null
-						|| columnRenderData.size() == 0
+						|| columnRenderData.size == 0
 						|| !RenderDataPointUtil.doesDataPointExist(columnRenderData.get(0))
 						|| RenderDataPointUtil.hasZeroHeight(columnRenderData.get(0)))
 					{
@@ -244,7 +244,7 @@ public class ColumnRenderBufferBuilder
 					// build this render column //
 					//==========================//
 					
-					for (int i = 0; i < columnRenderData.size(); i++)
+					for (int i = 0; i < columnRenderData.size; i++)
 					{
 						// can be uncommented to limit which vertical LOD is generated
 						if (Config.Client.Advanced.Debugging.ColumnBuilderDebugging.columnBuilderDebugEnable.get())
@@ -267,7 +267,7 @@ public class ColumnRenderBufferBuilder
 						}
 						
 						long topDataPoint = (i - 1) >= 0 ? columnRenderData.get(i - 1) : RenderDataPointUtil.EMPTY_DATA;
-						long bottomDataPoint = (i + 1) < columnRenderData.size() ? columnRenderData.get(i + 1) : RenderDataPointUtil.EMPTY_DATA;
+						long bottomDataPoint = (i + 1) < columnRenderData.size ? columnRenderData.get(i + 1) : RenderDataPointUtil.EMPTY_DATA;
 						
 						addRenderDataPointToBuilder(
 								clientLevel, phantomArrayCheckout,

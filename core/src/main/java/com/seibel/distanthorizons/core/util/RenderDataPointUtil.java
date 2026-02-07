@@ -20,9 +20,6 @@
 package com.seibel.distanthorizons.core.util;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
-import com.seibel.distanthorizons.core.level.AbstractDhLevel;
-import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
-import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDataView;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;

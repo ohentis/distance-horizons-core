@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.core.util;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
-import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDataView;
 import com.seibel.distanthorizons.core.util.objects.pooling.AbstractPhantomArrayList;
 import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.util.LodUtil.AssertFailureException;
@@ -121,11 +120,11 @@ public class RenderDataPointReducingList extends AbstractPhantomArrayList
 	// constructor //
 	//=============//
 	
-	public RenderDataPointReducingList(IColumnDataView view) 
+	public RenderDataPointReducingList(ColumnArrayView view) 
 	{
 		super(ARRAY_LIST_POOL, 0, 1, 2, 0);
 		
-		int size = view.size();
+		int size = view.size;
 		if (size == 0) 
 		{
 			this.setLowest(NULL);
@@ -834,9 +833,9 @@ public class RenderDataPointReducingList extends AbstractPhantomArrayList
 	 *
 	 * @implNote this method does not allocate any objects.
 	 */
-	public static long reduceToOne(IColumnDataView view) 
+	public static long reduceToOne(ColumnArrayView view) 
 	{
-		int size = view.size();
+		int size = view.size;
 		if (size <= 0)
 		{
 			return RenderDataPointUtil.EMPTY_DATA;
@@ -902,7 +901,7 @@ public class RenderDataPointReducingList extends AbstractPhantomArrayList
 			view.set(writeIndex++, RenderDataPointUtil.EMPTY_DATA);
 		}
 		
-		for (int size = view.size(); writeIndex < size; writeIndex++)
+		for (int size = view.size; writeIndex < size; writeIndex++)
 		{
 			view.set(writeIndex, RenderDataPointUtil.EMPTY_DATA);
 		}
