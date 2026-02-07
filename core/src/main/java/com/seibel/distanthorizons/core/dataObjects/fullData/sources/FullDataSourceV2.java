@@ -34,7 +34,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.pooling.AbstractPhantomArrayList;
 import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListCheckout;
 import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListPool;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.sql.dto.util.FullDataMinMaxPosUtil;
@@ -301,16 +300,11 @@ public class FullDataSourceV2
 	 */
 	public long getDataPointAtBlockPos(int blockPosX, int blockPosY, int blockPosZ, int levelMinY)
 	{
-		DhLodPos requestedPos = new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ);
+		long requestedPos = DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ);
 		
 		// stop if the requested blockPos is outside this datasource
 		{
-			// get the detail levels for this request
-			byte requestedDetailLevel = requestedPos.detailLevel;
-			byte requestedSectionDetailLevel = (byte) (requestedDetailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-	
-			// get the positions for this request
-			long sectionPos = requestedPos.getSectionPosWithSectionDetailLevel(requestedSectionDetailLevel);
+			long sectionPos =  DhSectionPos.encodeContaining(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, new DhBlockPos(blockPosX, blockPosY, blockPosZ));
 			if (!DhSectionPos.contains(this.pos, sectionPos))
 			{
 				return FullDataPointUtil.EMPTY_DATA_POINT;
@@ -320,10 +314,10 @@ public class FullDataSourceV2
 		
 		// get the relative data source position
 		byte requestDetailLevel = (byte) (DhSectionPos.getDetailLevel(this.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		DhLodPos relativePos = requestedPos.getDhSectionRelativePositionForDetailLevel(requestDetailLevel);
+		long relativePos = DhSectionPos.getDhSectionRelativePositionForDetailLevel(requestedPos, requestDetailLevel);
 		
 		// get the data column
-		LongArrayList dataColumn = this.getColumnAtRelPos(relativePos.x, relativePos.z);
+		LongArrayList dataColumn = this.getColumnAtRelPos(DhSectionPos.getX(relativePos), DhSectionPos.getZ(relativePos));
 		if (dataColumn == null)
 		{
 			return FullDataPointUtil.EMPTY_DATA_POINT;

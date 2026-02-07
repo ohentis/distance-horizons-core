@@ -20,37 +20,37 @@
 package tests;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
+import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import org.apache.logging.log4j.Level;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.Assert;
 import org.junit.Test;
 
-@Deprecated
 public class SquareIntersectTest
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	static
 	{
+		// allow all logging levels
 		Configurator.setRootLevel(Level.ALL);
 	}
 	
 	
 	
-	public static boolean DoSquaresOverlap(DhLodPos rect1Min, int rect1Width, DhLodPos rect2Min, int rect2Width)
+	public static boolean DoSquaresOverlap(long rect1MinPos, int rect1Width, long rect2MinPos, int rect2Width)
 	{
 		// Determine the coordinates of the rectangles
-		float rect1MinX = rect1Min.x;
-		float rect1MaxX = rect1Min.x + rect1Width;
-		float rect1MinZ = rect1Min.z;
-		float rect1MaxZ = rect1Min.z + rect1Width;
+		float rect1MinX = DhSectionPos.getX(rect1MinPos);
+		float rect1MaxX = DhSectionPos.getX(rect1MinPos) + rect1Width;
+		float rect1MinZ = DhSectionPos.getZ(rect1MinPos);
+		float rect1MaxZ = DhSectionPos.getZ(rect1MinPos) + rect1Width;
 		
-		float rect2MinX = rect2Min.x;
-		float rect2MaxX = rect2Min.x + rect2Width;
-		float rect2MinZ = rect2Min.z;
-		float rect2MaxZ = rect2Min.z + rect2Width;
+		float rect2MinX = DhSectionPos.getX(rect2MinPos);
+		float rect2MaxX = DhSectionPos.getX(rect2MinPos) + rect2Width;
+		float rect2MinZ = DhSectionPos.getZ(rect2MinPos);
+		float rect2MaxZ = DhSectionPos.getZ(rect2MinPos) + rect2Width;
 		
 		// Check if the rectangles overlap
 		return rect1MinX < rect2MaxX && rect1MaxX > rect2MinX && rect1MinZ < rect2MaxZ && rect1MaxZ > rect2MinZ;
@@ -62,10 +62,10 @@ public class SquareIntersectTest
 	@Test
 	public void TestOverlappingSquares()
 	{
-		DhLodPos rect1Min = new DhLodPos((byte) 0, 1, 1);
+		long rect1Min = DhSectionPos.encode((byte) 0, 1, 1);
 		int rect1Width = 4;
 		
-		DhLodPos rect2Min = new DhLodPos((byte) 0, 3, 3);
+		long rect2Min = DhSectionPos.encode((byte) 0, 3, 3);
 		int rect2Width = 4;
 		
 		boolean result = DoSquaresOverlap(rect1Min, rect1Width, rect2Min, rect2Width);
@@ -76,10 +76,10 @@ public class SquareIntersectTest
 	@Test
 	public void TestNonOverlappingSquares()
 	{
-		DhLodPos rect1Min = new DhLodPos((byte) 0, 1, 1);
+		long rect1Min = DhSectionPos.encode((byte) 0, 1, 1);
 		int rect1Width = 2;
 		
-		DhLodPos rect2Min = new DhLodPos((byte) 0, 4, 4);
+		long rect2Min = DhSectionPos.encode((byte) 0, 4, 4);
 		int rect2Width = 2;
 		
 		boolean result = DoSquaresOverlap(rect1Min, rect1Width, rect2Min, rect2Width);
@@ -90,10 +90,10 @@ public class SquareIntersectTest
 	@Test
 	public void TestSquaresWithDifferentSizes()
 	{
-		DhLodPos rect1Min = new DhLodPos((byte) 0, 1, 1);
+		long rect1Min = DhSectionPos.encode((byte) 0, 1, 1);
 		int rect1Width = 4;
 		
-		DhLodPos rect2Min = new DhLodPos((byte) 0, 3, 3);
+		long rect2Min = DhSectionPos.encode((byte) 0, 3, 3);
 		int rect2Width = 3;
 		
 		boolean result = DoSquaresOverlap(rect1Min, rect1Width, rect2Min, rect2Width);
@@ -104,10 +104,10 @@ public class SquareIntersectTest
 	@Test
 	public void TestOneRectangleContainsTheOther()
 	{
-		DhLodPos rect1Min = new DhLodPos((byte) 0, 1, 1);
+		long rect1Min = DhSectionPos.encode((byte) 0, 1, 1);
 		int rect1Width = 9;
 		
-		DhLodPos rect2Min = new DhLodPos((byte) 0, 3, 3);
+		long rect2Min = DhSectionPos.encode((byte) 0, 3, 3);
 		int rect2Width = 3;
 		
 		boolean result = DoSquaresOverlap(rect1Min, rect1Width, rect2Min, rect2Width);
@@ -118,10 +118,10 @@ public class SquareIntersectTest
 	@Test
 	public void TestOneRectangleContainsTheOtherInverted()
 	{
-		DhLodPos rect1Min = new DhLodPos((byte) 0, 3, 3);
+		long rect1Min = DhSectionPos.encode((byte) 0, 3, 3);
 		int rect1Width = 3;
 		
-		DhLodPos rect2Min = new DhLodPos((byte) 0, 1, 1);
+		long rect2Min = DhSectionPos.encode((byte) 0, 1, 1);
 		int rect2Width = 9;
 		
 		boolean result = DoSquaresOverlap(rect1Min, rect1Width, rect2Min, rect2Width);

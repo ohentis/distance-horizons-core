@@ -22,7 +22,6 @@ package com.seibel.distanthorizons.core.util.objects.quadTree;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -280,26 +279,26 @@ public class QuadTree<T>
 		
 		// check if the testPos is within the X,Z boundary of the tree
 		DhBlockPos2D treeBlockCorner = this.centerBlockPos.add(new DhBlockPos2D(-this.diameterInBlocks / 2, -this.diameterInBlocks / 2));
-		DhLodPos treeCornerPos = new DhLodPos((byte) 0, treeBlockCorner.x, treeBlockCorner.z);
+		long treeCornerPos = DhSectionPos.encode((byte) 0, treeBlockCorner.x, treeBlockCorner.z);
 		
 		long inputSectionCorner = DhSectionPos.convertToDetailLevel(testPos, (byte) 0);
-		DhLodPos inputCornerPos = new DhLodPos((byte) 0, DhSectionPos.getX(inputSectionCorner), DhSectionPos.getZ(inputSectionCorner));
+		long inputCornerPos = DhSectionPos.encode((byte) 0, DhSectionPos.getX(inputSectionCorner), DhSectionPos.getZ(inputSectionCorner));
 		int inputBlockWidth = BitShiftUtil.powerOfTwo(DhSectionPos.getDetailLevel(testPos));
 		
 		return DoSquaresOverlap(treeCornerPos, this.diameterInBlocks, inputCornerPos, inputBlockWidth);
 	}
-	private static boolean DoSquaresOverlap(DhLodPos square1Min, int square1Width, DhLodPos square2Min, int square2Width)
+	private static boolean DoSquaresOverlap(long square1Min, int square1Width, long square2Min, int square2Width)
 	{
 		// Determine the coordinates of the squares (the variables say rect[angle] because this logic would also work there and was simplified to work for squares)
-		float rect1MinX = square1Min.x;
-		float rect1MaxX = square1Min.x + square1Width;
-		float rect1MinZ = square1Min.z;
-		float rect1MaxZ = square1Min.z + square1Width;
+		float rect1MinX = DhSectionPos.getX(square1Min);
+		float rect1MaxX = DhSectionPos.getX(square1Min) + square1Width;
+		float rect1MinZ = DhSectionPos.getZ(square1Min);
+		float rect1MaxZ = DhSectionPos.getZ(square1Min) + square1Width;
 		
-		float rect2MinX = square2Min.x;
-		float rect2MaxX = square2Min.x + square2Width;
-		float rect2MinZ = square2Min.z;
-		float rect2MaxZ = square2Min.z + square2Width;
+		float rect2MinX = DhSectionPos.getX(square2Min);
+		float rect2MaxX = DhSectionPos.getX(square2Min) + square2Width;
+		float rect2MinZ = DhSectionPos.getZ(square2Min);
+		float rect2MaxZ = DhSectionPos.getZ(square2Min) + square2Width;
 		
 		// Check if the squares overlap
 		return

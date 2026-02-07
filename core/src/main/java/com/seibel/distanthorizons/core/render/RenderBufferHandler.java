@@ -29,7 +29,6 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
-import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.Pos2D;
 import com.seibel.distanthorizons.core.render.QuadTree.LodQuadTree;
@@ -37,7 +36,6 @@ import com.seibel.distanthorizons.core.render.QuadTree.LodRenderSection;
 import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.RenderParams;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IOverrideInjector;
@@ -200,11 +198,11 @@ public class RenderBufferHandler implements AutoCloseable
 			{
 				if (enableFrustumCulling)
 				{
-					DhLodPos lodBounds = DhSectionPos.getSectionBBoxPos(renderSection.pos);
-					int blockMinX = lodBounds.getMinX().toBlockWidth();
-					int blockMinZ = lodBounds.getMinZ().toBlockWidth();
-					int lodBlockWidth = lodBounds.getBlockWidth();
-					if (!frustum.intersects(blockMinX, blockMinZ, lodBlockWidth, lodBounds.detailLevel))
+					int blockMinX = DhSectionPos.getMinCornerBlockX(renderSection.pos);
+					int blockMinZ = DhSectionPos.getMinCornerBlockZ(renderSection.pos);
+					int blockWidth = DhSectionPos.getBlockWidth(renderSection.pos);
+					byte detailLevel = DhSectionPos.getDetailLevel(renderSection.pos);
+					if (!frustum.intersects(blockMinX, blockMinZ, blockWidth, detailLevel))
 					{
 						if (isShadowPass)
 						{
