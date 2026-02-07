@@ -540,22 +540,27 @@ public class PhantomArrayListPool
 				: "";
 		
 		
-		messageList.add(name + " - Pools:");
+		
+		String a = MinecraftTextFormat.AQUA;
+		String y = MinecraftTextFormat.YELLOW;
+		String cf = MinecraftTextFormat.CLEAR_FORMATTING;
+		
+		messageList.add(a+name+cf + " - Pools:");
 		if (totalByteArrayCount != 0)
 		{
-			messageList.add("byte[]: " + bytePoolCount + "/" + byteArrayTotalCount + bytePoolSizeInBytes);
+			messageList.add("byte[]: " + bytePoolCount + "/" + byteArrayTotalCount + y+bytePoolSizeInBytes+cf);
 		}
 		if (totalShortArrayCount != 0)
 		{
-			messageList.add("short[]: " + shortPoolCount + "/" + shortArrayTotalCount + shortPoolSizeInBytes);
+			messageList.add("short[]: " + shortPoolCount + "/" + shortArrayTotalCount + y+shortPoolSizeInBytes+cf);
 		}
 		if (totalLongArrayCount != 0)
 		{
-			messageList.add("long[]: " + longPoolCount + "/" + longArrayTotalCount + longPoolSizeInBytes);
+			messageList.add("long[]: " + longPoolCount + "/" + longArrayTotalCount + y+longPoolSizeInBytes+cf);
 		}
 		if (totalCharArrayCount != 0)
 		{
-			messageList.add("char[]: " + charPoolCount + "/" + charArrayTotalCount + charPoolSizeInBytes);
+			messageList.add("char[]: " + charPoolCount + "/" + charArrayTotalCount + y+charPoolSizeInBytes+cf);
 		}
 	}
 	

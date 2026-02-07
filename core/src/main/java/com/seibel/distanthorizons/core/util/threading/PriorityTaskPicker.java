@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.core.util.threading;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
+import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
@@ -369,12 +370,20 @@ public class PriorityTaskPicker
 		
 		public static String getThreadPoolStatString(String displayName, PriorityTaskPicker.Executor pool)
 		{
+			String o = MinecraftTextFormat.ORANGE;
+			String g = MinecraftTextFormat.GREEN;
+			String b = MinecraftTextFormat.DARK_BLUE;
+			String y = MinecraftTextFormat.YELLOW;
+			String cf = MinecraftTextFormat.CLEAR_FORMATTING;
+			
+			
+			
 			NumberFormat numberFormat = F3Screen.NUMBER_FORMAT;
 			
 			String queueSize = (pool != null) ? numberFormat.format(pool.getQueueSize()) : "-";
 			String completedCount = (pool != null) ? numberFormat.format(pool.getCompletedTaskCount()) : "-";
 			
-			String message = displayName+", Tasks: "+queueSize+", Done: "+completedCount;
+			String message = displayName+", Tasks: "+o+queueSize+cf+", Done: "+g+completedCount+cf;
 			
 			if (pool != null)
 			{
@@ -383,9 +392,9 @@ public class PriorityTaskPicker
 				int threadCount = pool.getPoolSize();
 				
 				boolean threadPoolActive = pool.canRun();
-				String poolActiveString = threadPoolActive ? "Active" : "Paused";
+				String poolActiveString = threadPoolActive ? ("Active") : (o+"Paused"+cf);
 				
-				message += ", "+poolActiveString+": "+activeThreadCount+"/"+threadCount;
+				message += ", "+poolActiveString+": "+y+activeThreadCount+cf+"/"+threadCount;
 				
 				// thread runtime
 				String runTimeAvgStr;
@@ -399,7 +408,7 @@ public class PriorityTaskPicker
 					runTimeAvgStr = "<0";
 				}
 				
-				message += ", Avg: "+runTimeAvgStr+"ms";
+				message += ", Avg: "+b+runTimeAvgStr+"ms"+cf;
 			}
 			
 			

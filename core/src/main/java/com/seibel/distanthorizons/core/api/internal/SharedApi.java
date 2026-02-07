@@ -27,6 +27,7 @@ import com.seibel.distanthorizons.core.api.internal.chunkUpdating.ChunkUpdateQue
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.eventHandlers.IgnoredDimensionCsvHandler;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.DhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
@@ -443,13 +444,18 @@ public class SharedApi
 	
 	public String getDebugMenuString()
 	{
+		String y = MinecraftTextFormat.YELLOW;
+		String o = MinecraftTextFormat.ORANGE;
+		String cf = MinecraftTextFormat.CLEAR_FORMATTING;
+		
+		
 		String preUpdatingCountStr = F3Screen.NUMBER_FORMAT.format(CHUNK_UPDATE_QUEUE_MANAGER.preUpdateQueue.getQueuedCount());
 		String updatingCountStr = F3Screen.NUMBER_FORMAT.format(CHUNK_UPDATE_QUEUE_MANAGER.updateQueue.getQueuedCount());
 		String queuedCountStr = F3Screen.NUMBER_FORMAT.format(CHUNK_UPDATE_QUEUE_MANAGER.getQueuedCount());
 		
 		String maxUpdateCountStr = F3Screen.NUMBER_FORMAT.format(CHUNK_UPDATE_QUEUE_MANAGER.maxSize);
 		
-		return "Queued chunk updates: "+"( "+preUpdatingCountStr+" + "+updatingCountStr+" )  [ "+queuedCountStr+" / "+maxUpdateCountStr+" ]";
+		return "Queued chunk updates: "+"("+y+preUpdatingCountStr+cf+" + "+o+updatingCountStr+cf+") ["+queuedCountStr+"/"+maxUpdateCountStr+"]";
 	}
 	
 	

@@ -23,6 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.fullDatafile.RemoteFullDataSourceProvider;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
@@ -314,9 +315,16 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
+		String o = MinecraftTextFormat.ORANGE;
+		String y = MinecraftTextFormat.YELLOW;
+		String g = MinecraftTextFormat.GREEN;
+		String cf = MinecraftTextFormat.CLEAR_FORMATTING;
+		
+		
 		String dimName = this.levelWrapper.getDhIdentifier();
 		boolean rendering = this.clientside.isRendering();
-		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
+		String renderingString = rendering ? (g+"yes"+cf) : (o+"no"+cf);
+		messageList.add("["+y+dimName+cf+"] rendering: "+renderingString);
 		
 		
 		this.remoteDataSourceProvider.addDebugMenuStringsToList(messageList);

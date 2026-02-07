@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
@@ -105,9 +106,16 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		// header
+		String o = MinecraftTextFormat.ORANGE;
+		String y = MinecraftTextFormat.YELLOW;
+		String g = MinecraftTextFormat.GREEN;
+		String cf = MinecraftTextFormat.CLEAR_FORMATTING;
+		
+		
 		String dimName = this.serverLevelWrapper.getDhIdentifier();
 		boolean rendering = this.clientside.isRendering();
-		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
+		String renderingString = rendering ? (g+"yes"+cf) : (o+"no"+cf);
+		messageList.add("["+y+dimName+cf+"] rendering: "+renderingString);
 		
 		super.addDebugMenuStringsToList(messageList);
 	}
