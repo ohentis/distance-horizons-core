@@ -86,7 +86,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 * that may traverse the tree while it's being modified.
 	 * IE {@link RenderBufferHandler} will walk through the tree each frame.
 	 */
-	private final ReentrantLock treeLock = new ReentrantLock();
+	private final ReentrantLock treeTickLock = new ReentrantLock();
 	
 	private final AtomicBoolean requeueAllRetrievalTasksRef = new AtomicBoolean(false);
 	private final AtomicBoolean queueThreadRunningRef = new AtomicBoolean(false);
@@ -198,8 +198,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		
 		// don't tick the tree if a modification is still going
-		// TODO is this lock necessary for anything beyond this tick method?
-		if (this.treeLock.tryLock())
+		if (this.treeTickLock.tryLock())
 		{
 			// this shouldn't be updated while the tree is being iterated through
 			this.updateDetailLevelVariables();
@@ -214,7 +213,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 			finally
 			{
-				this.treeLock.unlock();
+				this.treeTickLock.unlock();
 			}
 		}
 	}
@@ -518,7 +517,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		}
 		
 		
-		byte expectedDetailLevel = this.calculateExpectedDetailLevel(playerPos, quadNode.sectionPos);
+		byte expectedDetailLevel = this.calcExpectedDetailLevel(playerPos, quadNode.sectionPos);
 		expectedDetailLevel = (byte) Math.min(expectedDetailLevel, this.minRootRenderDetailLevel);
 		expectedDetailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		
@@ -863,40 +862,16 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	//region detail level logic
 	
 	/**
-	 * This method will compute the detail level based on player position and section pos
-	 * Override this method if you want to use a different algorithm
+	 * Determines the detail level expected for the given position based on player position.
 	 *
 	 * @param playerPos player position as a reference for calculating the detail level
 	 * @param sectionPos section position
 	 * @return detail level of this section pos
 	 */
-	public byte calculateExpectedDetailLevel(DhBlockPos2D playerPos, long sectionPos) { return this.getDetailLevelFromDistance(playerPos.dist(DhSectionPos.getCenterBlockPosX(sectionPos), DhSectionPos.getCenterBlockPosZ(sectionPos))); }
-	private byte getDetailLevelFromDistance(double distance)
+	public byte calcExpectedDetailLevel(DhBlockPos2D playerPos, long sectionPos) 
 	{
-		double maxDetailDistance = this.getDrawDistanceFromDetail(Byte.MAX_VALUE - 1);
-		if (distance > maxDetailDistance)
-		{
-			return Byte.MAX_VALUE - 1;
-		}
-		
-		
-		int detailLevel = (int) (Math.log(distance / this.detailDropOffDistanceUnit) / this.detailDropOffLogBase);
-		return (byte) MathUtil.clamp(this.maxLeafRenderDetailLevel, detailLevel, Byte.MAX_VALUE - 1);
-	}
-	private double getDrawDistanceFromDetail(int detail)
-	{
-		if (detail <= this.maxLeafRenderDetailLevel)
-		{
-			return 0;
-		}
-		else if (detail >= Byte.MAX_VALUE)
-		{
-			return this.blockRenderDistanceDiameter * 2;
-		}
-		
-		
-		double base = Config.Client.Advanced.Graphics.Quality.horizontalQuality.get().quadraticBase;
-		return Math.pow(base, detail) * this.detailDropOffDistanceUnit;
+		double blockDistance = playerPos.dist(DhSectionPos.getCenterBlockPosX(sectionPos), DhSectionPos.getCenterBlockPosZ(sectionPos));
+		return this.calcDetailLevelFromDistance(blockDistance); 
 	}
 	
 	private void updateDetailLevelVariables()
@@ -908,10 +883,16 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		// The minimum detail level is done to prevent single corner sections rendering 1 detail level lower than the others.
 		// If not done corners may not be flush with the other LODs, which looks bad.
-		byte minSectionDetailLevel = this.getDetailLevelFromDistance(this.blockRenderDistanceDiameter); // get the minimum allowed detail level
+		byte minSectionDetailLevel = this.calcDetailLevelFromDistance(this.blockRenderDistanceDiameter); // get the minimum allowed detail level
 		minSectionDetailLevel -= 1; // -1 so corners can't render lower than their adjacent neighbors. space
 		minSectionDetailLevel = (byte) Math.min(minSectionDetailLevel, this.treeRootDetailLevel); // don't allow rendering lower detail sections than what the tree contains
 		this.minRootRenderDetailLevel = (byte) Math.max(minSectionDetailLevel, this.maxLeafRenderDetailLevel); // respect the user's selected max resolution if it is lower detail (IE they want 2x2 block, but minSectionDetailLevel is specifically for 1x1 block render resolution)
+	}
+	
+	private byte calcDetailLevelFromDistance(double blockDistance)
+	{
+		int detailLevel = (int) (Math.log(blockDistance / this.detailDropOffDistanceUnit) / this.detailDropOffLogBase);
+		return (byte) MathUtil.clamp(this.maxLeafRenderDetailLevel, detailLevel, FullDataSourceProviderV2.ROOT_SECTION_DETAIL_LEVEL);
 	}
 	
 	//endregion detail level logic
@@ -931,7 +912,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	{
 		try
 		{
-			this.treeLock.lock();
+			this.treeTickLock.lock();
 			LOGGER.info("Disposing render data...");
 			
 			// clear the tree
@@ -954,7 +935,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		}
 		finally
 		{
-			this.treeLock.unlock();
+			this.treeTickLock.unlock();
 		}
 	}
 	
@@ -962,7 +943,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 * Can be called whenever a render section's data needs to be refreshed. <br>
 	 * This should be called whenever a world generation task is completed or if the connected server has new data to show.
 	 */
-	public void reloadPos(long pos)
+	public void queuePosToReload(long pos)
 	{		
 		// queue reloads //
 		
@@ -1059,7 +1040,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		// so this is run on a separate thread to prevent lagging the render thread
 		mainCleanupExecutor.execute(() -> 
 		{
-			this.treeLock.lock();
+			this.treeTickLock.lock();
 			try
 			{
 				// walk through each node
@@ -1077,7 +1058,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			}
 			finally
 			{
-				this.treeLock.unlock();
+				this.treeTickLock.unlock();
 			}
 		});
 		

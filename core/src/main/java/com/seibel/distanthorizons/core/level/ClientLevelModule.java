@@ -170,7 +170,7 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState != null)
 		{
-			ClientRenderState.quadtree.reloadPos(updatedFullDataSource.getPos());
+			ClientRenderState.quadtree.queuePosToReload(updatedFullDataSource.getPos());
 		}
 	}
 	
@@ -225,7 +225,7 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		ClientRenderState clientRenderState = this.ClientRenderStateRef.get();
 		if (clientRenderState != null && clientRenderState.quadtree != null)
 		{
-			clientRenderState.quadtree.reloadPos(pos);
+			clientRenderState.quadtree.queuePosToReload(pos);
 		}
 	}
 	

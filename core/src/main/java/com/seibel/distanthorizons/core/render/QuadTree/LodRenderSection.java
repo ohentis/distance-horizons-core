@@ -289,7 +289,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	private boolean isAdjacentPosSameDetailLevel(EDhDirection direction)
 	{
 		long adjPos = DhSectionPos.getAdjacentPos(this.pos, direction);
-		byte detailLevel = this.quadTree.calculateExpectedDetailLevel(new DhBlockPos2D(MC.getPlayerBlockPos()), adjPos);
+		byte detailLevel = this.quadTree.calcExpectedDetailLevel(new DhBlockPos2D(MC.getPlayerBlockPos()), adjPos);
 		detailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		return detailLevel == DhSectionPos.getDetailLevel(this.pos);
 	}
