@@ -320,6 +320,9 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 	//================//
 	//region
 	
+	@Override 
+	public String toString() { return this.name + ": [" + this.get() + "]"; }
+	
 	public boolean equals(AbstractConfigBase<?> obj) 
 	{
 		return obj.getClass() == ConfigEntry.class 
