@@ -48,6 +48,7 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	static
 	{
@@ -69,11 +70,14 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 		SAVE_CACHE_SET.add(new WeakReference<>(this));
 	}
 	
+	//endregion
+	
 	
 	
 	//==============//
 	// update queue //
 	//==============//
+	//region
 	
 	/**
 	 * Writing into memory is done synchronously so inputDataSource can 
@@ -141,11 +145,14 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 			});
 	}
 	
+	//endregion
+	
 	
 	
 	//==============//
 	// List methods //
 	//==============//
+	//region
 	
 	public int getUnsavedCount() { return this.dataSourceByPosition.size(); }
 	
@@ -180,11 +187,14 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// static cleanup //
 	//================//
+	//region
 	
 	private static void runCleanupLoop()
 	{
@@ -219,11 +229,14 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// base overrides //
 	//================//
+	//region
 	
 	@Override
 	public void close()
@@ -238,11 +251,14 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 		});
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// helper classes //
 	//================//
+	//region
 	
 	@FunctionalInterface
 	public interface ISaveDataSourceFunc
@@ -281,6 +297,9 @@ public class DelayedFullDataSourceSaveCache implements AutoCloseable
 			return (timeSinceUpdate > msTillTimeout);
 		}
 	}
+	
+	//endregion
+	
 	
 	
 }
