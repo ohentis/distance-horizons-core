@@ -683,7 +683,7 @@ public class LodRenderer
 						shaderProgram.bindVertexBuffer(vbo.getId());
 						GL32.glDrawElements(
 							GL32.GL_TRIANGLES,
-							(vbo.getVertexCount() / 4) * 6, // TODO what does the 4 and 6 here represent?
+							vbo.getVertexCount(),
 							this.quadIBO.getType(), 0);
 						vbo.unbind();
 					}
