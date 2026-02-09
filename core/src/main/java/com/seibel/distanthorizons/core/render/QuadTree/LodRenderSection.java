@@ -164,36 +164,44 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return false;
 		}
 		
+		CompletableFuture<Void> future = new CompletableFuture<>();
+		future.handle((voidObj, throwable) ->
+		{
+			// the task is done, we don't need to track these anymore
+			this.getAndBuildRenderDataFuture = null;
+			this.getAndBuildRenderDataRunnable = null;
+			
+			return null;
+		});
+		
 		try
 		{
-			CompletableFuture<Void> future = new CompletableFuture<>();
 			this.getAndBuildRenderDataFuture = future;
-			future.handle((voidObj, throwable) -> 
-			{
-				// the task is done, we don't need to track these anymore
-				this.getAndBuildRenderDataFuture = null;
-				this.getAndBuildRenderDataRunnable = null;
-				
-				return null; 
-			});
-			
 			this.getAndBuildRenderDataRunnable = () ->
 			{
-				this.refreshActiveBeaconList();
-				
-				LodQuadBuilder lodQuadBuilder = this.getAndBuildRenderData();
-				if (lodQuadBuilder == null)
+				try
 				{
-					future.complete(null);
-					return;
-				}
-				
-				this.uploadToGpuAsync(lodQuadBuilder)
-					.thenRun(() -> 
+					this.refreshActiveBeaconList();
+					
+					LodQuadBuilder lodQuadBuilder = this.getAndBuildRenderData();
+					if (lodQuadBuilder == null)
 					{
-						// the future is passed in separately (IE not using the local var) to prevent any possible race condition null pointers
 						future.complete(null);
-					});
+						return;
+					}
+					
+					this.uploadToGpuAsync(lodQuadBuilder)
+						.thenRun(() ->
+						{
+							// the future is passed in separately (IE not using the local var) to prevent any possible race condition null pointers
+							future.complete(null);
+						});
+				}
+				catch (Exception e)
+				{
+					LOGGER.error("Unexpected issue creating render data for pos: ["+DhSectionPos.toString(this.pos)+"], error: ["+e.getMessage()+"].", e);
+					future.complete(null);
+				}
 			};
 			executor.execute(this.getAndBuildRenderDataRunnable);
 			
@@ -201,7 +209,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 		catch (RejectedExecutionException ignore)
 		{
-			this.getAndBuildRenderDataFuture.complete(null);
+			future.complete(null);
 			
 			/* the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back */
 			return false;
