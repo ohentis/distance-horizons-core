@@ -40,6 +40,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.generic.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -51,6 +52,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A render section represents an area that could be rendered.
@@ -94,20 +96,20 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	 * Encapsulates everything between pulling data from the database (including neighbors)
 	 * up to the point when geometry data is uploaded to the GPU.
 	 */
-	private CompletableFuture<Void> getAndBuildRenderDataFuture = null;
+	private final AtomicReference<CompletableFuture<Void>> getAndBuildRenderDataFutureRef = new AtomicReference<>(null);
 	
 	/** 
-	 * used alongside {@link LodRenderSection#getAndBuildRenderDataFuture} so we can remove
+	 * used alongside {@link LodRenderSection#getAndBuildRenderDataFutureRef} so we can remove
 	 * unnecessary tasks from the executor.
 	 */
 	private Runnable getAndBuildRenderDataRunnable = null;
 	
 	/** 
 	 * Represents just uploading the {@link LodQuadBuilder} to the GPU. <br>
-	 * Separate from {@link LodRenderSection#getAndBuildRenderDataFuture} because they run on
+	 * Separate from {@link LodRenderSection#getAndBuildRenderDataFutureRef} because they run on
 	 * different threads (buffer uploading is on the MC render thread) and need to be canceled separately.
 	 */
-	private CompletableFuture<LodBufferContainer> bufferUploadFuture = null;
+	private final AtomicReference<CompletableFuture<LodBufferContainer>> bufferUploadFutureRef = new AtomicReference<>(null);
 	
 	
 	
@@ -152,7 +154,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			return false;
 		}
 		
-		if (this.getAndBuildRenderDataFuture != null)
+		if (this.getAndBuildRenderDataFutureRef.get() != null)
 		{
 			// don't accidentally queue multiple uploads at the same time
 			return false;
@@ -168,7 +170,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		future.handle((voidObj, throwable) ->
 		{
 			// the task is done, we don't need to track these anymore
-			this.getAndBuildRenderDataFuture = null;
+			this.getAndBuildRenderDataFutureRef.compareAndSet(future, null);
 			this.getAndBuildRenderDataRunnable = null;
 			
 			return null;
@@ -176,7 +178,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		
 		try
 		{
-			this.getAndBuildRenderDataFuture = future;
+			if (!this.getAndBuildRenderDataFutureRef.compareAndSet(null, future))
+			{
+				CompletableFuture<Void> oldFuture = this.getAndBuildRenderDataFutureRef.get();
+				LodUtil.assertTrue(oldFuture != null, "Concurrency error");
+				return true;
+			}
+			
+			
 			this.getAndBuildRenderDataRunnable = () ->
 			{
 				try
@@ -216,7 +225,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 	}
 	@Nullable
-	private LodQuadBuilder getAndBuildRenderData()
+	private synchronized LodQuadBuilder getAndBuildRenderData()
 	{
 		try (ColumnRenderSource thisRenderSource = this.getRenderSourceForPos(this.pos, null))
 		{
@@ -301,16 +310,27 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		detailLevel += DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 		return detailLevel == DhSectionPos.getDetailLevel(this.pos);
 	}
-	private CompletableFuture<LodBufferContainer> uploadToGpuAsync(LodQuadBuilder lodQuadBuilder)
+	private synchronized CompletableFuture<LodBufferContainer> uploadToGpuAsync(LodQuadBuilder lodQuadBuilder)
 	{
-		if (this.bufferUploadFuture != null)
+		CompletableFuture<LodBufferContainer> oldFuture = this.bufferUploadFutureRef.getAndSet(null);
+		if (oldFuture != null)
 		{
 			// shouldn't normally happen, but just in case canceling the previous future
 			// prevents the CPU from working on something that won't be used
-			this.bufferUploadFuture.cancel(true);
+			oldFuture.cancel(true);
 		}
 		
 		CompletableFuture<LodBufferContainer> future = ColumnRenderBufferBuilder.uploadBuffersAsync(this.level, this.pos, lodQuadBuilder);
+		future.handle((a, throwable) -> 
+		{
+			if (!this.bufferUploadFutureRef.compareAndSet(future, null))
+			{
+				LOGGER.error("Buffer upload future ref changed for pos: ["+DhSectionPos.toString(this.pos)+"].");
+			}
+			
+			return null;
+		});
+		
 		future.thenAccept((LodBufferContainer buffer) ->
 		{
 			// needed to clean up the old data
@@ -324,7 +344,13 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 				previousContainer.close();
 			}
 		});
-		this.bufferUploadFuture = future;
+		
+		
+		if (!this.bufferUploadFutureRef.compareAndSet(null, future))
+		{
+			LodUtil.assertNotReach("Buffer upload future ref couldn't be set due to concurrency error, pos: ["+DhSectionPos.toString(this.pos)+"].");
+		}
+		
 		return future;
 	}
 	
@@ -342,7 +368,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	public boolean getRenderingEnabled() { return this.renderingEnabled; }
 	public void setRenderingEnabled(boolean enabled) { this.renderingEnabled = enabled;}
 	
-	public boolean gpuUploadInProgress() { return this.getAndBuildRenderDataFuture != null; }
+	public boolean gpuUploadInProgress() { return this.getAndBuildRenderDataFutureRef.get() != null; }
 	
 	//endregion
 	
@@ -447,7 +473,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			//color = Color.green;
 			return;
 		}
-		else if (this.getAndBuildRenderDataFuture != null)
+		else if (this.getAndBuildRenderDataFutureRef.get() != null)
 		{
 			color = Color.yellow;
 		}
@@ -503,7 +529,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		}
 		
 		// removes any in-progress futures since they aren't needed any more
-		CompletableFuture<Void> buildFuture = this.getAndBuildRenderDataFuture;
+		CompletableFuture<Void> buildFuture = this.getAndBuildRenderDataFutureRef.get();
 		if (buildFuture != null)
 		{
 			// remove the task from our executor if present
@@ -520,7 +546,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			}
 		}
 		
-		CompletableFuture<LodBufferContainer> uploadFuture = this.bufferUploadFuture;
+		CompletableFuture<LodBufferContainer> uploadFuture = this.bufferUploadFutureRef.get();
 		if (uploadFuture != null)
 		{
 			uploadFuture.cancel(true);
