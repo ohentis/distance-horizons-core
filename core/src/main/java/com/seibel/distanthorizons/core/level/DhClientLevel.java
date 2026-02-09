@@ -96,6 +96,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	public DhClientLevel(
 		ISaveStructure saveStructure, 
@@ -205,11 +206,14 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		});
 	}
 	
+	//endregion
+	
 	
 	
 	//==============//
 	// tick methods //
 	//==============//
+	//region
 	
 	@Override
 	public void clientTick()
@@ -250,11 +254,14 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	@Override
 	public DhBlockPos2D getTargetPosForGeneration() { return new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()); }
 	
+	//endregion
+	
 	
 	
 	//===========//
 	// world gen //
 	//===========//
+	//region
 	
 	@Override
 	public void onWorldGenTaskComplete(long pos)
@@ -262,11 +269,14 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		this.clientside.reloadPos(pos);
 	}
 	
+	//endregion
+	
 	
 	
 	//=========//
 	// getters //
 	//=========//
+	//region
 	
 	@Override
 	public IClientLevelWrapper getClientLevelWrapper() { return this.levelWrapper; }
@@ -296,6 +306,9 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		return (renderState != null) ? renderState.renderBufferHandler : null;
 	}
 	
+	@Override 
+	public boolean isRendering() { return this.clientside.isRendering(); }
+	
 	public boolean shouldProcessChunkUpdate(DhChunkPos chunkPos)
 	{
 		if (this.networkState == null || !this.networkState.isReady())
@@ -306,11 +319,14 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		return !this.networkState.sessionConfig.isRealTimeUpdatesEnabled() || this.loadedOnceChunks.add(chunkPos);
 	}
 	
+	//endregion
+	
 	
 	
 	//===========//
 	// debugging //
 	//===========//
+	//region
 	
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
@@ -342,11 +358,14 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// base overrides //
 	//================//
+	//region
 	
 	@Override
 	public String toString() { return "DhClientLevel{" + this.getClientLevelWrapper().getDhIdentifier() + "}"; }
@@ -371,11 +390,14 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 		LOGGER.info("Closed [" + DhClientLevel.class.getSimpleName() + "] for [" + this.levelWrapper + "]");
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// helper classes //
 	//================//
+	//region
 	
 	private static class LodRequestState extends LodRequestModule.AbstractLodRequestState
 	{
@@ -384,5 +406,9 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 			this.retrievalQueue = new RemoteWorldRetrievalQueue(networkState, clientLevel);
 		}
 	}
+	
+	//endregion
+	
+	
 	
 }

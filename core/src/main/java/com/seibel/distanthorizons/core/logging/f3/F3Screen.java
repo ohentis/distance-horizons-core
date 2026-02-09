@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.jar.ModJarInfo;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListPool;
@@ -171,7 +172,23 @@ public class F3Screen
 			messageList.add("");
 			for (IDhLevel level : levelIterator)
 			{
+				// skip non-rendering levels if requested
+				if (Config.Client.Advanced.Debugging.F3Screen.onlyShowRenderingLevels.get())
+				{
+					if (level instanceof IDhClientLevel)
+					{
+						IDhClientLevel clientLevel = (IDhClientLevel) level;
+						if (!clientLevel.isRendering())
+						{
+							continue;
+						}
+					}
+				}
+				
+				
+				
 				level.addDebugMenuStringsToList(messageList);
+				
 				// LOD rendering
 				RenderBufferHandler renderBufferHandler = level.getRenderBufferHandler();
 				if (renderBufferHandler != null)
@@ -183,6 +200,7 @@ public class F3Screen
 						messageList.add(showPassString);
 					}
 				}
+				
 				// Generic rendering
 				GenericObjectRenderer genericRenderer = level.getGenericRenderer();
 				if (genericRenderer != null)

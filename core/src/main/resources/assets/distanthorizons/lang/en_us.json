@@ -569,6 +569,8 @@
     "Show Queued Chunk Update Count",
   "distanthorizons.config.client.advanced.debugging.f3Screen.showLevelStatus":
     "Show Level Status",
+  "distanthorizons.config.client.advanced.debugging.f3Screen.onlyShowRenderingLevels":
+    "Only Show Rendering Levels",
 
 
   

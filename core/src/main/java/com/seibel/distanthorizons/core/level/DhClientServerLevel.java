@@ -50,6 +50,7 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	public DhClientServerLevel(
 		ISaveStructure saveStructure, 
@@ -64,30 +65,42 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 		this.runRepoReliantSetup();
 	}
 	
+	//endregion
+	
 	
 	
 	//==============//
 	// tick methods //
 	//==============//
+	//region
 	
 	@Override
 	public void clientTick() { this.clientside.clientTick(); }
+	
+	//endregion
 	
 	
 	
 	//========//
 	// render //
 	//========//
+	//region
 	
 	public void startRenderer() { this.clientside.startRenderer(); }
 	
 	public void stopRenderer() { this.clientside.stopRenderer(); }
+	
+	@Override
+	public boolean isRendering() { return this.clientside.isRendering(); }
+	
+	//endregion
 	
 	
 	
 	//================//
 	// level handling //
 	//================//
+	//region
 	
 	@Nullable
 	@Override
@@ -96,11 +109,14 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	@Override
 	public void clearRenderCache() { this.clientside.clearRenderCache(); }
 	
+	//endregion
+	
 	
 	
 	//===========//
 	// debugging //
 	//===========//
+	//region
 	
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
@@ -130,11 +146,14 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 		return (renderState != null) ? renderState.renderBufferHandler : null;
 	}
 	
+	//endregion
+	
 	
 	
 	//===============//
 	// data handling //
 	//===============//
+	//region
 	
 	@Override
 	public void onWorldGenTaskComplete(long pos)
@@ -143,11 +162,14 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 		this.clientside.reloadPos(pos);
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// base overrides //
 	//================//
+	//region
 	
 	@Override
 	public String toString() { return "DhClientServerLevel{"+this.serverLevelWrapper.getKeyedLevelDimensionName()+"}"; }
@@ -160,5 +182,9 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 		this.serverside.close();
 		LOGGER.info("Closed " + this.getClass().getSimpleName() + " for " + this.getServerLevelWrapper());
 	}
+	
+	//endregion
+	
+	
 	
 }

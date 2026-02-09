@@ -1158,6 +1158,11 @@ public class Config
 							.comment("Shows what levels are loaded and world gen/rendering info about those levels.")
 							.build();
 					
+					public static ConfigEntry<Boolean> onlyShowRenderingLevels = new ConfigEntry.Builder<Boolean>()
+							.set(true)
+							.comment("Only show levels that DH is actively rendering.")
+							.build();
+					
 				}
 				
 				/** This class is used to debug the different features of the config GUI */
