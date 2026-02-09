@@ -133,6 +133,15 @@ public class PriorityTaskPicker
 							// Clear this executor's tasks since we no longer expect anything to execute.
 							executor.taskQueue.clear();
 						}
+						else
+						{
+							// This executor is still running, there must have been a glitch with the
+							// underlying thread pool.
+							// Re-queue the task so we don't lose any tasks
+							// (failing to re-queue tasks can cause LODs to fail to load due
+							// to completable futures becoming orphaned).
+							executor.taskQueue.add(task);
+						}
 					}
 				}
 			}
