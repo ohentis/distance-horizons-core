@@ -78,7 +78,9 @@ public class FullDataSourceV2
 	/** how many chunks wide this datasource is at detail level 0. */
 	public static final int NUMB_OF_CHUNKS_WIDE = WIDTH / LodUtil.CHUNK_WIDTH;
 	
-	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2");
+	private static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2");
+	
+	private static final ThreadLocal<FullDataPointIdMap> DATA_MAP_FOR_REMAPPING_REF = ThreadLocal.withInitial(() -> new FullDataPointIdMap(DhSectionPos.encode((byte)0, 0, 0)));
 	
 	
 	
@@ -441,6 +443,8 @@ public class FullDataSourceV2
 		}
 		
 		
+		// needed to prevent infinite mapped ID growth
+		this.removeUnusedIdsAndRemap();
 		
 		
 		
@@ -1128,6 +1132,68 @@ public class FullDataSourceV2
 		}
 		
 		return dataChanged;
+	}
+	
+	/**
+	 * Should be run at the end of {@link FullDataSourceV2#updateFromDataSource}
+	 * so the {@link FullDataPointIdMap} will only contain ID's that are actively in use. <br><br>
+	 * 
+	 * This prevents the {@link FullDataPointIdMap} from growing infinitely when merged.
+	 * 
+	 * @see FullDataPointIdMap#mergeAndReturnRemappedEntityIds(FullDataPointIdMap) 
+	 */
+	private void removeUnusedIdsAndRemap()
+	{
+		Int2IntOpenHashMap newIdByOldId = new Int2IntOpenHashMap();
+		FullDataPointIdMap newMap = DATA_MAP_FOR_REMAPPING_REF.get();
+		newMap.clear(this.pos);
+		
+		
+		// find all the IDs that are currently in use
+		for (int x = 0; x < WIDTH; x++)
+		{
+			for (int z = 0; z < WIDTH; z++)
+			{
+				int index = relativePosToIndex(x, z);
+				LongArrayList dataColumn = this.dataPoints[index];
+				for (int i = 0; i < dataColumn.size(); i++)
+				{
+					long dataPoint = dataColumn.getLong(i);
+					int oldId = FullDataPointUtil.getId(dataPoint);
+					
+					int newId = newMap.addIfNotPresentAndGetId(
+						this.mapping.getBiomeWrapper(oldId),
+						this.mapping.getBlockStateWrapper(oldId));
+					
+					newIdByOldId.put(oldId, newId);
+				}
+			}
+		}
+		
+		
+		// replace the old entries to remove any unneeded ones
+		this.mapping.clear(this.pos);
+		this.mapping.addAll(newMap);
+		
+		
+		// remap the data
+		for (int x = 0; x < WIDTH; x++)
+		{
+			for (int z = 0; z < WIDTH; z++)
+			{
+				int index = relativePosToIndex(x, z);
+				LongArrayList dataColumn = this.dataPoints[index];
+				for (int i = 0; i < dataColumn.size(); i++)
+				{
+					long oldDataPoint = dataColumn.getLong(i);
+					int oldId = FullDataPointUtil.getId(oldDataPoint);
+					
+					int newId = newIdByOldId.get(oldId);
+					long newDataPoint = FullDataPointUtil.setId(oldDataPoint, newId);
+					dataColumn.set(i, newDataPoint);
+				}
+			}
+		}
 	}
 	
 	//endregion

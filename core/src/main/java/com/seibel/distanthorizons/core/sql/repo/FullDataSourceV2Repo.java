@@ -477,7 +477,10 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			"   abs((PosX << (6 + DetailLevel)) - ?) + abs((PosZ << (6 + DetailLevel)) - ?) AS Distance " +
 			"FROM " + this.getTableName() + " " +
 			"WHERE ApplyToParent = 1 " +
-			"ORDER BY DetailLevel ASC, Distance ASC " +
+			// sorting by detail level first will reduce the total number of updates required
+			// but makes it feel less responsive since distant updates won't be seen until everything 
+			// underneith is done
+			"ORDER BY Distance ASC " + // DetailLevel ASC,
 			"LIMIT ?; ";
 	public LongArrayList getPositionsToUpdate(int targetBlockPosX, int targetBlockPosZ, int returnCount)
 	{ return this.getPositionsToUpdate(targetBlockPosX, targetBlockPosZ, returnCount, true); }
@@ -488,7 +491,7 @@ public class FullDataSourceV2Repo extends AbstractDhRepo<Long, FullDataSourceV2D
 			"   abs((PosX << (6 + DetailLevel)) - ?) + abs((PosZ << (6 + DetailLevel)) - ?) AS Distance " +
 			"FROM " + this.getTableName() + " " +
 			"WHERE ApplyToChildren = 1 " +
-			"ORDER BY DetailLevel ASC, Distance ASC " +
+			"ORDER BY Distance ASC " + // DetailLevel ASC, 
 			"LIMIT ?; ";
 	public LongArrayList getChildPositionsToUpdate(int targetBlockPosX, int targetBlockPosZ, int returnCount)
 	{ return this.getPositionsToUpdate(targetBlockPosX, targetBlockPosZ, returnCount, false); }
