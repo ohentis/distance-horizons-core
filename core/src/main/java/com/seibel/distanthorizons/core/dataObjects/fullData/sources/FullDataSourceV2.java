@@ -43,6 +43,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
@@ -127,6 +128,7 @@ public class FullDataSourceV2
 	//==============//
 	// constructors //
 	//==============//
+	//region
 	
 	public static FullDataSourceV2 createFromChunk(ILevelWrapper levelWrapper, IChunkWrapper chunkWrapper) { return LodDataBuilder.createFromChunk(levelWrapper, chunkWrapper); }
 	
@@ -273,11 +275,14 @@ public class FullDataSourceV2
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//=========//
 	// getters //
 	//=========//
+	//region
 	
 	public LongArrayList getColumnAtRelPos(int relX, int relZ) throws IndexOutOfBoundsException 
 	{ return this.dataPoints[relativePosToIndex(relX, relZ)]; }
@@ -355,11 +360,14 @@ public class FullDataSourceV2
 		return FullDataPointUtil.EMPTY_DATA_POINT;
 	}
 	
+	//endregion
+	
 	
 	
 	//==========//
 	// updating //
 	//==========//
+	//region
 	
 	public boolean updateFromDataSource(@NotNull FullDataSourceV2 inputDataSource)
 	{
@@ -670,6 +678,7 @@ public class FullDataSourceV2
 		
 		return dataChanged;
 	}
+	
 	/** 
 	 * The minimum value is used because we don't want to accidentally record that
 	 * something was generated when it wasn't.
@@ -1121,11 +1130,14 @@ public class FullDataSourceV2
 		return dataChanged;
 	}
 	
+	//endregion
+	
 	
 	
 	//===================//
 	// adjacent clearing //
 	//===================//
+	//region
 	
 	/** Removes any non-adjacent data from the given direction. */
 	public void clearAllNonAdjData(EDhDirection direction)
@@ -1154,10 +1166,13 @@ public class FullDataSourceV2
 		}
 	}
 	
+	//endregion
+	
 	
 	//================//
 	// helper methods //
 	//================//
+	//region
 	
 	/** 
 	 * Usually this should just be used internally, but there may be instances
@@ -1249,11 +1264,14 @@ public class FullDataSourceV2
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//=====================//
 	// setters and getters //
 	//=====================//
+	//region
 	
 	public long getPos() { return this.pos; }
 	
@@ -1283,11 +1301,14 @@ public class FullDataSourceV2
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//=============//
 	// API methods //
 	//=============//
+	//region
 	
 	public void setRunApiSetterValidation(boolean runValidation) { this.runApiSetterValidation = runValidation; }
 	
@@ -1335,20 +1356,26 @@ public class FullDataSourceV2
 		return apiList;
 	}
 	
+	//endregion
+	
 	
 	
 	//============//
 	// unit tests //
 	//============//
+	//region
 	
 	public PhantomArrayListCheckout getPhantomArrayCheckoutForUnitTesting()
 	{ return this.pooledArraysCheckout; }
+	
+	//endregion
 	
 	
 	
 	//================//
 	// base overrides //
 	//================//
+	//region
 	
 	@Override
 	public String toString() { return DhSectionPos.toString(this.pos); }
@@ -1394,6 +1421,8 @@ public class FullDataSourceV2
 			return other.hashCode() == this.hashCode();
 		}
 	}
+	
+	//endregion
 	
 	
 	
