@@ -406,6 +406,9 @@ public class FullDataPointIdMap
 	//===========//
 	//region
 	
+	@Override 
+	public String toString() { return DhSectionPos.toString(this.pos) + " size: " + this.blockBiomePairList.size(); }
+	
 	@Override
 	public boolean equals(Object other)
 	{
