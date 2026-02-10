@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.pooling.AbstractPhantomArrayList;
 import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
+import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnRenderView;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import com.seibel.distanthorizons.core.logging.DhLogger;
@@ -95,23 +95,24 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 	
 	public long getDataPoint(int posX, int posZ, int verticalIndex) { return this.renderDataContainer.getLong(posX * WIDTH * this.maxVerticalSliceCount + posZ * this.maxVerticalSliceCount + verticalIndex); }
 	
-	public ColumnArrayView getVerticalDataPointView(int posX, int posZ)
+	public void populateColumnView(ColumnRenderView view, int posX, int posZ) throws IllegalArgumentException
 	{
 		int offset = posX * WIDTH * this.maxVerticalSliceCount + posZ * this.maxVerticalSliceCount;
 		
 		// don't allow returning views that are outside this render source's bounds
 		if (offset >= this.renderDataContainer.size())
 		{
-			return null;
+			throw new IllegalArgumentException("Column View offset ["+offset+"] greater than parent render data container ["+DhSectionPos.toString(this.pos)+"] size ["+this.renderDataContainer.size()+"].");
 		}
 		else if (posX < 0 || posX >= WIDTH
 				|| posZ < 0 || posZ >= WIDTH)
 		{
-			return null;
+			throw new IllegalArgumentException("Column View pos outside valid range ["+posX+","+posZ+"].");
 		}
 		
-		return new ColumnArrayView(this.renderDataContainer, this.maxVerticalSliceCount,
-				offset, this.maxVerticalSliceCount);
+		view.populate(
+			this.renderDataContainer, this.maxVerticalSliceCount,
+			offset, this.maxVerticalSliceCount);
 	}
 	
 	//endregion
@@ -139,18 +140,20 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 			return false;
 		}
 		
-		
-		for (int x = 0; x < WIDTH; x++)
+		try (ColumnRenderView columnView = ColumnRenderView.getPooled())
 		{
-			for (int z = 0; z < WIDTH; z++)
+			for (int x = 0; x < WIDTH; x++)
 			{
-				ColumnArrayView columnArrayView = this.getVerticalDataPointView(x,z);
-				for (int i = 0; i < columnArrayView.size; i++)
+				for (int z = 0; z < WIDTH; z++)
 				{
-					long dataPoint = columnArrayView.get(i);
-					if (!RenderDataPointUtil.hasZeroHeight(dataPoint))
+					this.populateColumnView(columnView, x, z);
+					for (int i = 0; i < columnView.size; i++)
 					{
-						return true;
+						long dataPoint = columnView.get(i);
+						if (!RenderDataPointUtil.hasZeroHeight(dataPoint))
+						{
+							return true;
+						}
 					}
 				}
 			}

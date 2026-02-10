@@ -27,7 +27,7 @@ import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListChec
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
-import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
+import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnRenderView;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -54,7 +54,7 @@ public class ColumnBox
 			short width, short yHeight,
 			short minX, short minY, short minZ,
 			int color, byte irisBlockMaterialId, byte skyLight, byte blockLight,
-			long topData, long bottomData, ColumnArrayView[] adjData, boolean[] isAdjDataSameDetailLevel)
+			long topData, long bottomData, ColumnRenderView[] adjData, boolean[] isAdjDataSameDetailLevel)
 	{
 		//================//
 		// variable setup //
@@ -145,7 +145,7 @@ public class ColumnBox
 		
 		// NORTH face
 		{
-			ColumnArrayView adjCol = adjData[EDhDirection.NORTH.compassIndex];
+			ColumnRenderView adjCol = adjData[EDhDirection.NORTH.compassIndex];
 			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.NORTH.compassIndex];
 			// if the adjacent column is null that generally means the adjacent area hasn't been generated yet
 			if (adjCol == null)
@@ -172,7 +172,7 @@ public class ColumnBox
 		
 		// SOUTH face
 		{
-			ColumnArrayView adjCol = adjData[EDhDirection.SOUTH.compassIndex];
+			ColumnRenderView adjCol = adjData[EDhDirection.SOUTH.compassIndex];
 			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.SOUTH.compassIndex];
 			if (adjCol == null)
 			{
@@ -197,7 +197,7 @@ public class ColumnBox
 		
 		// WEST face
 		{
-			ColumnArrayView adjCol = adjData[EDhDirection.WEST.compassIndex];
+			ColumnRenderView adjCol = adjData[EDhDirection.WEST.compassIndex];
 			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.WEST.compassIndex];
 			if (adjCol == null)
 			{
@@ -222,7 +222,7 @@ public class ColumnBox
 		
 		// EAST face
 		{
-			ColumnArrayView adjCol = adjData[EDhDirection.EAST.compassIndex];
+			ColumnRenderView adjCol = adjData[EDhDirection.EAST.compassIndex];
 			boolean adjSameDetailLevel = isAdjDataSameDetailLevel[EDhDirection.EAST.compassIndex];
 			if (adjCol == null)
 			{
@@ -248,7 +248,7 @@ public class ColumnBox
 	
 	private static void makeAdjVerticalQuad(
 		LodQuadBuilder builder, PhantomArrayListCheckout phantomArrayCheckout,
-		@NotNull ColumnArrayView adjColumnView, boolean adjacentIsSameDetailLevel, int caveCullingMaxY, EDhDirection direction,
+		@NotNull ColumnRenderView adjColumnView, boolean adjacentIsSameDetailLevel, int caveCullingMaxY, EDhDirection direction,
 		short x, short yMin, short z, short horizontalWidth, short ySize,
 		int color, byte irisBlockMaterialId, byte blockLight)
 	{

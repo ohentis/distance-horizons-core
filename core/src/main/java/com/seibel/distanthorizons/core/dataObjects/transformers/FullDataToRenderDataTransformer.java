@@ -24,13 +24,13 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dataObjects.render.ColumnRenderSource;
-import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
+import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnRenderView;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListCheckout;
 import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
@@ -40,6 +40,7 @@ import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import com.seibel.distanthorizons.core.logging.DhLogger;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
@@ -122,30 +123,40 @@ public class FullDataToRenderDataTransformer
 		int baseX = DhSectionPos.getMinCornerBlockX(pos);
 		int baseZ = DhSectionPos.getMinCornerBlockZ(pos);
 		
-		for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
+		try(ColumnRenderView columnArrayView = ColumnRenderView.getPooled();
+			PhantomArrayListCheckout phantomCheckout = ARRAY_LIST_POOL.checkoutLongArrays(1);
+			ColumnRenderView tempExpandingColumnView = ColumnRenderView.getPooled();
+			RenderDataPointReducingList reducingList = new RenderDataPointReducingList())
 		{
-			for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
+			for (int x = 0; x < FullDataSourceV2.WIDTH; x++)
 			{
-				ColumnArrayView columnArrayView = columnSource.getVerticalDataPointView(x, z);
-				LongArrayList dataColumn = fullDataSource.getColumnAtRelPos(x, z);
-				
-				updateOrReplaceRenderDataViewColumnWithFullDataColumn(
-						levelWrapper, fullDataSource, 
-						// bitshift is to account for LODs with a detail level greater than 0 so the block pos is correct
-						baseX + BitShiftUtil.pow(x,dataDetail), baseZ + BitShiftUtil.pow(z,dataDetail), 
-						columnArrayView, dataColumn);
+				for (int z = 0; z < FullDataSourceV2.WIDTH; z++)
+				{
+					columnSource.populateColumnView(columnArrayView, x, z);
+					LongArrayList dataColumn = fullDataSource.getColumnAtRelPos(x, z);
+					
+					updateOrReplaceRenderDataViewColumnWithFullDataColumn(
+						levelWrapper, fullDataSource,
+						// bit shift is to account for LODs with a detail level greater than 0 so the block pos is correct
+						baseX + BitShiftUtil.pow(x, dataDetail), baseZ + BitShiftUtil.pow(z, dataDetail),
+						columnArrayView, dataColumn,
+						// pooled references so we don't need to re-allocate/get them 4000 times per render source
+						phantomCheckout, tempExpandingColumnView, reducingList);
+				}
 			}
 		}
 		
 		return columnSource;
 	}
 	
-	/** Updates the given {@link ColumnArrayView} to match the incoming Full data {@link LongArrayList} */
+	/** Updates the given {@link ColumnRenderView} to match the incoming Full data {@link LongArrayList} */
 	public static void updateOrReplaceRenderDataViewColumnWithFullDataColumn(
 			IClientLevelWrapper levelWrapper,
 			FullDataSourceV2 fullDataSource, int blockX, int blockZ, 
-			ColumnArrayView columnArrayView, 
-			LongArrayList fullDataColumn)
+			ColumnRenderView columnArrayView, 
+			LongArrayList fullDataColumn,
+			// pooled references
+			PhantomArrayListCheckout phantomCheckout, ColumnRenderView tempExpandingColumnView, RenderDataPointReducingList reducingList)
 	{
 		// we can't do anything if the full data is missing or empty
 		if (fullDataColumn == null 
@@ -162,22 +173,19 @@ public class FullDataToRenderDataTransformer
 		}
 		else
 		{
-			try(PhantomArrayListCheckout checkout = ARRAY_LIST_POOL.checkoutLongArrays(1))
-			{
-				LongArrayList dataArrayList = checkout.getLongArray(0, fullDataLength);
-				
-				// expand the ColumnArrayView to fit the new larger max vertical size
-				ColumnArrayView newColumnArrayView = new ColumnArrayView(dataArrayList, fullDataLength, 0, fullDataLength);
-				setRenderColumnView(levelWrapper, fullDataSource, blockX, blockZ, newColumnArrayView, fullDataColumn);
-				
-				columnArrayView.changeVerticalSizeFrom(newColumnArrayView);
-			}
+			LongArrayList dataArrayList = phantomCheckout.getLongArray(0, fullDataLength);
+			
+			// expand the ColumnArrayView to fit the new larger max vertical size
+			tempExpandingColumnView.populate(dataArrayList, fullDataLength, 0, fullDataLength);
+			setRenderColumnView(levelWrapper, fullDataSource, blockX, blockZ, tempExpandingColumnView, fullDataColumn);
+			
+			columnArrayView.changeVerticalSizeFrom(tempExpandingColumnView, reducingList);
 		}
 	}
 	private static void setRenderColumnView(
 			IClientLevelWrapper levelWrapper, FullDataSourceV2 fullDataSource,
 			int blockX, int blockZ,
-			ColumnArrayView renderColumnData, LongArrayList fullColumnData)
+			ColumnRenderView renderColumnData, LongArrayList fullColumnData)
 	{
 		//===============//
 		// config values //
@@ -186,8 +194,8 @@ public class FullDataToRenderDataTransformer
 		boolean ignoreNonCollidingBlocks = (Config.Client.Advanced.Graphics.Quality.blocksToIgnore.get() == EDhApiBlocksToAvoid.NON_COLLIDING);
 		boolean colorBelowWithAvoidedBlocks = Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks.get();
 		
-		HashSet<IBlockStateWrapper> blockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredBlocks(levelWrapper);
-		HashSet<IBlockStateWrapper> caveBlockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredCaveBlocks(levelWrapper);
+		ObjectOpenHashSet<IBlockStateWrapper> blockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredBlocks(levelWrapper);
+		ObjectOpenHashSet<IBlockStateWrapper> caveBlockStatesToIgnore = WRAPPER_FACTORY.getRendererIgnoredCaveBlocks(levelWrapper);
 		
 		// build snow block cache if needed
 		if (snowLayerBlockStates == null)
