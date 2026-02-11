@@ -315,15 +315,17 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		CompletableFuture<LodBufferContainer> oldFuture = this.bufferUploadFutureRef.getAndSet(null);
 		if (oldFuture != null)
 		{
-			// shouldn't normally happen, but just in case canceling the previous future
+			// canceling the previous future
 			// prevents the CPU from working on something that won't be used
 			oldFuture.cancel(true);
 		}
 		
 		CompletableFuture<LodBufferContainer> future = ColumnRenderBufferBuilder.uploadBuffersAsync(this.level, this.pos, lodQuadBuilder);
-		future.handle((a, throwable) -> 
+		future.handle((lodBufferContainer, throwable) -> 
 		{
-			if (!this.bufferUploadFutureRef.compareAndSet(future, null))
+			if (!this.bufferUploadFutureRef.compareAndSet(future, null)
+				// if the old future is canceled then the future ref will be different and that's expected
+				&& !future.isCancelled())
 			{
 				LOGGER.error("Buffer upload future ref changed for pos: ["+DhSectionPos.toString(this.pos)+"].");
 			}
