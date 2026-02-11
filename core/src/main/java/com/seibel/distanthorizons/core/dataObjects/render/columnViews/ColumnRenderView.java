@@ -111,6 +111,14 @@ public final class ColumnRenderView implements AutoCloseable
 		}
 	}
 	
+	public void clear()
+	{
+		this.data = null;
+		this.size = 0;
+		this.offset = 0;
+		this.maxVerticalSliceCount = 0;
+	}
+	
 	//endregion
 	
 	
@@ -131,7 +139,7 @@ public final class ColumnRenderView implements AutoCloseable
 			// we can fairly confidently say this is a concurrent exception over an actual
 			// index out of bounds, since we're generally iterating over the whole
 			// array any time we use this getter.
-			throw new ConcurrentModificationException("Potential concurrent modification detected. Make sure the parent ColumnRenderSource isn't being closed before the ColumnArrayView processing is complete.", e);
+			throw new ConcurrentModificationException("Potential concurrent modification detected. Make sure the parent ColumnRenderSource isn't being closed before the ColumnRenderView processing is complete.", e);
 		}
 	}
 	public void set(int index, long value) { this.data.set(index + this.offset, value); }

@@ -325,9 +325,11 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		{
 			if (!this.bufferUploadFutureRef.compareAndSet(future, null)
 				// if the old future is canceled then the future ref will be different and that's expected
-				&& !future.isCancelled())
+				&& !future.isCancelled()
+				// if the old future is already done, then we don't care about the ref being swapped
+				&& !future.isDone())
 			{
-				LOGGER.error("Buffer upload future ref changed for pos: ["+DhSectionPos.toString(this.pos)+"].");
+				LOGGER.warn("Buffer upload future ref changed for pos: ["+DhSectionPos.toString(this.pos)+"].");
 			}
 			
 			return null;

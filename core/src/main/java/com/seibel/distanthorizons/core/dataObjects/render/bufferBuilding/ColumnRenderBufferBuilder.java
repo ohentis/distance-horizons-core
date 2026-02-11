@@ -163,6 +163,12 @@ public class ColumnRenderBufferBuilder
 					// get adjacent render data columns //
 					//==================================//
 					
+					// clear the old data so we can handle if one of the adjacent columns is missing/empty
+					adjColumnViews[EDhDirection.NORTH.compassIndex].clear();
+					adjColumnViews[EDhDirection.SOUTH.compassIndex].clear();
+					adjColumnViews[EDhDirection.EAST.compassIndex].clear();
+					adjColumnViews[EDhDirection.WEST.compassIndex].clear();
+					
 					for (EDhDirection direction : EDhDirection.CARDINAL_COMPASS)
 					{
 						try
