@@ -82,7 +82,6 @@ public class SharedApi
 	
 	@Nullable
 	private static AbstractDhWorld currentWorld;
-	private static int lastWorldGenTickDelta = 0;
 	
 	
 	
