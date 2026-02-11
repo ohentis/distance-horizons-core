@@ -1646,7 +1646,16 @@ public class Config
 					.comment(""
 						+ "If enabled, a message will be logged if the garbage \n"
 						+ "collector Java is currently using is known \n"
-						+ "to cause stutters and/or issues. \n"
+						+ "to cause frame stuttering and/or other issues. \n"
+						+ "")
+					.build();
+				
+				public static ConfigEntry<Boolean> showGarbageCollectorWarning = new ConfigEntry.Builder<Boolean>()
+					.set(true)
+					.comment(""
+						+ "If enabled, a chat message will be displayed if the garbage \n"
+						+ "collector Java is currently using is known \n"
+						+ "to cause frame stuttering and/or other issues. \n"
 						+ "")
 					.build();
 				

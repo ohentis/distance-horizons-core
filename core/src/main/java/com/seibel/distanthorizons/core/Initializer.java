@@ -21,9 +21,11 @@ package com.seibel.distanthorizons.core;
 
 import com.github.luben.zstd.ZstdOutputStream;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeRenderEvent;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.eventHandlers.IgnoredDimensionCsvHandler;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
@@ -160,16 +162,31 @@ public class Initializer
 			LOGGER.info("Garbage collectors: ["+garbageCollectorNames+"]");
 			
 			
-			if (g1GcInUse
-				&& Config.Common.Logging.Warning.logGarbageCollectorWarning.get())
+			if (g1GcInUse)
 			{
-				LOGGER.warn(
-					"Distant Horizons: G1 Garbage collector detected. \n" +
-					"This garbage collector can cause FPS stuttering. \n" +
+				String warningMessageHeader = "Distant Horizons: G1 Garbage collector detected.";
+				String warningMessageBody = 
+					"This can cause FPS stuttering. \n" +
 					"It's recommended to use a concurrent garbage collector \n" +
-					"like ZGC (Java 21+) or Shenandoah (Java 8 through 17) for a smoother experience. \n" +
-					"");
+					"like ZGC (Java 21+) or Shenandoah (Java 8 through 17) \n" +
+					"for a smoother experience."
+					;
 				
+				if (Config.Common.Logging.Warning.logGarbageCollectorWarning.get())
+				{
+					LOGGER.warn(
+						warningMessageHeader + "\n" +
+						warningMessageBody +
+						"");
+				}
+				
+				if (Config.Common.Logging.Warning.showGarbageCollectorWarning.get())
+				{
+					ClientApi.INSTANCE.showChatMessageNextFrame(
+						MinecraftTextFormat.ORANGE + warningMessageHeader + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
+						warningMessageBody +
+						"");
+				}
 			}
 		}
 		
