@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
@@ -26,6 +27,8 @@ public class RenderParams extends DhApiRenderParam
 {
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	
+	private static final long TIME_FOR_MAC_TO_FINISH_COMPILING_IN_MS = 5_000;
 	
 	
 	public IDhClientWorld dhClientWorld;
@@ -92,7 +95,7 @@ public class RenderParams extends DhApiRenderParam
 	 * Should be called before rendering is done.
 	 * @return a message if LODs shouldn't be rendered, null if the LODs can render 
 	 */
-	public String getValidationErrorMessage()
+	public String getValidationErrorMessage(long firstRenderTimeMs)
 	{
 		// Note: all strings here should be constants to prevent String allocations
 		
@@ -145,6 +148,24 @@ public class RenderParams extends DhApiRenderParam
 		{
 			// wait for MC to finish setting up their renderer
 			return "Optifine Target Frame Buffer not set";
+		}
+		
+		
+		// potential fix for a segfault when
+		// Sodium and DH are running together
+		if (EPlatform.get() == EPlatform.MACOS)
+		{
+			// Once MC starts rendering, wait a few seconds so
+			// MC/Sodium can finish their shader compiling before DH does its own.
+			// This will allow DH to compile its own shaders after Sodium finishes
+			// compiling it's own.
+			
+			long nowMs = System.currentTimeMillis();
+			long firstAllowedRenderTimeMs = firstRenderTimeMs + TIME_FOR_MAC_TO_FINISH_COMPILING_IN_MS;
+			if (nowMs < firstAllowedRenderTimeMs)
+			{
+				return "Waiting for initial MC compile...";
+			}
 		}
 		
 		

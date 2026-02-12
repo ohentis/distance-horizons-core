@@ -410,6 +410,8 @@ public class ClientApi
 	 */
 	public void renderDeferredLodsForShaders() { this.renderLodLayer(true); }
 	
+	public static long firstRenderTimeMs = 0;
+	
 	private void renderLodLayer(boolean renderingDeferredLayer)
 	{
 		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
@@ -529,7 +531,12 @@ public class ClientApi
 		//============//
 		///region
 		
-		String validationMessage = renderParams.getValidationErrorMessage();
+		if (firstRenderTimeMs == 0)
+		{
+			firstRenderTimeMs = System.currentTimeMillis();
+		}
+		
+		String validationMessage = renderParams.getValidationErrorMessage(firstRenderTimeMs);
 		if (validationMessage != null)
 		{
 			// store the error message so it can be seen on the F3 screen
