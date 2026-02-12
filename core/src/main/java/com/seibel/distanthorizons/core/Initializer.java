@@ -57,6 +57,11 @@ public class Initializer
 	
 	public static void init()
 	{
+		//============================//
+		// check referenced libraries //
+		//============================//
+		//region
+		
 		LOGGER.info("Running library validation...");
 		
 		// confirm that all referenced libraries are available to use
@@ -96,7 +101,15 @@ public class Initializer
 			MC_CLIENT.crashMinecraft("Distant Horizons critical setup error: One or more libraries are either in-accessible, corrupted, or overwritten by another mod. Error: [" + e.getMessage() + "].", e);
 		}
 		
-		// confirm the resource directory is present
+		//endregion
+		
+		
+		
+		//==========================//
+		// check resource directory //
+		//==========================//
+		//region
+		
 		try
 		{
 			int scriptCount = DatabaseUpdater.getAutoUpdateScriptCount();
@@ -109,6 +122,15 @@ public class Initializer
 		{
 			MC_CLIENT.crashMinecraft("Critical programmer error: Can't read SQL Scripts resource folder is either missing or malformed. Error: [" + e.getMessage() + "].", e);
 		}
+		
+		//endregion
+		
+		
+		
+		//===========================//
+		// Java AWT Headless setting // 
+		//===========================//
+		//region
 		
 		// This code has been disabled since it can cause Mac
 		// to lock up and refuse the load (there's a bug with Java.awt texture loading)
@@ -126,6 +148,15 @@ public class Initializer
 		//	}
 		//}
 		
+		//endregion
+		
+		
+		
+		//===================//
+		// API delayed setup //
+		//===================//
+		//region
+		
 		// link Core's config to the API
 		DhApi.Delayed.configs = DhApiConfig.INSTANCE;
 		DhApi.Delayed.terrainRepo = DhApiTerrainDataRepo.INSTANCE;
@@ -137,6 +168,18 @@ public class Initializer
 		{
 			LOGGER.error("Programmer Error: No ["+IWrapperFactory.class.getSimpleName()+"] assigned to the DhApi.");
 		}
+		
+		
+		DhApi.events.bind(DhApiBeforeRenderEvent.class, IgnoredDimensionCsvHandler.INSTANCE);
+		
+		//endregion
+		
+		
+		
+		//==============================//
+		// G1 Garbage collector warning //
+		//==============================//
+		//region
 		
 		// log a warning if G1GC is being used
 		// (this garbage collector is known to cause stuttering)
@@ -190,7 +233,9 @@ public class Initializer
 			}
 		}
 		
-		DhApi.events.bind(DhApiBeforeRenderEvent.class, IgnoredDimensionCsvHandler.INSTANCE);
+		//endregion
+		
+		
 		
 	}
 	
