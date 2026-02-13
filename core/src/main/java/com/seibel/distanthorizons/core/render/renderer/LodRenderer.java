@@ -182,6 +182,8 @@ public class LodRenderer
 			// only do this once, that way they can still be reverted if desired
 			if (Config.Client.Advanced.Graphics.overrideVanillaGraphicsSettings.get())
 			{
+				LOGGER.info("Overriding vanilla MC settings to better fit Distant Horizons... This behavior can be disabled in the Distant Horizons config.");
+				
 				MC.disableVanillaClouds();
 				MC.disableVanillaChunkFadeIn();
 				MC.disableFabulousTransparency();
