@@ -184,6 +184,7 @@ public class LodRenderer
 			{
 				MC.disableVanillaClouds();
 				MC.disableVanillaChunkFadeIn();
+				MC.disableFabulousTransparency();
 			}
 			
 			this.renderObjectsCreated = true;

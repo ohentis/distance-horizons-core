@@ -99,8 +99,8 @@ public interface IMinecraftClientWrapper extends IBindable
 	//==========================//
 	
 	void disableVanillaClouds();
-	
 	void disableVanillaChunkFadeIn();
+	void disableFabulousTransparency();
 	
 	
 	
