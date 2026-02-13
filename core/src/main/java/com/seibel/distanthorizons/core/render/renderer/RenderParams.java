@@ -158,7 +158,7 @@ public class RenderParams extends DhApiRenderParam
 			// Once MC starts rendering, wait a few seconds so
 			// MC/Sodium can finish their shader compiling before DH does its own.
 			// This will allow DH to compile its own shaders after Sodium finishes
-			// compiling it's own.
+			// compiling its own.
 			
 			long nowMs = System.currentTimeMillis();
 			long firstAllowedRenderTimeMs = firstRenderTimeMs + TIME_FOR_MAC_TO_FINISH_COMPILING_IN_MS;
