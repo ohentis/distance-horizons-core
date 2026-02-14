@@ -12,6 +12,8 @@ import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRend
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
+import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.IDhClientWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -29,7 +31,8 @@ public class RenderParams extends DhApiRenderParam
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
-	private static final long TIME_FOR_MAC_TO_FINISH_COMPILING_IN_MS = 5_000;
+	private static final long TIME_FOR_MAC_TO_FINISH_COMPILING_IN_MS = 10_000;
+	private static boolean initialLoadingComplete = false;
 	
 	
 	public IDhClientWorld dhClientWorld;
@@ -172,19 +175,40 @@ public class RenderParams extends DhApiRenderParam
 		
 		// potential fix for a segfault when
 		// Sodium and DH are running together
-		if (EPlatform.get() == EPlatform.MACOS)
+		if (EPlatform.get() == EPlatform.MACOS
+			&& !initialLoadingComplete)
 		{
 			// Once MC starts rendering, wait a few seconds so
 			// MC/Sodium can finish their shader compiling before DH does its own.
 			// This will allow DH to compile its own shaders after Sodium finishes
 			// compiling its own.
-			
 			long nowMs = System.currentTimeMillis();
 			long firstAllowedRenderTimeMs = firstRenderTimeMs + TIME_FOR_MAC_TO_FINISH_COMPILING_IN_MS;
 			if (nowMs < firstAllowedRenderTimeMs)
 			{
 				return "Waiting for initial MC compile...";
 			}
+			
+			
+			// null shouldn't happen, but just in case
+			PriorityTaskPicker.Executor renderLoadExecutor = ThreadPoolUtil.getRenderLoadingExecutor();
+			if (renderLoadExecutor == null)
+			{
+				return "Waiting for DH Threadpool...";
+			}
+			
+			// wait for DH to finish loading, by the time that's done
+			// java should have finished all of DH's JIT compiling,
+			// which will hopefully mean less concurrency and thus a lower
+			// chance of breaking
+			// (plus this gives Sodium/vanill a bit longer to finish their setup)
+			int taskCount = renderLoadExecutor.getQueueSize();
+			if (taskCount > 0)
+			{
+				return "Waiting for DH JIT compiling...";
+			}
+			
+			initialLoadingComplete = true;
 		}
 		
 		
