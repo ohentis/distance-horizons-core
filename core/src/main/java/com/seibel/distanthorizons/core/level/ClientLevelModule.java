@@ -93,7 +93,7 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		}
 		
 		// recreate the RenderState if the render distance changes
-		if (clientRenderState.quadtree.blockRenderDistanceDiameter != ClientRenderState.getQuadTreeBlockRadius())
+		if (clientRenderState.viewDiameterInBlocks != ClientRenderState.getViewDiameterInBlocks())
 		{
 			// close the older renderer
 			clientRenderState.close();
@@ -213,6 +213,8 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		public final LodQuadTree quadtree;
 		public final RenderBufferHandler renderBufferHandler;
 		
+		public final int viewDiameterInBlocks;
+		
 		
 		
 		//=============//
@@ -223,9 +225,11 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 				IDhClientLevel dhClientLevel, 
 				FullDataSourceProviderV2 fullDataSourceProvider)
 		{
+			this.viewDiameterInBlocks = getViewDiameterInBlocks();
+			
 			this.quadtree = new LodQuadTree(
 				dhClientLevel,
-				getQuadTreeBlockRadius(),
+				this.viewDiameterInBlocks,
 				// initial position is (0,0) just in case the player hasn't loaded in yet, the tree will be moved once the level starts ticking
 				0, 0,
 				fullDataSourceProvider);
@@ -233,10 +237,15 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 			this.renderBufferHandler = new RenderBufferHandler(this.quadtree);
 		}
 		
-		public static int getQuadTreeBlockRadius()
-		{
+		/**
+		 * Used both during setup and
+		 * to determine if the render distance changed.
+		 */
+		public static int getViewDiameterInBlocks() 
+		{ 
 			return Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() 
-				* LodUtil.CHUNK_WIDTH * 2;
+				* LodUtil.CHUNK_WIDTH 
+				* 2; 
 		}
 		
 		
