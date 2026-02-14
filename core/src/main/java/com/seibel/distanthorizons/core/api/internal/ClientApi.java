@@ -514,13 +514,7 @@ public class ClientApi
 		// render prep and actual rendering into different threads/methods
 		// this is annoying since it's possible to start a render with only
 		// partially complete info, but there isn't a better option at the moment
-		RenderParams renderParams =
-			new RenderParams(
-				renderPass,
-				RENDER_STATE.partialTickTime,
-				RENDER_STATE.mcProjectionMatrix, RENDER_STATE.mcModelViewMatrix,
-				RENDER_STATE.clientLevelWrapper
-			);
+		RenderParams renderParams = new RenderParams(renderPass, RENDER_STATE);
 		
 		///endregion
 		

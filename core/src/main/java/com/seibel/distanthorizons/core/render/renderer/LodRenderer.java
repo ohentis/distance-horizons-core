@@ -270,7 +270,9 @@ public class LodRenderer
 			}
 			
 			// fog
-			if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get())
+			if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get() 
+				// this is done to fix issues with: underwater fog, blindness effect, etc.
+				|| renderParams.vanillaFogEnabled)
 			{
 				profiler.popPush("LOD Fog");
 				
@@ -337,7 +339,9 @@ public class LodRenderer
 				this.renderLodPass(lodShaderProgram, renderBufferHandler, renderParams, /*opaquePass*/ false);
 				
 				
-				if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get())
+				if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get()
+					// this is done to fix issues with: underwater fog, blindness effect, etc.
+					|| renderParams.vanillaFogEnabled)
 				{
 					profiler.popPush("LOD Fog");
 					

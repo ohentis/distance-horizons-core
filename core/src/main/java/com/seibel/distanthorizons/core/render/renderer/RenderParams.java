@@ -3,6 +3,7 @@ package com.seibel.distanthorizons.core.render.renderer;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
+import com.seibel.distanthorizons.core.api.internal.rendering.DhRenderState;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.EPlatform;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
@@ -39,6 +40,8 @@ public class RenderParams extends DhApiRenderParam
 	public RenderBufferHandler renderBufferHandler;
 	public GenericObjectRenderer genericRenderer;
 	public Vec3d exactCameraPosition;
+	/** @see DhRenderState#vanillaFogEnabled */
+	public boolean vanillaFogEnabled;
 	
 	public boolean validationRun = false;
 	
@@ -47,12 +50,23 @@ public class RenderParams extends DhApiRenderParam
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
-	public RenderParams(
+	public RenderParams(EDhApiRenderPass renderPass, DhRenderState renderState)
+	{
+		this(renderPass,
+			renderState.partialTickTime,
+			renderState.mcProjectionMatrix, renderState.mcModelViewMatrix,
+			renderState.clientLevelWrapper,
+			renderState.vanillaFogEnabled
+		);
+	}
+	private RenderParams(
 			EDhApiRenderPass renderPass,
 			float newPartialTicks,
 			Mat4f newMcProjectionMatrix, Mat4f newMcModelViewMatrix,
-			IClientLevelWrapper clientLevelWrapper
+			IClientLevelWrapper clientLevelWrapper,
+			boolean vanillaFogEnabled
 		)
 	{
 		super(renderPass,
@@ -83,13 +97,18 @@ public class RenderParams extends DhApiRenderParam
 			this.exactCameraPosition = MC_RENDER.getCameraExactPosition();
 		}
 		
+		this.vanillaFogEnabled = vanillaFogEnabled;
+		
 	}
+	
+	//endregion
 	
 	
 	
 	//======================//
 	// parameter validation //
 	//======================//
+	//region
 	
 	/** 
 	 * Should be called before rendering is done.
@@ -171,6 +190,8 @@ public class RenderParams extends DhApiRenderParam
 		
 		return null;
 	}
+	
+	//endregion
 	
 	
 	

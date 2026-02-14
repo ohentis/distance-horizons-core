@@ -30,6 +30,16 @@ public class DhRenderState
 	public float partialTickTime = -1; 
 	public IClientLevelWrapper clientLevelWrapper = null;
 	
+	/**
+	 * This will generally be true if the player is: <br>
+	 * - blinded <br>
+	 * - under lava/water <br>
+	 * <br>
+	 * In those cases some rendering logic may need to be changed
+	 * to look correct.
+	 */
+	public boolean vanillaFogEnabled = false;
+	
 	
 	
 	//========//
@@ -63,13 +73,6 @@ public class DhRenderState
 		}
 		
 		return errorReasons;
-	}
-	
-	public boolean canRender()
-	{
-		// separated variable to allow for easy checking with the debugger
-		String errorReasons = this.unableToRenderBecause();
-		return errorReasons.isEmpty();
 	}
 	
 	public void canRenderOrThrow() throws IllegalStateException
