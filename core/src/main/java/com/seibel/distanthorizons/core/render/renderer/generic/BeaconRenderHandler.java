@@ -60,9 +60,12 @@ public class BeaconRenderHandler
 	
 	private final ReentrantLock updateLock = new ReentrantLock();
 	
-	private final IDhApiRenderableBoxGroup beaconBoxGroup;
+	/** only contains the beacons currently being rendered (culled beacons will be missing) */
+	private final IDhApiRenderableBoxGroup activeBeaconBoxRenderGroup;
+	/** contains all beacons that could be rendered (including those that are being culled) */
 	private final ArrayList<DhApiRenderableBox> fullBeaconBoxList = new ArrayList<>();
-	private final HashSet<DhBlockPos> beaconBlockPosSet = new HashSet<>();
+	/** contains all beacons that could be rendered */
+	private final HashSet<DhBlockPos> fullBeaconBlockPosSet = new HashSet<>();
 	
 	private boolean cullingThreadRunning = false;
 	private boolean updateRenderDataNextFrame = false;
@@ -72,24 +75,28 @@ public class BeaconRenderHandler
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	public BeaconRenderHandler(@NotNull GenericObjectRenderer renderer)
 	{
-		this.beaconBoxGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(ModInfo.NAME+":Beacons", new ArrayList<>(0));
-		this.beaconBoxGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
-		this.beaconBoxGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
-		this.beaconBoxGroup.setSsaoEnabled(false);
-		this.beaconBoxGroup.setShading(DhApiRenderableBoxGroupShading.getUnshaded());
-		this.beaconBoxGroup.setPreRenderFunc(this::beforeRender);
+		this.activeBeaconBoxRenderGroup = GenericRenderObjectFactory.INSTANCE.createAbsolutePositionedGroup(ModInfo.NAME+":Beacons", new ArrayList<>(0));
+		this.activeBeaconBoxRenderGroup.setBlockLight(LodUtil.MAX_MC_LIGHT);
+		this.activeBeaconBoxRenderGroup.setSkyLight(LodUtil.MAX_MC_LIGHT);
+		this.activeBeaconBoxRenderGroup.setSsaoEnabled(false);
+		this.activeBeaconBoxRenderGroup.setShading(DhApiRenderableBoxGroupShading.getUnshaded());
+		this.activeBeaconBoxRenderGroup.setPreRenderFunc(this::beforeRender);
 		
-		renderer.add(this.beaconBoxGroup);
+		renderer.add(this.activeBeaconBoxRenderGroup);
 	}
+	
+	//endregion
 	
 	
 	
 	//=================//
 	// render handling //
 	//=================//
+	//region
 	
 	public void startRenderingBeacons(ArrayList<BeaconBeamDTO> beaconList, byte detailLevel)
 	{
@@ -143,12 +150,15 @@ public class BeaconRenderHandler
 			}
 			
 			
+			//LOGGER.info("startRenderingBeacons ["+sortedBeaconList+"]");
+			
 			// add each beacon to the renderer
 			for (int i = 0; i < sortedBeaconList.size(); i++)
 			{
 				BeaconBeamDTO beacon = sortedBeaconList.get(i);
-				if (!this.beaconBlockPosSet.add(beacon.blockPos))
+				if (!this.fullBeaconBlockPosSet.add(beacon.blockPos))
 				{
+					// skip already present beacons
 					continue;
 				}
 				
@@ -161,9 +171,9 @@ public class BeaconRenderHandler
 					EDhApiBlockMaterial.ILLUMINATED
 				);
 				
-				this.beaconBoxGroup.add(beaconBox);
+				this.activeBeaconBoxRenderGroup.add(beaconBox);
 				this.fullBeaconBoxList.add(beaconBox);
-				this.beaconBoxGroup.triggerBoxChange();
+				this.activeBeaconBoxRenderGroup.triggerBoxChange();
 			}
 		}
 		finally
@@ -172,58 +182,28 @@ public class BeaconRenderHandler
 		}
 	}
 	
-	public void stopRenderingBeacons(ArrayList<BeaconBeamDTO> beaconList)
+	public void stopRenderingBeaconsInRange(long pos)
 	{
 		try
 		{
 			this.updateLock.lock();
 			
-			for (int i = 0; i < beaconList.size(); i++)
+			Predicate<DhApiRenderableBox> removeBoxPredicate = (DhApiRenderableBox box) ->
 			{
-				BeaconBeamDTO beacon = beaconList.get(i);
-				DhBlockPos beaconPos = beacon.blockPos;
-				if (!this.beaconBlockPosSet.remove(beaconPos))
-				{
-					continue;
-				}
-				
-				Predicate<DhApiRenderableBox> removePredicate = (DhApiRenderableBox box) ->
-				{
-					return box.minPos.x == beaconPos.getX()
-						&& box.minPos.y == beaconPos.getY() + 1 // plus 1 because the beam starts above the beacon
-						&& box.minPos.z == beaconPos.getZ();
-				};
-				this.beaconBoxGroup.removeIf(removePredicate);
-				this.fullBeaconBoxList.removeIf(removePredicate);
-				
-				this.beaconBoxGroup.triggerBoxChange();
-			}
-		}
-		finally
-		{
-			this.updateLock.unlock();
-		}
-	}
-	
-	public void updateBeaconColor(BeaconBeamDTO newBeam)
-	{
-		try
-		{
-			this.updateLock.lock();
+				DhBlockPos blockPos = new DhBlockPos((int)box.minPos.x, (int)box.minPos.y, (int)box.minPos.z);
+				boolean contains = DhSectionPos.contains(pos, blockPos);
+				//if (contains)
+				//{
+				//	LOGGER.info("stopRenderingBeaconsInRange ["+DhSectionPos.toString(pos)+"] ["+blockPos+"]");
+				//}
+				return contains;
+			};
+			this.activeBeaconBoxRenderGroup.removeIf(removeBoxPredicate);
+			this.fullBeaconBoxList.removeIf(removeBoxPredicate);
 			
-			DhBlockPos pos = newBeam.blockPos;
-			for (int i = 0; i < this.fullBeaconBoxList.size(); i++)
-			{
-				DhApiRenderableBox box = this.fullBeaconBoxList.get(i);
-				if (box.minPos.x == pos.getX()
-						&& box.minPos.y == pos.getY() + 1 // plus 1 because the beam starts above the beacon
-						&& box.minPos.z == pos.getZ())
-				{
-					box.color = newBeam.color;
-					this.beaconBoxGroup.triggerBoxChange();
-					break;
-				}
-			}
+			this.fullBeaconBlockPosSet.removeIf((DhBlockPos blockPos) -> DhSectionPos.contains(pos, blockPos));
+			
+			this.activeBeaconBoxRenderGroup.triggerBoxChange();
 		}
 		finally
 		{
@@ -245,10 +225,10 @@ public class BeaconRenderHandler
 		// this must be called on the render thread to prevent concurrency issues
 		if (this.updateRenderDataNextFrame)
 		{
-			this.beaconBoxGroup.triggerBoxChange();
+			this.activeBeaconBoxRenderGroup.triggerBoxChange();
 			this.updateRenderDataNextFrame = false;
 		}
-		this.beaconBoxGroup.setActive(Config.Client.Advanced.Graphics.GenericRendering.enableBeaconRendering.get());
+		this.activeBeaconBoxRenderGroup.setActive(Config.Client.Advanced.Graphics.GenericRendering.enableBeaconRendering.get());
 	}
 	/** does nothing if the culling thread is already running */
 	private void tryUpdateBeaconCullingAsync()
@@ -284,7 +264,7 @@ public class BeaconRenderHandler
 						// Clear the existing box group so we can re-populate it.
 						// Since the box group is only used when we trigger an update, clearing it here
 						// and repopulating it is fine.
-						this.beaconBoxGroup.clear();
+						this.activeBeaconBoxRenderGroup.clear();
 						
 						// While iterating over every beacon isn't a great way of doing this, 
 						// when 940 beacons were tested this only took ~0.9 Milliseconds, so as long as
@@ -295,7 +275,7 @@ public class BeaconRenderHandler
 							double distance = Vec3d.getHorizontalDistance(cameraPos, box.minPos);
 							if (distance > dhFadeDistance)
 							{
-								this.beaconBoxGroup.add(box);
+								this.activeBeaconBoxRenderGroup.add(box);
 							}
 						}
 						
@@ -317,11 +297,14 @@ public class BeaconRenderHandler
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
  	// helper classes //
  	//================//
+	//region
 	
 	private static class NegativeInfiniteBlockPosComparator implements Comparator<BeaconBeamDTO>
 	{
@@ -339,6 +322,8 @@ public class BeaconRenderHandler
 			return Integer.compare(blockPos1.getZ(), blockPos2.getZ());
 		}
 	}
+	
+	//endregion
 	
 	
 	

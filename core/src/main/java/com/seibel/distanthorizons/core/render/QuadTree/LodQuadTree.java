@@ -629,10 +629,10 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 				continue;
 			}
 			
-			// the section only needs to be updated if a buffer is currently present 
 			LodRenderSection renderSection = this.tryGetValue(pos);
 			if (renderSection != null)
 			{
+				// the section only needs to be updated if a buffer is currently present 
 				if (renderSection.gpuUploadComplete())
 				{
 					if (renderSection.gpuUploadInProgress()

@@ -181,7 +181,7 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 		);
 	}
 	
-	public List<BeaconBeamDTO> getAllBeamsForPos(long pos)
+	public ArrayList<BeaconBeamDTO> getAllBeamsForPos(long pos)
 	{
 		int minBlockX = DhSectionPos.getMinCornerBlockX(pos);
 		int minBlockZ = DhSectionPos.getMinCornerBlockZ(pos);
@@ -200,7 +200,7 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 			"WHERE " +
 			"? <= BlockPosX AND BlockPosX <= ? AND " +
 			"? <= BlockPosZ AND BlockPosZ <= ?";
-	public List<BeaconBeamDTO> getAllBeamsInBlockPosRange(
+	public ArrayList<BeaconBeamDTO> getAllBeamsInBlockPosRange(
 			int minBlockX, int maxBlockX,
 			int minBlockZ, int maxBlockZ
 		)
