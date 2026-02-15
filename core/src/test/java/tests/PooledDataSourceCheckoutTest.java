@@ -26,10 +26,15 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * @see PhantomArrayListCheckout
- *
+ * Note: this test will have issues if {@link DelayedSaveCacheTest} is also enabled.
+ * Probably due to creating additional checkouts in the global static state.
+ * For now this issue can be ignored.
+ * 
  * @author James Seibel
  * @version 2025-10-02
+ * 
+ * @see PhantomArrayListCheckout
+ * @see DelayedSaveCacheTest
  */
 public class PooledDataSourceCheckoutTest
 {
@@ -37,6 +42,11 @@ public class PooledDataSourceCheckoutTest
 	@Test
 	public void TestCheckouts()
 	{
+		// something like this should probably be called before starting the test to ensure
+		// we have a clean slate, otherwise other tests could clutter up the static state
+		// and cause the test to fail
+		//FullDataSourceV2.ARRAY_LIST_POOL.clear();
+		
 		PhantomArrayListCheckout initialCheckout;
 		try (FullDataSourceV2 initialSource = FullDataSourceV2.createEmpty(DhSectionPos.encode((byte)6, 0, 0)))
 		{
@@ -46,6 +56,7 @@ public class PooledDataSourceCheckoutTest
 		try (FullDataSourceV2 outerSource = FullDataSourceV2.createEmpty(DhSectionPos.encode((byte) 6, 0, 0)))
 		{
 			PhantomArrayListCheckout outerCheckout = outerSource.getPhantomArrayCheckoutForUnitTesting();
+			// Note: this can fail if this test is run at the same time as other tasks (generating additional checkouts)
 			Assert.assertEquals("the first checkout object should be pooled", initialCheckout, outerCheckout);
 			
 			try (FullDataSourceV2 innerSource = FullDataSourceV2.createEmpty(DhSectionPos.encode((byte) 6, 0, 0)))
