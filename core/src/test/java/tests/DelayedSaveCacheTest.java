@@ -20,16 +20,21 @@
 package tests;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.file.fullDatafile.DelayedFullDataSourceSaveCache;
+import com.seibel.distanthorizons.core.util.delayedSaveCache.DelayedDataSourceSaveCache;
+import com.seibel.distanthorizons.core.logging.DhLogger;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListCheckout;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A few very basic tests to confirm {@link DelayedFullDataSourceSaveCache}
+ * A few very basic tests to confirm {@link DelayedDataSourceSaveCache}
  * is working properly.
  *
  * @author James Seibel
@@ -37,19 +42,27 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DelayedSaveCacheTest
 {
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	
+	static
+	{
+		// allow all logging levels
+		Configurator.setRootLevel(Level.ALL);
+	}
+	
 	
 	
 	// commented out for now since it makes the normal build take longer
-	//@Test
+	@Test
 	public void CacheExpirationAndPoolingTest() throws InterruptedException
 	{
 		// how many times any data source has been "written to disk"
 		AtomicInteger diskSaveCountRef = new AtomicInteger(0);
 		
-		DelayedFullDataSourceSaveCache cache = new DelayedFullDataSourceSaveCache((FullDataSourceV2 fullDataSource) -> 
+		DelayedDataSourceSaveCache cache = new DelayedDataSourceSaveCache((FullDataSourceV2 fullDataSource) -> 
 				{
 					diskSaveCountRef.getAndIncrement();
-					return this.onDataSourceSaveAsync(fullDataSource);
+					return CompletableFuture.completedFuture(null);
 				}, 1_000);
 		
 		
@@ -58,11 +71,13 @@ public class DelayedSaveCacheTest
 		// single item and manual flush //
 		//==============================//
 		
+		//LOGGER.info("============ Single item - manual flush ============");
+		
 		PhantomArrayListCheckout initialCheckout;
 		try (FullDataSourceV2 initialSource = FullDataSourceV2.createEmpty(DhSectionPos.encode((byte)6, 0, 0)))
 		{
 			initialCheckout = initialSource.getPhantomArrayCheckoutForUnitTesting();
-			cache.writeDataSourceToMemoryAndQueueSave(initialSource);
+			cache.writeToMemoryAndQueueSave( initialSource);
 		}
 		Assert.assertEquals("only 1 item should be in the cache", 1, cache.getUnsavedCount());
 		Assert.assertEquals("no disk saves should have happened yet", 0, diskSaveCountRef.get());
@@ -78,6 +93,8 @@ public class DelayedSaveCacheTest
 		// quick group position //
 		//======================//
 		
+		//LOGGER.info("============ quick group - auto flush ============");
+		
 		// write multiple items for the same position
 		for (int i = 0; i < 4; i++)
 		{
@@ -86,7 +103,7 @@ public class DelayedSaveCacheTest
 				PhantomArrayListCheckout loopCheckout = loopSource.getPhantomArrayCheckoutForUnitTesting();
 				Assert.assertEquals(initialCheckout, loopCheckout);
 				
-				cache.writeDataSourceToMemoryAndQueueSave(loopSource);
+				cache.writeToMemoryAndQueueSave(loopSource);
 			}
 		}
 		// each item writes to the same place
@@ -104,6 +121,8 @@ public class DelayedSaveCacheTest
 		// slow group position //
 		//=====================//
 		
+		//LOGGER.info("============ slow group - auto flush ============");
+		
 		// write multiple items for the same position
 		for (int i = 0; i < 4; i++)
 		{
@@ -112,7 +131,7 @@ public class DelayedSaveCacheTest
 				PhantomArrayListCheckout loopCheckout = loopSource.getPhantomArrayCheckoutForUnitTesting();
 				Assert.assertEquals(initialCheckout, loopCheckout);
 				
-				cache.writeDataSourceToMemoryAndQueueSave(loopSource);
+				cache.writeToMemoryAndQueueSave(loopSource);
 			}
 			
 			// long enough to prevent a timeout, but short enough that they don't happen all at once
@@ -128,7 +147,7 @@ public class DelayedSaveCacheTest
 		Assert.assertEquals("third timeout expected", 3, diskSaveCountRef.get());
 		
 	}
-	private CompletableFuture<Void> onDataSourceSaveAsync(FullDataSourceV2 fullDataSource)
-	{ return CompletableFuture.completedFuture(null); }
+	
+	
 	
 }
