@@ -190,18 +190,11 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		this.vertexAttribDivisorSupported = GLProxy.getInstance().vertexAttribDivisorSupported;
 		this.instancedArraysSupported = GLProxy.getInstance().instancedArraysSupported;
-		this.instancedRenderingAvailable = this.vertexAttribDivisorSupported || this.instancedArraysSupported;
+		boolean isMac = (EPlatform.get() == EPlatform.MACOS);
+		this.instancedRenderingAvailable = (this.vertexAttribDivisorSupported || this.instancedArraysSupported) && !isMac;
 		if (!this.instancedRenderingAvailable)
 		{
 			LOGGER.warn("Instanced rendering not supported by this GPU, falling back to direct rendering. Generic object rendering will be slow and some effects may be disabled.");
-		}
-		else
-		{
-			boolean isMac = (EPlatform.get() == EPlatform.MACOS);
-			if (isMac && SODIUM != null)
-			{
-				LOGGER.warn("There have been reports of instanced rendering causing crashes on macOS when Sodium is present. Instanced rendering can be disabled via the DH config.");
-			}
 		}
 		
 		
@@ -499,7 +492,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 			}
 			else
 			{
-				this.renderBoxGroupDirect(shaderProgram, renderEventParam, boxGroup, camPos);
+				this.renderBoxGroupDirect(shaderProgram, renderEventParam, boxGroup, camPos, profiler);
 			}
 			profiler.pop(); // resource path
 			profiler.pop(); // resource namespace
@@ -636,8 +629,13 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	//==================//
 	//region
 	
-	private void renderBoxGroupDirect(IDhApiGenericObjectShaderProgram shaderProgram, DhApiRenderParam renderEventParam, RenderableBoxGroup boxGroup, Vec3d camPos)
+	private void renderBoxGroupDirect(
+		IDhApiGenericObjectShaderProgram shaderProgram, 
+		DhApiRenderParam renderEventParam, 
+		RenderableBoxGroup boxGroup, Vec3d camPos,
+		IProfilerWrapper profiler)
 	{
+		profiler.popPush("shared uniforms");
 		DhApiRenderableBoxGroupShading shading = boxGroup.shading;
 		if (shading == null)
 		{
@@ -653,7 +651,11 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				DhApiRenderableBox box = boxGroup.get(i);
 				if (box != null)
 				{
-					this.renderBox(shaderProgram, renderEventParam, boxGroup, box, camPos);
+					profiler.popPush("direct uniforms");
+					shaderProgram.fillDirectUniformData(renderEventParam, boxGroup, box, camPos);
+					
+					profiler.popPush("render");
+					GL32.glDrawElements(GL32.GL_TRIANGLES, BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
 				}
 			}
 			catch (IndexOutOfBoundsException e)
@@ -664,15 +666,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				break;
 			}
 		}
-	}
-	private void renderBox(
-			IDhApiGenericObjectShaderProgram shaderProgram, 
-			DhApiRenderParam renderEventParam,
-			RenderableBoxGroup boxGroup, DhApiRenderableBox box,
-			Vec3d camPos)
-	{
-		shaderProgram.fillDirectUniformData(renderEventParam, boxGroup, box, camPos);
-		GL32.glDrawElements(GL32.GL_TRIANGLES, BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
+		
+		profiler.pop();
 	}
 	
 	//endregion
