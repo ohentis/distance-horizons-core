@@ -353,23 +353,40 @@ public class FullDataToRenderDataTransformer
 				{
 					// this snow block was entirely removed, just color the block below it
 					ignoreNonSolidBlock = true;
+					
+					// snow is a special case where it should always tint the block
+					// below it, if not done grass will appear as gray
+					int snowColor = levelWrapper.getBlockColor(mutableBlockPos, biome, fullDataSource, block);
+					colorToApplyToNextBlock = ColorUtil.setAlpha(snowColor, 255);
 				}
 			}
 			
 			if (ignoreNonSolidBlock)
 			{
+				int ignoredColor = levelWrapper.getBlockColor(mutableBlockPos, biome, fullDataSource, block);
+				int ignoredAlpha = ColorUtil.getAlpha(ignoredColor);
+				
 				if (colorBelowWithAvoidedBlocks)
 				{
-					int tempColor = levelWrapper.getBlockColor(mutableBlockPos, biome, fullDataSource, block);
-					
 					// don't transfer the color when alpha is 0
 					// this prevents issues if grass is transparent
-					if (ColorUtil.getAlpha(tempColor) != 0)
+					if (ignoredAlpha != 0)
 					{
-						colorToApplyToNextBlock = ColorUtil.setAlpha(tempColor, 255);
-						skylightToApplyToNextBlock = skyLight;
-						blocklightToApplyToNextBlock = blockLight;
+						colorToApplyToNextBlock = ColorUtil.setAlpha(ignoredColor, 255);
 					}
+				}
+				
+				// Don't transfer the lighting when alpha is 0
+				// (the block below should have its own lighting).
+				if (ignoredAlpha != 0)
+				{
+					// Lighting is transferred even when "colorBelowWithAvoidedBlocks"
+					// is false, since otherwise the blocks underneath may have a light value of "0"
+					// which makes things look darker than they should.
+					// This can specifically manifest as grid lines on LOD borders
+					// (not sure why grid lines on LOD borders, but here we are).
+					skylightToApplyToNextBlock = skyLight;
+					blocklightToApplyToNextBlock = blockLight;
 				}
 				
 				// skip this non-colliding block
@@ -382,6 +399,20 @@ public class FullDataToRenderDataTransformer
 			{
 				// use this block's color
 				color = levelWrapper.getBlockColor(mutableBlockPos, biome, fullDataSource, block);
+				
+				// use the skylight override if present
+				if (skylightToApplyToNextBlock != -1)
+				{
+					skyLight = skylightToApplyToNextBlock;
+					// remove the override so we don't accidentally override the next datapoint
+					skylightToApplyToNextBlock = -1;
+				}
+				
+				if (blocklightToApplyToNextBlock != -1)
+				{
+					blockLight = blocklightToApplyToNextBlock;
+					blocklightToApplyToNextBlock = -1;
+				}
 			}
 			else
 			{
