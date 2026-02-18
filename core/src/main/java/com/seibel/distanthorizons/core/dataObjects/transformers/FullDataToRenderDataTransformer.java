@@ -384,7 +384,7 @@ public class FullDataToRenderDataTransformer
 					// is false, since otherwise the blocks underneath may have a light value of "0"
 					// which makes things look darker than they should.
 					// This can specifically manifest as grid lines on LOD borders
-					// (not sure why grid lines on LOD borders, but here we are).
+					// (not entire sure why grid lines on LOD borders, maybe it has to do with the fact that those LODs aren't occluded?).
 					skylightToApplyToNextBlock = skyLight;
 					blocklightToApplyToNextBlock = blockLight;
 				}
