@@ -256,7 +256,6 @@ public class ClientApi
 			if (world != null)
 			{
 				world.unloadLevel(level);
-				SharedApi.INSTANCE.clearQueuedChunkUpdates();
 				ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelUnloadEvent.class, new DhApiLevelUnloadEvent.EventParam(level));
 			}
 			else
@@ -340,7 +339,7 @@ public class ClientApi
 			if (levelWrapper.equals(level))
 			{
 				IChunkWrapper chunkWrapper = this.waitingChunkByClientLevelAndPos.get(levelChunkPair);
-				SharedApi.INSTANCE.chunkLoadEvent(chunkWrapper, levelWrapper);
+				SharedApi.INSTANCE.applyChunkUpdate(chunkWrapper, levelWrapper);
 				keysToRemove.add(levelChunkPair);
 			}
 		}

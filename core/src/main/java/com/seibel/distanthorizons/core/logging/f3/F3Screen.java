@@ -161,7 +161,8 @@ public class F3Screen
 		// chunk updates
 		if (Config.Client.Advanced.Debugging.F3Screen.showQueuedChunkUpdateCount.get())
 		{
-			messageList.add(SharedApi.INSTANCE.getDebugMenuString());
+			ArrayList<String> chunkQueueList = SharedApi.INSTANCE.getDebugMenuString();
+			messageList.addAll(chunkQueueList);
 			messageList.add("");
 		}
 		
