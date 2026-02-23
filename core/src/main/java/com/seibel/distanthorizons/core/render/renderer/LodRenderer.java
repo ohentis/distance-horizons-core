@@ -51,6 +51,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrap
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcTestRenderer;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
@@ -660,48 +661,52 @@ public class LodRenderer
 			GLMC.enableFaceCulling();
 		}
 		
-		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
-		{
-			// Normal LOD rendering
-			
-			SortedArraySet<LodBufferContainer> lodBufferContainer = lodBufferHandler.getColumnRenderBuffers();
-			if (lodBufferContainer != null)
-			{
-				for (int lodIndex = 0; lodIndex < lodBufferContainer.size(); lodIndex++)
-				{
-					LodBufferContainer bufferContainer = lodBufferContainer.get(lodIndex);
-					this.setShaderProgramMvmOffset(bufferContainer.minCornerBlockPos, shaderProgram, renderEventParam);
-					
-					GLVertexBuffer[] vbos = opaquePass ? bufferContainer.vbos : bufferContainer.vbosTransparent;
-					for (int vboIndex = 0; vboIndex < vbos.length; vboIndex++)
-					{
-						GLVertexBuffer vbo = vbos[vboIndex];
-						if (vbo == null)
-						{
-							continue;
-						}
-						
-						if (vbo.getVertexCount() == 0)
-						{
-							continue;
-						}
-						
-						vbo.bind();
-						shaderProgram.bindVertexBuffer(vbo.getId());
-						GL32.glDrawElements(
-							GL32.GL_TRIANGLES,
-							vbo.getVertexCount(),
-							this.quadIBO.getType(), 0);
-						vbo.unbind();
-					}
-				}
-			}
-		}
-		else
+		//if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
+		//{
+		//	// Normal LOD rendering
+		//	
+		//	SortedArraySet<LodBufferContainer> lodBufferContainer = lodBufferHandler.getColumnRenderBuffers();
+		//	if (lodBufferContainer != null)
+		//	{
+		//		for (int lodIndex = 0; lodIndex < lodBufferContainer.size(); lodIndex++)
+		//		{
+		//			LodBufferContainer bufferContainer = lodBufferContainer.get(lodIndex);
+		//			this.setShaderProgramMvmOffset(bufferContainer.minCornerBlockPos, shaderProgram, renderEventParam);
+		//			
+		//			GLVertexBuffer[] vbos = opaquePass ? bufferContainer.vbos : bufferContainer.vbosTransparent;
+		//			for (int vboIndex = 0; vboIndex < vbos.length; vboIndex++)
+		//			{
+		//				GLVertexBuffer vbo = vbos[vboIndex];
+		//				if (vbo == null)
+		//				{
+		//					continue;
+		//				}
+		//				
+		//				if (vbo.getVertexCount() == 0)
+		//				{
+		//					continue;
+		//				}
+		//				
+		//				vbo.bind();
+		//				shaderProgram.bindVertexBuffer(vbo.getId());
+		//				GL32.glDrawElements(
+		//					GL32.GL_TRIANGLES,
+		//					vbo.getVertexCount(),
+		//					this.quadIBO.getType(), 0);
+		//				vbo.unbind();
+		//			}
+		//		}
+		//	}
+		//}
+		//else
 		{
 			// basic quad rendering
 			
-			TestRenderer.INSTANCE.render();
+			IMcTestRenderer testRenderer = SingletonInjector.INSTANCE.get(IMcTestRenderer.class);
+			testRenderer.render();
+			
+			//TestRenderer.INSTANCE.render();
+			//McTestRenderer.INSTANCE.render();
 		}
 		
 		

@@ -50,8 +50,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class GLProxy
 {
-	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	//private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	//private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
 	public static final DhLogger LOGGER = new DhLoggerBuilder()
 			.fileLevelConfig(Config.Common.Logging.logRendererGLEventToFile)
@@ -145,6 +145,7 @@ public class GLProxy
 			String errorMessage = ModInfo.READABLE_NAME + " was initializing " + GLProxy.class.getSimpleName()
 					+ " and discovered this GPU doesn't meet the OpenGL requirements. Sorry I couldn't tell you sooner :(\n" +
 					"Additional info:\n" + supportedVersionInfo;
+			IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 			MC.crashMinecraft(errorMessage, new UnsupportedOperationException("Distant Horizon OpenGL requirements not met"));
 		}
 	 	LOGGER.info("minecraftGlCapabilities:\n" + this.versionInfoToString(this.glCapabilities));
@@ -287,6 +288,8 @@ public class GLProxy
 	 */
 	public void runRenderThreadTasks()
 	{
+		IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+		
 		int frameLimit = MC_RENDER.getFrameLimit();
 		if (frameLimit <= 1)
 		{
@@ -336,6 +339,7 @@ public class GLProxy
 		// this means we could have GL jobs building up.
 		// Run the queued tasks on MC's executor (hopefully this should always run,
 		// even if DH's render code isn't being hit).
+		IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 		MC.executeOnRenderThread(() -> this.runRenderThreadTasks(1_000));
 	}
 	

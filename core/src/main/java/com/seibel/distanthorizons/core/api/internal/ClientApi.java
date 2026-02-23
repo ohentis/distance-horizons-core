@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcTestRenderer;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
@@ -485,6 +486,13 @@ public class ClientApi
 		
 		///endregion
 		
+		IMcTestRenderer testRenderer = SingletonInjector.INSTANCE.get(IMcTestRenderer.class);
+		if (testRenderer == null)
+		{
+			return;
+		}
+		
+		
 		
 		
 		//=================//
@@ -577,7 +585,9 @@ public class ClientApi
 				boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderParams);
 				if (!renderingCancelled)
 				{
-					LodRenderer.INSTANCE.render(renderParams, profiler);
+					testRenderer.render();
+					
+					//LodRenderer.INSTANCE.render(renderParams, profiler);
 				}
 				
 				if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
@@ -590,7 +600,7 @@ public class ClientApi
 				boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDeferredRenderEvent.class, renderParams);
 				if (!renderingCancelled)
 				{
-					LodRenderer.INSTANCE.renderDeferred(renderParams, profiler);
+					//LodRenderer.INSTANCE.renderDeferred(renderParams, profiler);
 				}
 				
 				
