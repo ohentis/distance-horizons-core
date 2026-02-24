@@ -40,6 +40,7 @@ import java.nio.ByteOrder;
  * to the center of the screen to confirm DH's
  * apply shader is running correctly
  */
+@Deprecated
 public class TestRenderer
 {
 	public static final DhLogger LOGGER = new DhLoggerBuilder().build(); 

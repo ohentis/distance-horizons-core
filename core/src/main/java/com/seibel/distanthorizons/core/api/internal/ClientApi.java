@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcFadeRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcTestRenderer;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.config.Config;
@@ -585,7 +586,7 @@ public class ClientApi
 				boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderParams);
 				if (!renderingCancelled)
 				{
-					testRenderer.render();
+					//testRenderer.render();
 					
 					//LodRenderer.INSTANCE.render(renderParams, profiler);
 				}
@@ -644,20 +645,28 @@ public class ClientApi
 	 */
 	public void renderFadeOpaque()
 	{
-		// only fade when DH is rendering
-		if (Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED
-			&&
-			(
-				// only fade when requested
-				Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() == EDhApiMcRenderingFadeMode.DOUBLE_PASS
-				// or if LOD-only mode is enabled (fading is used to remove the MC render pass)
-				|| Config.Client.Advanced.Debugging.lodOnlyMode.get()
-			)
-			// don't fade when Iris shaders are active, otherwise the rendering can get weird
-			&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
+		IMcFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IMcFadeRenderer.class);
+		if (fadeRenderer == null)
 		{
-			VanillaFadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.partialTickTime, RENDER_STATE.clientLevelWrapper);
+			return;
 		}
+		fadeRenderer.render();
+		
+		
+		//// only fade when DH is rendering
+		//if (Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED
+		//	&&
+		//	(
+		//		// only fade when requested
+		//		Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() == EDhApiMcRenderingFadeMode.DOUBLE_PASS
+		//		// or if LOD-only mode is enabled (fading is used to remove the MC render pass)
+		//		|| Config.Client.Advanced.Debugging.lodOnlyMode.get()
+		//	)
+		//	// don't fade when Iris shaders are active, otherwise the rendering can get weird
+		//	&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
+		//{
+		//	VanillaFadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.partialTickTime, RENDER_STATE.clientLevelWrapper);
+		//}
 	}
 	/** 
 	 * The second fade pass.
@@ -666,23 +675,25 @@ public class ClientApi
 	 */
 	public void renderFadeTransparent()
 	{
-		// only fade when DH is rendering
-		if (Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED)
-		{
-			boolean renderFade =
-				(
-					// only fade when requested
-					Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() != EDhApiMcRenderingFadeMode.NONE
-					// or if LOD-only mode is enabled (fading is used to remove the MC render pass)
-					|| Config.Client.Advanced.Debugging.lodOnlyMode.get()
-				)
-				// don't fade when Iris shaders are active, otherwise the rendering can get weird
-				&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering();
-			if (renderFade)
-			{
-				VanillaFadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.partialTickTime, RENDER_STATE.clientLevelWrapper);
-			}
-		}
+		
+		
+		//// only fade when DH is rendering
+		//if (Config.Client.Advanced.Debugging.rendererMode.get() != EDhApiRendererMode.DISABLED)
+		//{
+		//	boolean renderFade =
+		//		(
+		//			// only fade when requested
+		//			Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() != EDhApiMcRenderingFadeMode.NONE
+		//			// or if LOD-only mode is enabled (fading is used to remove the MC render pass)
+		//			|| Config.Client.Advanced.Debugging.lodOnlyMode.get()
+		//		)
+		//		// don't fade when Iris shaders are active, otherwise the rendering can get weird
+		//		&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering();
+		//	if (renderFade)
+		//	{
+		//		VanillaFadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.partialTickTime, RENDER_STATE.clientLevelWrapper);
+		//	}
+		//}
 	}
 	
 	///endregion
