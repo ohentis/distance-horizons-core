@@ -11,14 +11,14 @@ uniform sampler2D uDhDepthTexture;
 void main()
 {
     float dhFragmentDepth = texture(uDhDepthTexture, TexCoord).r;
-    if (dhFragmentDepth == 0)
+    if (dhFragmentDepth == 1)
     {
         // no MC depth
-        fragColor = fColor;    
+        fragColor = fColor;
     }
     else
     {
         // MC depth drawn
-        fragColor = vec4(0, 0, 1, 1); // green
+        fragColor = vec4(1, 1, 1, 1); // white
     }
 }
