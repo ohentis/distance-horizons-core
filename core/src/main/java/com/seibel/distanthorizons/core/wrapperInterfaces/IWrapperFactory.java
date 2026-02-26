@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IVertexBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration.IBatchGeneratorEnvironmentWrapper;
@@ -101,5 +102,9 @@ public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 	 * @throws ClassCastException with instructions on expected objects if the object couldn't be cast
 	 */
 	IChunkWrapper createChunkWrapper(Object[] objectArray) throws ClassCastException;
+	
+	
+	
+	IVertexBufferWrapper createVboWrapper();
 	
 }

@@ -23,14 +23,14 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.glObject.GLState;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.McLodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.lwjgl.opengl.GL32;
 
 /**
- * Copies {@link LodRenderer}'s currently active color and depth texture to Minecraft's framebuffer. 
+ * Copies {@link McLodRenderer}'s currently active color and depth texture to Minecraft's framebuffer. 
  */
 public class DhApplyShader extends AbstractShaderRenderer
 {
@@ -117,11 +117,11 @@ public class DhApplyShader extends AbstractShaderRenderer
 			//GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 			
 			GLMC.glActiveTexture(GL32.GL_TEXTURE0);
-			GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveColorTextureId());
+			GLMC.glBindTexture(McLodRenderer.INSTANCE.getActiveColorTextureId());
 			GL32.glUniform1i(this.gDhColorTextureUniform, 0);
 			
 			GLMC.glActiveTexture(GL32.GL_TEXTURE1);
-			GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
+			GLMC.glBindTexture(McLodRenderer.INSTANCE.getActiveDepthTextureId());
 			GL32.glUniform1i(this.gDepthMapUniform, 1);
 			
 			// Copy to MC's framebuffer
@@ -141,7 +141,7 @@ public class DhApplyShader extends AbstractShaderRenderer
 			return;
 		}
 		
-		int dhFrameBufferId = LodRenderer.INSTANCE.getActiveFramebufferId();
+		int dhFrameBufferId = McLodRenderer.INSTANCE.getActiveFramebufferId();
 		if (dhFrameBufferId == -1)
 		{
 			return;
@@ -170,11 +170,11 @@ public class DhApplyShader extends AbstractShaderRenderer
 			//GLMC.glBlendFunc(GL32.GL_ONE, GL32.GL_ONE_MINUS_SRC_ALPHA);
 			
 			GLMC.glActiveTexture(GL32.GL_TEXTURE0);
-			GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveColorTextureId());
+			GLMC.glBindTexture(McLodRenderer.INSTANCE.getActiveColorTextureId());
 			GL32.glUniform1i(this.gDhColorTextureUniform, 0);
 			
 			GLMC.glActiveTexture(GL32.GL_TEXTURE1);
-			GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
+			GLMC.glBindTexture(McLodRenderer.INSTANCE.getActiveDepthTextureId());
 			GL32.glUniform1i(this.gDepthMapUniform, 1);
 			
 			

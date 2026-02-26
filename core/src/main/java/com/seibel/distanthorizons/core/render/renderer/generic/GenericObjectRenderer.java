@@ -38,7 +38,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLElementBuffer;
-import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -86,7 +85,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	
 	private IDhApiGenericObjectShaderProgram instancedShaderProgram;
 	private IDhApiGenericObjectShaderProgram directShaderProgram;
-	private GLVertexBuffer boxVertexBuffer;
+	//private GLVertexBuffer boxVertexBuffer;
 	private GLElementBuffer boxIndexBuffer;
 	
 	private boolean instancedRenderingAvailable;
@@ -219,9 +218,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		ByteBuffer boxVerticesBuffer = MemoryUtil.memAlloc(BOX_VERTICES.length * Float.BYTES);
 		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
 		boxVerticesBuffer.rewind();
-		this.boxVertexBuffer = new GLVertexBuffer(false);
-		this.boxVertexBuffer.bind();
-		this.boxVertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
+		//this.boxVertexBuffer = new GLVertexBuffer(false);
+		//this.boxVertexBuffer.bind();
+		//this.boxVertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
 		MemoryUtil.memFree(boxVerticesBuffer);
 		
 		// box vertex indexes
@@ -424,7 +423,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		}
 		
 		shaderProgram.bind(renderEventParam);
-		shaderProgram.bindVertexBuffer(this.boxVertexBuffer.getId());
+		//shaderProgram.bindVertexBuffer(this.boxVertexBuffer.getId());
 		
 		this.boxIndexBuffer.bind();
 		

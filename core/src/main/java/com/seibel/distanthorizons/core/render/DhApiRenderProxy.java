@@ -25,11 +25,10 @@ import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.McLodRenderer;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
-import org.lwjgl.opengl.GL32;
 
 /**
  * Used to interact with Distant Horizons' rendering systems.
@@ -86,13 +85,13 @@ public class DhApiRenderProxy implements IDhApiRenderProxy
 	@Override
 	public DhApiResult<Integer> getDhDepthTextureId()
 	{
-		int activeTexture = LodRenderer.INSTANCE.getActiveDepthTextureId();
+		int activeTexture = McLodRenderer.INSTANCE.getActiveDepthTextureId();
 		return (activeTexture == -1) ? DhApiResult.createFail("DH's depth texture hasn't been created and/or bound yet.", -1) : DhApiResult.createSuccess(activeTexture);
 	}
 	@Override
 	public DhApiResult<Integer> getDhColorTextureId()
 	{
-		int activeTexture = LodRenderer.INSTANCE.getActiveColorTextureId();
+		int activeTexture = McLodRenderer.INSTANCE.getActiveColorTextureId();
 		return (activeTexture == -1) ? DhApiResult.createFail("DH's color texture hasn't been created and/or bound yet.", -1) : DhApiResult.createSuccess(activeTexture);
 	}
 	

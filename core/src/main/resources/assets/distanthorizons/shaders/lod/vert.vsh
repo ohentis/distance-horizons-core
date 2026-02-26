@@ -1,23 +1,31 @@
-#version 150 core
+#version 330 core
 
 in uvec4 vPosition;
-in vec4 color;
+in vec4 vColor;
 
 out vec4 vPos;
 out vec4 vertexColor;
 out vec3 vertexWorldPos;
 out float vertexYPos;
 
-uniform bool uIsWhiteWorld;
+//layout (std140) uniform uIsWhiteWorld { bool uIsWhiteWorld; };
+//layout (std140) uniform uCombinedMatrix { mat4 uCombinedMatrix; };
+//layout (std140) uniform uModelOffset { vec3 uModelOffset; };
+//layout (std140) uniform uWorldYOffset { float uWorldYOffset; };
+//layout (std140) uniform uMircoOffset { float uMircoOffset; };
+//layout (std140) uniform uEarthRadius { float uEarthRadius; };
 
-uniform mat4 uCombinedMatrix;
-uniform vec3 uModelOffset;
-uniform float uWorldYOffset;
+layout (std140) uniform vertUniformBlock 
+{ 
+    bool uIsWhiteWorld;
+    mat4 uCombinedMatrix;
+    vec3 uModelOffset;
+    float uWorldYOffset;
+    float uMircoOffset;
+    float uEarthRadius;
+};
 
 uniform sampler2D uLightMap;
-uniform float uMircoOffset;
-
-uniform float uEarthRadius;
 
 /** 
  * Vertex Shader
@@ -72,7 +80,7 @@ void main()
     
     if (!uIsWhiteWorld)
     {
-        vertexColor *= color;
+        vertexColor *= vColor;
     }
     
     gl_Position = uCombinedMatrix * vec4(vertexWorldPos, 1.0);

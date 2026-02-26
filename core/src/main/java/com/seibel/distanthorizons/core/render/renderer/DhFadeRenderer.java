@@ -146,7 +146,7 @@ public class DhFadeRenderer
 			
 			FadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
 			FadeApplyShader.INSTANCE.readFramebuffer = DhFadeShader.INSTANCE.frameBuffer;
-			FadeApplyShader.INSTANCE.drawFramebuffer = LodRenderer.INSTANCE.getActiveFramebufferId();
+			FadeApplyShader.INSTANCE.drawFramebuffer = McLodRenderer.INSTANCE.getActiveFramebufferId();
 			FadeApplyShader.INSTANCE.render(partialTicks);
 		}
 		catch (Exception e)

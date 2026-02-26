@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.McLodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
@@ -126,8 +126,8 @@ public class DhFadeShader extends AbstractShaderRenderer
 	@Override
 	protected void onRender()
 	{
-		int depthTextureId = LodRenderer.INSTANCE.getActiveDepthTextureId();
-		int colorTextureId = LodRenderer.INSTANCE.getActiveColorTextureId();
+		int depthTextureId = McLodRenderer.INSTANCE.getActiveDepthTextureId();
+		int colorTextureId = McLodRenderer.INSTANCE.getActiveColorTextureId();
 		
 		if (depthTextureId == -1
 			|| colorTextureId == -1)

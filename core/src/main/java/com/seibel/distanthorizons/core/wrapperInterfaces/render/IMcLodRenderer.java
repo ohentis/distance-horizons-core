@@ -1,0 +1,43 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.seibel.distanthorizons.core.wrapperInterfaces.render;
+
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
+import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
+
+public interface IMcLodRenderer extends IBindable
+{
+	//void fillUniformData(DhApiRenderParam renderEventParam);
+	///** sets the vec3 that all DH verticies should be offset by when rendering */
+	//void setModelOffsetPos(DhApiVec3f modelPos);
+	
+	//void render(IVertexBufferWrapper[] bufferList, IProfilerWrapper profiler);
+	void render(
+		DhApiRenderParam renderEventParam, boolean opaquePass,
+		DhApiVec3f modelPos, IVertexBufferWrapper[] bufferList,
+		IProfilerWrapper profiler);
+	
+	int getVertexSize();
+	
+	void clearDepth();
+	
+}

@@ -109,7 +109,7 @@ public class QuadElementBuffer extends GLElementBuffer
 	//==========//
 	//region
 	
-	private static void buildBuffer(int quadCount, ByteBuffer buffer, int type)
+	public static void buildBuffer(int quadCount, ByteBuffer buffer, int type)
 	{
 		switch (type)
 		{

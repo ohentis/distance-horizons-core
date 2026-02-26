@@ -33,7 +33,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.QuadTree.LodQuadTree;
 import com.seibel.distanthorizons.core.render.QuadTree.LodRenderSection;
-import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.McLodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.RenderParams;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -47,7 +47,7 @@ import org.joml.Matrix4fc;
 import java.util.ArrayList;
 
 /**
- * This object tells the {@link LodRenderer} what buffers to render
+ * This object tells the {@link McLodRenderer} what buffers to render
  */
 public class RenderBufferHandler implements AutoCloseable
 {

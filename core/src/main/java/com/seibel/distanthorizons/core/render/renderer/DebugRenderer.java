@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLElementBuffer;
-import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
@@ -67,7 +66,7 @@ public class DebugRenderer
 	
 	// rendering setup
 	private ShaderProgram basicShader;
-	private GLVertexBuffer vertexBuffer;
+	//private GLVertexBuffer vertexBuffer;
 	private GLElementBuffer outlineIndexBuffer;
 	private AbstractVertexAttribute va;
 	private boolean init = false;
@@ -153,9 +152,9 @@ public class DebugRenderer
 		boxVerticesBuffer.order(ByteOrder.nativeOrder());
 		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
 		boxVerticesBuffer.rewind();
-		this.vertexBuffer = new GLVertexBuffer(false);
-		this.vertexBuffer.bind();
-		this.vertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
+		//this.vertexBuffer = new GLVertexBuffer(false);
+		//this.vertexBuffer.bind();
+		//this.vertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
 		
 		
 		// outline vertex indexes
@@ -215,7 +214,7 @@ public class DebugRenderer
 		
 		this.basicShader.bind();
 		this.va.bind();
-		this.va.bindBufferToAllBindingPoints(this.vertexBuffer.getId());
+		//this.va.bindBufferToAllBindingPoints(this.vertexBuffer.getId());
 		
 		
 		this.outlineIndexBuffer.bind();

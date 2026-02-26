@@ -19,8 +19,6 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
-import com.seibel.distanthorizons.core.render.glObject.buffer.GLVertexBuffer;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
 import org.lwjgl.opengl.GL32;
@@ -46,7 +44,7 @@ public class ScreenQuad
 			-1, 1,
 	};
 	
-	private GLVertexBuffer boxBuffer;
+	//private GLVertexBuffer boxBuffer;
 	private AbstractVertexAttribute va;
 	private boolean init = false;
 
@@ -77,10 +75,10 @@ public class ScreenQuad
 	{
 		this.init();
 		
-		this.boxBuffer.bind();
+		//this.boxBuffer.bind();
 		
 		this.va.bind();
-		this.va.bindBufferToAllBindingPoints(this.boxBuffer.getId());
+		//this.va.bindBufferToAllBindingPoints(this.boxBuffer.getId());
 		
 		GL32.glDrawArrays(GL32.GL_TRIANGLES, 0, 6);
 	}
@@ -91,9 +89,9 @@ public class ScreenQuad
 		buffer.asFloatBuffer().put(box_vertices);
 		buffer.rewind();
 		
-		this.boxBuffer = new GLVertexBuffer(false);
-		this.boxBuffer.bind();
-		this.boxBuffer.uploadBuffer(buffer, box_vertices.length, EDhApiGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
+		//this.boxBuffer = new GLVertexBuffer(false);
+		//this.boxBuffer.bind();
+		//this.boxBuffer.uploadBuffer(buffer, box_vertices.length, EDhApiGpuUploadMethod.DATA, box_vertices.length * Float.BYTES);
 		MemoryUtil.memFree(buffer);
 	}
 	

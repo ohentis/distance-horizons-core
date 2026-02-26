@@ -121,7 +121,7 @@ public class VanillaFadeRenderer
 	
 	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
 	{
-		int depthTextureId = LodRenderer.INSTANCE.getActiveDepthTextureId();
+		int depthTextureId = McLodRenderer.INSTANCE.getActiveDepthTextureId();
 		if (depthTextureId == -1)
 		{
 			// the renderer hasn't been set up yet

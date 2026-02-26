@@ -19,16 +19,13 @@
 
 package com.seibel.distanthorizons.core.render.renderer.shaders;
 
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.McLodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.SSAORenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
-import com.seibel.distanthorizons.core.util.NumberUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
-import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.lwjgl.opengl.GL32;
 
 /**
@@ -136,7 +133,7 @@ public class SSAOShader extends AbstractShaderRenderer
 		GLMC.disableBlend();
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
-		GLMC.glBindTexture(LodRenderer.INSTANCE.getActiveDepthTextureId());
+		GLMC.glBindTexture(McLodRenderer.INSTANCE.getActiveDepthTextureId());
 		
 		ScreenQuad.INSTANCE.render();
 	}

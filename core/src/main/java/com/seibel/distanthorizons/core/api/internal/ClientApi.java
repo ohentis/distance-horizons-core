@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.core.api.internal;
 
 import com.seibel.distanthorizons.api.DhApi;
-import com.seibel.distanthorizons.api.enums.config.EDhApiMcRenderingFadeMode;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRenderPass;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.core.api.internal.rendering.DhRenderState;
@@ -38,7 +37,6 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcFadeRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcTestRenderer;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.config.Config;
@@ -588,7 +586,7 @@ public class ClientApi
 				{
 					//testRenderer.render();
 					
-					//LodRenderer.INSTANCE.render(renderParams, profiler);
+					McLodRenderer.INSTANCE.render(renderParams, profiler);
 				}
 				
 				if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
@@ -645,12 +643,12 @@ public class ClientApi
 	 */
 	public void renderFadeOpaque()
 	{
-		IMcFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IMcFadeRenderer.class);
-		if (fadeRenderer == null)
-		{
-			return;
-		}
-		fadeRenderer.render();
+		//IMcFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IMcFadeRenderer.class);
+		//if (fadeRenderer == null)
+		//{
+		//	return;
+		//}
+		//fadeRenderer.render();
 		
 		
 		//// only fade when DH is rendering
