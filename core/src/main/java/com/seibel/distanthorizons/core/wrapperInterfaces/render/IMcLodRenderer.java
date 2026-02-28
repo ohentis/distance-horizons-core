@@ -33,6 +33,8 @@ public interface IMcLodRenderer extends IBindable
 	
 	int getVertexSize();
 	
+	void applyToMcTexture();
 	void clearDepth();
+	void clearColor();
 	
 }

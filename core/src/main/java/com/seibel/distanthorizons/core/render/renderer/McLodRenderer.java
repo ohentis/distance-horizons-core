@@ -157,6 +157,10 @@ public class McLodRenderer
 		
 		if (!runningDeferredPass)
 		{
+			lodRenderer.clearColor();
+			lodRenderer.clearDepth();
+			
+			
 			//=========================//
 			// opaque and non-deferred //
 			// transparent rendering   //
@@ -234,8 +238,6 @@ public class McLodRenderer
 				//// Note: this can be very slow if a lot of boxes are being rendered 
 				//DebugRenderer.INSTANCE.render(combinedMatrix);
 			}
-			
-			lodRenderer.clearDepth();
 			
 		}
 		else
@@ -326,6 +328,8 @@ public class McLodRenderer
 					lodRenderer.render(renderEventParam, opaquePass, modelPos, vbos, profilerWrapper);
 				}
 			}
+			
+			lodRenderer.applyToMcTexture();
 		}
 		else
 		{
