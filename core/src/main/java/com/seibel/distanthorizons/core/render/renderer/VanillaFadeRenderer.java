@@ -119,7 +119,7 @@ public class VanillaFadeRenderer
 	// render //
 	//========//
 	
-	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks, IClientLevelWrapper level)
+	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, IClientLevelWrapper level)
 	{
 		int depthTextureId = McLodRenderer.INSTANCE.getActiveDepthTextureId();
 		if (depthTextureId == -1)
@@ -156,7 +156,7 @@ public class VanillaFadeRenderer
 			VanillaFadeShader.INSTANCE.frameBuffer = this.fadeFramebuffer;
 			VanillaFadeShader.INSTANCE.setProjectionMatrix(mcModelViewMatrix, mcProjectionMatrix);
 			VanillaFadeShader.INSTANCE.setLevelMaxHeight(level.getMaxHeight());
-			VanillaFadeShader.INSTANCE.render(partialTicks);
+			VanillaFadeShader.INSTANCE.render(0);
 			
 			// Applying the fade texture is only needed if MC is drawing to their own frame buffer,
 			// otherwise we can directly render to their texture
@@ -167,7 +167,7 @@ public class VanillaFadeRenderer
 				FadeApplyShader.INSTANCE.fadeTexture = this.fadeTexture;
 				FadeApplyShader.INSTANCE.readFramebuffer = DhFadeShader.INSTANCE.frameBuffer;
 				FadeApplyShader.INSTANCE.drawFramebuffer = MC_RENDER.getTargetFramebuffer();
-				FadeApplyShader.INSTANCE.render(partialTicks);
+				FadeApplyShader.INSTANCE.render(0);
 			}
 			
 			profiler.pop(); 
