@@ -1,4 +1,4 @@
-#version 330 core
+#version 150
 
 in uvec4 vPosition;
 in vec4 vColor;
@@ -8,21 +8,17 @@ out vec4 vertexColor;
 out vec3 vertexWorldPos;
 out float vertexYPos;
 
-//layout (std140) uniform uIsWhiteWorld { bool uIsWhiteWorld; };
-//layout (std140) uniform uCombinedMatrix { mat4 uCombinedMatrix; };
-//layout (std140) uniform uModelOffset { vec3 uModelOffset; };
-//layout (std140) uniform uWorldYOffset { float uWorldYOffset; };
-//layout (std140) uniform uMircoOffset { float uMircoOffset; };
-//layout (std140) uniform uEarthRadius { float uEarthRadius; };
-
 layout (std140) uniform vertUniformBlock 
 { 
     bool uIsWhiteWorld;
-    mat4 uCombinedMatrix;
-    vec3 uModelOffset;
+    
     float uWorldYOffset;
     float uMircoOffset;
     float uEarthRadius;
+    
+    vec3 uModelOffset;
+    
+    mat4 uCombinedMatrix;
 };
 
 uniform sampler2D uLightMap;

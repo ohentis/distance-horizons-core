@@ -26,11 +26,6 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 
 public interface IMcLodRenderer extends IBindable
 {
-	//void fillUniformData(DhApiRenderParam renderEventParam);
-	///** sets the vec3 that all DH verticies should be offset by when rendering */
-	//void setModelOffsetPos(DhApiVec3f modelPos);
-	
-	//void render(IVertexBufferWrapper[] bufferList, IProfilerWrapper profiler);
 	void render(
 		DhApiRenderParam renderEventParam, boolean opaquePass,
 		DhApiVec3f modelPos, IVertexBufferWrapper[] bufferList,

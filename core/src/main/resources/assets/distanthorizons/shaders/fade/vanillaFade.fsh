@@ -4,20 +4,23 @@ in vec2 TexCoord;
 
 out vec4 fragColor;
 
-// inverted model view matrix and projection matrix
-uniform mat4 uDhInvMvmProj;
-uniform mat4 uMcInvMvmProj;
-
 uniform sampler2D uMcDepthTexture;
 uniform sampler2D uDhDepthTexture;
 uniform sampler2D uCombinedMcDhColorTexture;
 uniform sampler2D uDhColorTexture;
 
-uniform float uStartFadeBlockDistance;
-uniform float uEndFadeBlockDistance;
-uniform float uMaxLevelHeight;
+layout (std140) uniform fragUniformBlock
+{
+    // inverted model view matrix and projection matrix
+    mat4 uDhInvMvmProj;
+    mat4 uMcInvMvmProj;
 
-uniform bool uOnlyRenderLods;
+    float uStartFadeBlockDistance;
+    float uEndFadeBlockDistance;
+    float uMaxLevelHeight;
+
+    bool uOnlyRenderLods;
+};
 
 
 

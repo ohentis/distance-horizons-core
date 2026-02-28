@@ -220,12 +220,8 @@ public class LodBufferContainer implements AutoCloseable
 			
 			ByteBuffer buffer = byteBuffers.get(i);
 			int size = buffer.limit() - buffer.position();
-			//int vertexCount = size / LodUtil.DH_VERTEX_FORMAT.getByteSize();
 			int vertexCount = size / lodRenderer.getVertexSize();
 			
-			// 6,1,0
-			// java.nio.DirectByteBuffer[pos=0 lim=219840 cap=10485760]
-			// 13740
 			try
 			{
 				vbo.upload(buffer, vertexCount);

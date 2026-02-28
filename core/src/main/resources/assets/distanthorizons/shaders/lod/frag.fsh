@@ -7,27 +7,17 @@ in vec4 gl_FragCoord;
 
 out vec4 fragColor;
 
-//// Fade/Clip Uniforms
-//layout (std140) uniform uClipDistance { float uClipDistance; };
-//
-//// Noise Uniforms
-//layout (std140) uniform uNoiseEnabled { bool uNoiseEnabled; };
-//layout (std140) uniform uNoiseSteps { int uNoiseSteps; };
-//layout (std140) uniform uNoiseIntensity { float uNoiseIntensity; };
-//layout (std140) uniform uNoiseDropoff { int uNoiseDropoff; };
-//layout (std140) uniform uDitherDhRendering { bool uDitherDhRendering; };
-
 layout (std140) uniform fragUniformBlock
 {
     // Fade/Clip Uniforms
     float uClipDistance;
-
+    
     // Noise Uniforms
-    bool uNoiseEnabled;
-    int uNoiseSteps;
     float uNoiseIntensity;
+    int uNoiseSteps;
     int uNoiseDropoff;
     bool uDitherDhRendering;
+    bool uNoiseEnabled;
 };
 
 
