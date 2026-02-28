@@ -2,7 +2,7 @@
 
 in vec4 vertexColor;
 in vec3 vertexWorldPos;
-in vec4 vPos;
+in vec3 vPos;
 in vec4 gl_FragCoord;
 
 out vec4 fragColor;

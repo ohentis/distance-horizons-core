@@ -1,9 +1,12 @@
 #version 150
 
-in uvec4 vPosition;
+in uvec3 vPosition;
+in uint meta; // contains light and micro-offset data
 in vec4 vColor;
+in int irisMaterial;
+in int irisNormal;
 
-out vec4 vPos;
+out vec3 vPos;
 out vec4 vertexColor;
 out vec3 vertexWorldPos;
 out float vertexYPos;
@@ -24,14 +27,7 @@ layout (std140) uniform vertUniformBlock
 uniform sampler2D uLightMap;
 
 /** 
- * Vertex Shader
- * 
- * author: James Seibel
- * author: TomTheFurry
- * author: stduhpf
- * updated: coolGi
- *
- * version: 2025-12-22
+ * LOD terrain Vertex Shader
  */
 void main()
 {
@@ -40,8 +36,6 @@ void main()
     vertexWorldPos = vPosition.xyz + uModelOffset;
     
     vertexYPos = vPosition.y + uWorldYOffset;
-    
-    uint meta = vPosition.a;
     
     uint mirco = (meta & 0xFF00u) >> 8u; // mirco offset which is a xyz 2bit value
     // 0b00 = no offset
@@ -72,7 +66,7 @@ void main()
     uint lights = meta & 0xFFu;
     float skyLight = (float(lights/16u)+0.5) / 16.0;
     float blockLight = (mod(float(lights), 16.0)+0.5) / 16.0;
-    vertexColor = vec4(1.0); //vec4(texture(uLightMap, vec2(skyLight, blockLight)).xyz, 1.0);
+    vertexColor = vec4(texture(uLightMap, vec2(skyLight, blockLight)).xyz, 1.0);
     
     if (!uIsWhiteWorld)
     {

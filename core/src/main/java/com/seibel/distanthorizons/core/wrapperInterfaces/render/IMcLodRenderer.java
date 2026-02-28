@@ -19,15 +19,15 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.render;
 
-import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
+import com.seibel.distanthorizons.core.render.renderer.RenderParams;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
 public interface IMcLodRenderer extends IBindable
 {
 	void render(
-		DhApiRenderParam renderEventParam, boolean opaquePass,
+		RenderParams renderEventParam, boolean opaquePass,
 		DhApiVec3f modelPos, IVertexBufferWrapper[] bufferList,
 		IProfilerWrapper profiler);
 	
