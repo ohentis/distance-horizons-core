@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManag
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,7 +70,7 @@ public class DhServerLevel extends AbstractDhServerLevel
 	//=========//
 	
 	@Override
-	public GenericObjectRenderer getGenericRenderer() 
+	public IMcGenericRenderer getGenericRenderer() 
 	{ 
 		// server-only levels don't support rendering
 		return null; 

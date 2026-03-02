@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRend
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -92,7 +93,7 @@ public interface IDhLevel extends AutoCloseable, GeneratedFullDataSourceProvider
 	 * Not supported on the server-side. 
 	 */
 	@Nullable
-	GenericObjectRenderer getGenericRenderer();
+	IMcGenericRenderer getGenericRenderer();
 	/**
 	 * Will return null if the renderer isn't set up yet. <br>
 	 * Not supported on the server-side. 

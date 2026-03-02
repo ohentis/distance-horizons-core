@@ -12,6 +12,7 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import org.jetbrains.annotations.Nullable;
@@ -35,6 +36,7 @@ public class RenderableBoxGroup
 	
 	private static final IMinecraftGLWrapper GLMC = SingletonInjector.INSTANCE.get(IMinecraftGLWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	
 	public static final AtomicInteger NEXT_ID_ATOMIC_INT = new AtomicInteger(0);
 	
@@ -67,9 +69,9 @@ public class RenderableBoxGroup
 	public Consumer<DhApiRenderParam> afterRenderFunc;
 	
 	// instance data
-	public InstancedVboContainer instancedVbos = new InstancedVboContainer();
+	public IInstancedVboContainer instancedVbos = WRAPPER_FACTORY.createInstancedVboContainer();
 	/** double buffering for thread safety and to prevent locking the render thread during update */
-	private InstancedVboContainer altInstancedVbos = new InstancedVboContainer(); 
+	private IInstancedVboContainer altInstancedVbos = WRAPPER_FACTORY.createInstancedVboContainer();
 	
 	
 	
@@ -195,12 +197,12 @@ public class RenderableBoxGroup
 	public void tryUpdateInstancedDataAsync()
 	{
 		// if the alt container is done, swap it in
-		if (this.altInstancedVbos.state == InstancedVboContainer.EState.READY_TO_UPLOAD)
+		if (this.altInstancedVbos.getState() == InstancedVboContainer.EState.READY_TO_UPLOAD)
 		{
 			this.altInstancedVbos.uploadDataToGpu();
 			
 			// swap VBO references for rendering
-			InstancedVboContainer temp = this.instancedVbos;
+			IInstancedVboContainer temp = this.instancedVbos;
 			this.instancedVbos = this.altInstancedVbos;
 			this.altInstancedVbos = temp;
 			
@@ -224,15 +226,15 @@ public class RenderableBoxGroup
 		}
 		
 		// if the alternate container is already updating, don't double-queue it
-		if (this.altInstancedVbos.state == InstancedVboContainer.EState.UPDATING_DATA)
+		if (this.altInstancedVbos.getState() == InstancedVboContainer.EState.UPDATING_DATA)
 		{
 			return;
 		}
-		this.altInstancedVbos.state = InstancedVboContainer.EState.UPDATING_DATA;
+		this.altInstancedVbos.setState(InstancedVboContainer.EState.UPDATING_DATA);
 		
 		
 		
-		this.altInstancedVbos.tryRunRenderThreadSetup();
+		//this.altInstancedVbos.tryRunRenderThreadSetup();
 		
 		// copy over the box list so we can upload without concurrent modification issues
 		this.uploadBoxList.clear();
@@ -252,14 +254,14 @@ public class RenderableBoxGroup
 				catch (Exception e)
 				{
 					LOGGER.error("Unexpected error updating instanced VBO data for: ["+this+"], error: ["+e.getMessage()+"].", e);
-					this.altInstancedVbos.state = InstancedVboContainer.EState.ERROR;
+					this.altInstancedVbos.setState(InstancedVboContainer.EState.ERROR);
 				}
 			});
 		}
 		catch (RejectedExecutionException ignore) 
 		{
 			// the executor was shut down, it should be back up shortly and able to accept new jobs
-			this.altInstancedVbos.state = InstancedVboContainer.EState.NEW;
+			this.altInstancedVbos.setState(InstancedVboContainer.EState.NEW);
 		}
 	}
 	
@@ -341,7 +343,7 @@ public class RenderableBoxGroup
 	//region
 	
 	@Override
-	public String toString() { return "["+this.resourceLocationNamespace+":"+this.resourceLocationPath+"]  ID:["+this.id+"], pos:["+this.originBlockPos.x+","+this.originBlockPos.y+","+this.originBlockPos.z+"], size:["+this.size()+"], active:["+this.active+"]"; }
+	public String toString() { return "["+this.resourceLocationNamespace+":"+this.resourceLocationPath+"]  ID:["+this.id+"], pos:[("+this.originBlockPos.x+", "+this.originBlockPos.y+", "+this.originBlockPos.z+")], size:["+this.size()+"], active:["+this.active+"]"; }
 	
 	@Override 
 	public void close()

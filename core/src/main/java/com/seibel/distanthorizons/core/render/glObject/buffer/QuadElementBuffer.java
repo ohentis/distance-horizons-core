@@ -32,6 +32,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/** AKA Index Buffer TODO RENAME */
 public class QuadElementBuffer extends GLElementBuffer
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();

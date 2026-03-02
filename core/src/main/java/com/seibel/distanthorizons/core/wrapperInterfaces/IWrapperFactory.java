@@ -21,8 +21,10 @@ package com.seibel.distanthorizons.core.wrapperInterfaces;
 
 import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.render.renderer.generic.IInstancedVboContainer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IVertexBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -106,5 +108,9 @@ public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 	
 	
 	IVertexBufferWrapper createVboWrapper();
+	
+	IInstancedVboContainer createInstancedVboContainer();
+	
+	IMcGenericRenderer createGenericRenderer();
 	
 }

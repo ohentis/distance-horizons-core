@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.Nullable;
@@ -138,7 +139,7 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	
 	
 	@Override
-	public GenericObjectRenderer getGenericRenderer() { return this.clientside.genericRenderer; }
+	public IMcGenericRenderer getGenericRenderer() { return this.clientside.genericRenderer; }
 	@Override
 	public RenderBufferHandler getRenderBufferHandler()
 	{

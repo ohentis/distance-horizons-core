@@ -28,10 +28,12 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcLodRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcTestRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IVertexBufferWrapper;
@@ -114,7 +116,7 @@ public class McLodRenderer
 		}
 		
 		RenderBufferHandler renderBufferHandler = renderParams.renderBufferHandler;
-		//GenericObjectRenderer genericRenderer = renderParams.genericRenderer;
+		IMcGenericRenderer genericRenderer = renderParams.genericRenderer;
 		
 		
 		
@@ -174,8 +176,8 @@ public class McLodRenderer
 			// custom objects with SSAO
 			if (Config.Client.Advanced.Graphics.GenericRendering.enableGenericRendering.get())
 			{
-				//profiler.popPush("Custom Objects");
-				//genericRenderer.render(renderParams, profiler, true);
+				profiler.popPush("Custom Objects");
+				genericRenderer.render(renderParams, profiler, true);
 			}
 			
 			// SSAO
@@ -188,8 +190,8 @@ public class McLodRenderer
 			// custom objects without SSAO
 			if (Config.Client.Advanced.Graphics.GenericRendering.enableGenericRendering.get())
 			{
-				//profiler.popPush("Custom Objects");
-				//genericRenderer.render(renderParams, profiler, false);
+				profiler.popPush("Custom Objects");
+				genericRenderer.render(renderParams, profiler, false);
 			}
 			
 			// combined pass transparent rendering
@@ -238,6 +240,8 @@ public class McLodRenderer
 				//// Note: this can be very slow if a lot of boxes are being rendered 
 				//DebugRenderer.INSTANCE.render(combinedMatrix);
 			}
+			
+			lodRenderer.applyToMcTexture();
 			
 		}
 		else
@@ -328,8 +332,6 @@ public class McLodRenderer
 					lodRenderer.render(renderEventParam, opaquePass, modelPos, vbos, profilerWrapper);
 				}
 			}
-			
-			lodRenderer.applyToMcTexture();
 		}
 		else
 		{

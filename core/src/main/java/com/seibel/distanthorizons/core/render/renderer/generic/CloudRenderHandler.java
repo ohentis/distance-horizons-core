@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.logging.DhLogger;
@@ -80,7 +81,7 @@ public class CloudRenderHandler
 			= new IDhApiRenderableBoxGroup[(CLOUD_INSTANCE_RADIUS_COUNT * 2) + 1][(CLOUD_INSTANCE_RADIUS_COUNT * 2) + 1];
 	
 	private final IDhClientLevel level;
-	private final GenericObjectRenderer renderer;
+	private final IMcGenericRenderer renderer;
 	
 	/** cached array so we don't need to re-create it each frame for each cloud group */
 	private final Vec3d[] cullingCorners = new Vec3d[]
@@ -102,7 +103,7 @@ public class CloudRenderHandler
 	//=============//
 	//region
 	
-	public CloudRenderHandler(IDhClientLevel level, GenericObjectRenderer renderer) 
+	public CloudRenderHandler(IDhClientLevel level, IMcGenericRenderer renderer) 
 	{
 		this.level = level;
 		this.renderer = renderer;
@@ -316,16 +317,16 @@ public class CloudRenderHandler
 			return;
 		}
 		
-		if (!this.renderer.getInstancedRenderingAvailable())
-		{
-			if (!this.disabledWarningLogged)
-			{
-				this.disabledWarningLogged = true;
-				LOGGER.warn("Instanced rendering unavailable, cloud rendering disabled.");
-			}
-			boxGroup.setActive(false);
-			return;
-		}
+		//if (!this.renderer.getInstancedRenderingAvailable())
+		//{
+		//	if (!this.disabledWarningLogged)
+		//	{
+		//		this.disabledWarningLogged = true;
+		//		LOGGER.warn("Instanced rendering unavailable, cloud rendering disabled.");
+		//	}
+		//	boxGroup.setActive(false);
+		//	return;
+		//}
 		
 		IClientLevelWrapper clientLevelWrapper = this.level.getClientLevelWrapper();
 		if (clientLevelWrapper == null)

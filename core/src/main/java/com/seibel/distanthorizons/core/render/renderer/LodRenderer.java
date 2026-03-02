@@ -51,6 +51,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrap
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcTestRenderer;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
@@ -159,7 +160,7 @@ public class LodRenderer
 		}
 		
 		RenderBufferHandler renderBufferHandler = renderParams.renderBufferHandler;
-		GenericObjectRenderer genericRenderer = renderParams.genericRenderer;
+		IMcGenericRenderer genericRenderer = renderParams.genericRenderer;
 		ILightMapWrapper lightmap = renderParams.lightmap;
 		
 		

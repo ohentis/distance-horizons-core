@@ -38,12 +38,14 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLElementBuffer;
+import com.seibel.distanthorizons.core.render.renderer.RenderParams;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -63,7 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see IDhApiCustomRenderRegister
  * @see DhApiRenderableBox
  */
-public class GenericObjectRenderer implements IDhApiCustomRenderRegister
+public class GenericObjectRenderer implements IMcGenericRenderer
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
@@ -386,7 +388,8 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 	 *      if true that means this render call is happening before the SSAO pass
      *      and any objects rendered in this pass will have SSAO applied to them.
 	 */
-	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler, boolean renderingWithSsao)
+	@Override
+	public void render(RenderParams renderEventParam, IProfilerWrapper profiler, boolean renderingWithSsao)
 	{
 		// render setup //
 		profiler.push("setup");
@@ -472,7 +475,7 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 				boxGroup.tryUpdateInstancedDataAsync();	
 				
 				// skip groups that haven't been uploaded yet
-				if (boxGroup.instancedVbos.state != InstancedVboContainer.EState.RENDER)
+				if (boxGroup.instancedVbos.getState() != InstancedVboContainer.EState.RENDER)
 				{
 					continue;
 				}
@@ -554,27 +557,29 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		// Bind instance data //
 		profiler.popPush("binding");
 		
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instancedVbos.color);
+		InstancedVboContainer container = (InstancedVboContainer)(boxGroup.instancedVbos);
+		
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, container.color);
 		GL32.glEnableVertexAttribArray(1);
 		GL32.glVertexAttribPointer(1, 4, GL32.GL_FLOAT, false, 4 * Float.BYTES, 0);
 		this.vertexAttribDivisor(1, 1);
 		
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instancedVbos.scale);
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, container.scale);
 		GL32.glEnableVertexAttribArray(2);
 		this.vertexAttribDivisor(2, 1);
 		GL32.glVertexAttribPointer(2, 3, GL32.GL_FLOAT, false, 3 * Float.BYTES, 0);
 		
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instancedVbos.chunkPos);
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, container.chunkPos);
 		GL32.glEnableVertexAttribArray(3);
 		this.vertexAttribDivisor(3, 1);
 		GL32.glVertexAttribIPointer(3, 3, GL32.GL_INT, 3 * Integer.BYTES, 0);
 		
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instancedVbos.subChunkPos);
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, container.subChunkPos);
 		GL32.glEnableVertexAttribArray(4);
 		this.vertexAttribDivisor(4, 1);
 		GL32.glVertexAttribPointer(4, 3, GL32.GL_FLOAT, false, 3 * Float.BYTES, 0);
 		
-		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, boxGroup.instancedVbos.material);
+		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, container.material);
 		GL32.glEnableVertexAttribArray(5);
 		this.vertexAttribDivisor(5, 1);
 		GL32.glVertexAttribIPointer(5, 1, GL32.GL_BYTE, Byte.BYTES, 0);
@@ -582,9 +587,9 @@ public class GenericObjectRenderer implements IDhApiCustomRenderRegister
 		
 		// Draw instanced
 		profiler.popPush("render");
-		if (boxGroup.instancedVbos.uploadedBoxCount > 0)
+		if (container.uploadedBoxCount > 0)
 		{
-			GL32.glDrawElementsInstanced(GL32.GL_TRIANGLES, BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0, boxGroup.instancedVbos.uploadedBoxCount);
+			GL32.glDrawElementsInstanced(GL32.GL_TRIANGLES, BOX_INDICES.length, GL32.GL_UNSIGNED_INT, 0, container.uploadedBoxCount);
 		}
 		
 		

@@ -17,7 +17,7 @@ import java.util.List;
  * 
  * @see RenderableBoxGroup
  */
-public class InstancedVboContainer implements AutoCloseable
+public class InstancedVboContainer implements IInstancedVboContainer
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
@@ -40,7 +40,11 @@ public class InstancedVboContainer implements AutoCloseable
 	
 	public int uploadedBoxCount = 0;
 	
-	public EState state = EState.NEW;
+	private EState state = EState.NEW;
+	@Override 
+	public EState getState() { return this.state; }
+	@Override 
+	public void setState(EState state) { this.state = state; }
 	
 	
 	
@@ -170,23 +174,6 @@ public class InstancedVboContainer implements AutoCloseable
 	//endregion
 	
 	
-	
-	//================//
-	// helper classes //
-	//================//
-	//region
-	
-	public enum EState
-	{
-		NEW,
-		UPDATING_DATA,
-		READY_TO_UPLOAD,
-		RENDER,
-		
-		ERROR,
-	}
-	
-	//endregion
 	
 	
 	
