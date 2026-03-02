@@ -33,10 +33,7 @@ import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcLodRenderer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcTestRenderer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IVertexBufferWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.*;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
 
@@ -150,6 +147,7 @@ public class McLodRenderer
 		}
 		
 		IMcLodRenderer lodRenderer = SingletonInjector.INSTANCE.get(IMcLodRenderer.class);
+		IMcSsaoRenderer ssaoRenderer = SingletonInjector.INSTANCE.get(IMcSsaoRenderer.class);
 		
 		
 		
@@ -183,8 +181,8 @@ public class McLodRenderer
 			// SSAO
 			if (Config.Client.Advanced.Graphics.Ssao.enableSsao.get())
 			{
-				//profiler.popPush("LOD SSAO");
-				//SSAORenderer.INSTANCE.render(new Mat4f(renderParams.dhProjectionMatrix), renderParams.partialTicks);
+				profiler.popPush("LOD SSAO");
+				ssaoRenderer.render(renderParams.dhProjectionMatrix);
 			}
 			
 			// custom objects without SSAO
