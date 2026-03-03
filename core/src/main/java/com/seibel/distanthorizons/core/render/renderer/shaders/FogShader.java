@@ -243,9 +243,9 @@ public class FogShader extends AbstractShaderRenderer
 		return fogColor;
 	}
 	
-	public void setProjectionMatrix(Mat4f projectionMatrix)
+	public void setProjectionMatrix(Mat4f modelViewProjectionMatrix)
 	{
-		this.inverseMvmProjMatrix = new Mat4f(projectionMatrix);
+		this.inverseMvmProjMatrix = new Mat4f(modelViewProjectionMatrix);
 		this.inverseMvmProjMatrix.invert();
 	}
 	

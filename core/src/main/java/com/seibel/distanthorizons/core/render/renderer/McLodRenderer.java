@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -148,6 +149,7 @@ public class McLodRenderer
 		
 		IMcLodRenderer lodRenderer = SingletonInjector.INSTANCE.get(IMcLodRenderer.class);
 		IMcSsaoRenderer ssaoRenderer = SingletonInjector.INSTANCE.get(IMcSsaoRenderer.class);
+		IMcFogRenderer fogRenderer = SingletonInjector.INSTANCE.get(IMcFogRenderer.class);
 		
 		
 		
@@ -214,12 +216,12 @@ public class McLodRenderer
 				// this is done to fix issues with: underwater fog, blindness effect, etc.
 				|| renderParams.vanillaFogEnabled)
 			{
-				//profiler.popPush("LOD Fog");
-				//
-				//Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
-				//combinedMatrix.multiply(renderParams.dhModelViewMatrix);
-				//
-				//FogRenderer.INSTANCE.render(combinedMatrix, renderParams.partialTicks);
+				profiler.popPush("LOD Fog");
+
+				Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
+				combinedMatrix.multiply(renderParams.dhModelViewMatrix);
+				
+				fogRenderer.render(combinedMatrix, renderParams.partialTicks);
 			}
 			
 			
