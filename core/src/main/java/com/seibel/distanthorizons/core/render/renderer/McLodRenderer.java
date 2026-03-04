@@ -150,6 +150,7 @@ public class McLodRenderer
 		IMcLodRenderer lodRenderer = SingletonInjector.INSTANCE.get(IMcLodRenderer.class);
 		IMcSsaoRenderer ssaoRenderer = SingletonInjector.INSTANCE.get(IMcSsaoRenderer.class);
 		IMcFogRenderer fogRenderer = SingletonInjector.INSTANCE.get(IMcFogRenderer.class);
+		IMcFarFadeRenderer farFadeRenderer = SingletonInjector.INSTANCE.get(IMcFarFadeRenderer.class);
 		
 		
 		
@@ -205,10 +206,9 @@ public class McLodRenderer
 			// far plane clip fading
 			if (Config.Client.Advanced.Graphics.Quality.dhFadeFarClipPlane.get())
 			{
-				//profiler.popPush("Fade Far Clip Fade");
-				//DhFadeRenderer.INSTANCE.render(
-				//		new Mat4f(renderParams.mcModelViewMatrix), new Mat4f(renderParams.mcProjectionMatrix),
-				//		renderParams.partialTicks, profiler);
+				profiler.popPush("Fade Far Clip Fade");
+				farFadeRenderer.render(
+						new Mat4f(renderParams.mcModelViewMatrix), new Mat4f(renderParams.mcProjectionMatrix));
 			}
 			
 			// fog

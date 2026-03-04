@@ -38,7 +38,7 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcFadeRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcVanillaFadeRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcTestRenderer;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.config.Config;
@@ -645,7 +645,7 @@ public class ClientApi
 	 */
 	public void renderFadeOpaque()
 	{
-		IMcFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IMcFadeRenderer.class);
+		IMcVanillaFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IMcVanillaFadeRenderer.class);
 		if (fadeRenderer == null)
 		{
 			return;
@@ -674,7 +674,7 @@ public class ClientApi
 	 */
 	public void renderFadeTransparent()
 	{
-		IMcFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IMcFadeRenderer.class);
+		IMcVanillaFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IMcVanillaFadeRenderer.class);
 		if (fadeRenderer == null)
 		{
 			return;
