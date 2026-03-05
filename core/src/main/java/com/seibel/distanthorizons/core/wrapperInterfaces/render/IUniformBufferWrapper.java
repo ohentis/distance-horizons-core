@@ -19,24 +19,13 @@
 
 package com.seibel.distanthorizons.core.wrapperInterfaces.render;
 
-import com.seibel.distanthorizons.api.objects.math.DhApiVec3f;
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
-import com.seibel.distanthorizons.core.render.renderer.RenderParams;
-import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
-public interface IMcLodRenderer extends IBindable
+public interface IUniformBufferWrapper extends IBindable, AutoCloseable
 {
-	void render(
-		RenderParams renderEventParam, boolean opaquePass,
-		SortedArraySet<LodBufferContainer> bufferContainers,
-		IProfilerWrapper profiler);
+	void upload();
 	
-	int getVertexSize();
-	
-	void applyToMcTexture();
-	void clearDepth();
-	void clearColor();
+	@Override
+	void close();
 	
 }

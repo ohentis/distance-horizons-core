@@ -28,7 +28,9 @@ import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.ILodContainerUniformBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcLodRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IUniformBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IVertexBufferWrapper;
 import org.lwjgl.system.MemoryUtil;
 
@@ -46,6 +48,8 @@ public class LodBufferContainer implements AutoCloseable
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
+	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
+	
 	/** number of bytes a single quad takes */
 	public static final int QUADS_BYTE_SIZE = LodUtil.DH_VERTEX_FORMAT.getByteSize() * 4;
 	/** how big a single VBO can be in bytes */
@@ -62,6 +66,8 @@ public class LodBufferContainer implements AutoCloseable
 	
 	public IVertexBufferWrapper[] vbos;
 	public IVertexBufferWrapper[] vbosTransparent;
+	
+	public ILodContainerUniformBufferWrapper uniforms = WRAPPER_FACTORY.createLodContainerUniformWrapper();
 	
 	private final AtomicReference<CompletableFuture<LodBufferContainer>> uploadFutureRef = new AtomicReference<>(null);
 	
@@ -305,6 +311,8 @@ public class LodBufferContainer implements AutoCloseable
 					buffer.close();
 				}
 			}
+			
+			this.uniforms.close();
 		});
 	}
 	

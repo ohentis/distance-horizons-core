@@ -237,6 +237,7 @@ public class McLodRenderer
 				DebugRenderer.INSTANCE.render(renderParams);
 			}
 			
+			profiler.popPush("Apply to MC");
 			lodRenderer.applyToMcTexture();
 			
 		}
@@ -307,26 +308,7 @@ public class McLodRenderer
 			SortedArraySet<LodBufferContainer> lodBufferContainer = lodBufferHandler.getColumnRenderBuffers();
 			if (lodBufferContainer != null)
 			{
-				for (int lodIndex = 0; lodIndex < lodBufferContainer.size(); lodIndex++)
-				{
-					LodBufferContainer bufferContainer = lodBufferContainer.get(lodIndex);
-					// TODO match buffer builder debugger
-					//if (bufferContainer.pos != DhSectionPos.encode((byte)6, 1,0))
-					//{
-					//	continue;
-					//}
-					
-					Vec3d camPos = renderEventParam.exactCameraPosition;
-					Vec3f modelPos = new Vec3f(
-						(float) (bufferContainer.minCornerBlockPos.getX() - camPos.x),
-						(float) (bufferContainer.minCornerBlockPos.getY() - camPos.y),
-						(float) (bufferContainer.minCornerBlockPos.getZ() - camPos.z));
-					
-					ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeBufferRenderEvent.class, new DhApiBeforeBufferRenderEvent.EventParam(renderEventParam, modelPos));
-
-					IVertexBufferWrapper[] vbos = opaquePass ? bufferContainer.vbos : bufferContainer.vbosTransparent;
-					lodRenderer.render(renderEventParam, opaquePass, modelPos, vbos, profilerWrapper);
-				}
+				lodRenderer.render(renderEventParam, opaquePass, lodBufferContainer, profilerWrapper);
 			}
 		}
 		else

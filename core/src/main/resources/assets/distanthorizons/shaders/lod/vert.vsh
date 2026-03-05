@@ -11,15 +11,18 @@ out vec4 vertexColor;
 out vec3 vertexWorldPos;
 out float vertexYPos;
 
-layout (std140) uniform vertUniformBlock 
+layout (std140) uniform vertUniqueUniformBlock
+{
+    vec3 uModelOffset;
+};
+
+layout (std140) uniform vertSharedUniformBlock 
 { 
     bool uIsWhiteWorld;
     
     float uWorldYOffset;
     float uMircoOffset;
     float uEarthRadius;
-    
-    vec3 uModelOffset;
     
     mat4 uCombinedMatrix;
 };
