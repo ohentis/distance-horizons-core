@@ -242,28 +242,28 @@ public class McLodRenderer
 		}
 		else
 		{
-			////====================//
-			//// deferred rendering //
-			////====================//
-			//
-			//if (Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
-			//{
-			//	profiler.popPush("LOD Transparent");
-			//	this.renderLodPass(lodShaderProgram, renderBufferHandler, renderParams, /*opaquePass*/ false);
-			//	
-			//	
-			//	if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get()
-			//		// this is done to fix issues with: underwater fog, blindness effect, etc.
-			//		|| renderParams.vanillaFogEnabled)
-			//	{
-			//		profiler.popPush("LOD Fog");
-			//		
-			//		Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
-			//		combinedMatrix.multiply(renderParams.dhModelViewMatrix);
-			//		
-			//		FogRenderer.INSTANCE.render(combinedMatrix, renderParams.partialTicks);
-			//	}
-			//}
+			//====================//
+			// deferred rendering //
+			//====================//
+
+			if (Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
+			{
+				profiler.popPush("LOD Transparent");
+				this.renderLodPass(lodRenderer, renderBufferHandler, renderParams, /*opaquePass*/ false, profiler);
+
+
+				if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get()
+					// this is done to fix issues with: underwater fog, blindness effect, etc.
+					|| renderParams.vanillaFogEnabled)
+				{
+					profiler.popPush("LOD Fog");
+
+					Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
+					combinedMatrix.multiply(renderParams.dhModelViewMatrix);
+
+					FogRenderer.INSTANCE.render(combinedMatrix, renderParams.partialTicks);
+				}
+			}
 		}
 		
 		
