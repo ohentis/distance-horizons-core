@@ -421,6 +421,22 @@ public class ClientApi
 		
 		
 		
+		//===========//
+		// debugging //
+		//===========//
+		//region
+		
+		//DhApiTerrainDataRepo.asyncDebugMethod(
+		//	RENDER_STATE.clientLevelWrapper,
+		//	MC_CLIENT.getPlayerBlockPos().getX(),
+		//	MC_CLIENT.getPlayerBlockPos().getY(),
+		//	MC_CLIENT.getPlayerBlockPos().getZ()
+		//);
+		
+		//endregion
+		
+		
+		
 		//=====================//
 		// render thread tasks //
 		//=====================//

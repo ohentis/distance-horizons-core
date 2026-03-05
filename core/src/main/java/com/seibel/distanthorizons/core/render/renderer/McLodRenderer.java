@@ -28,7 +28,6 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
-import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
@@ -232,13 +231,10 @@ public class McLodRenderer
 			
 			if (Config.Client.Advanced.Debugging.DebugWireframe.enableRendering.get())
 			{
-				//profiler.popPush("Debug wireframes");
-				//
-				//Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
-				//combinedMatrix.multiply(renderParams.dhModelViewMatrix);
-				//
-				//// Note: this can be very slow if a lot of boxes are being rendered 
-				//DebugRenderer.INSTANCE.render(combinedMatrix);
+				profiler.popPush("Debug wireframes");
+
+				// Note: this can be very slow if a lot of boxes are being rendered
+				DebugRenderer.INSTANCE.render(renderParams);
 			}
 			
 			lodRenderer.applyToMcTexture();

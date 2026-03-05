@@ -298,7 +298,7 @@ public class LodRenderer
 				combinedMatrix.multiply(renderParams.dhModelViewMatrix);
 				
 				// Note: this can be very slow if a lot of boxes are being rendered 
-				DebugRenderer.INSTANCE.render(combinedMatrix);
+				//DebugRenderer.INSTANCE.render(combinedMatrix); // TODO
 			}
 			
 			

@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -29,21 +28,19 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.glObject.buffer.GLElementBuffer;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.AbstractVertexAttribute;
-import com.seibel.distanthorizons.core.render.glObject.vertexAttribute.VertexPointer;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.util.math.Vec3f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.util.math.Vec3d;
-import com.seibel.distanthorizons.core.util.math.Vec3f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcDebugRenderer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.lwjgl.opengl.GL32;
 
 import java.awt.*;
 import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.concurrent.PriorityBlockingQueue;
 
 /**
@@ -66,13 +63,12 @@ public class DebugRenderer
 	
 	// rendering setup
 	private ShaderProgram basicShader;
-	//private GLVertexBuffer vertexBuffer;
 	private GLElementBuffer outlineIndexBuffer;
 	private AbstractVertexAttribute va;
 	private boolean init = false;
 	
 	// used when rendering
-	private Mat4f transformationMatrixThisFrame;
+	private Mat4f dhMvmProjMatrixThisFrame;
 	private Vec3f camPosFloatThisFrame;
 	
 	
@@ -81,39 +77,39 @@ public class DebugRenderer
 	
 	
 	
-	/** A box from 0,0,0 to 1,1,1 */
-	private static final float[] BOX_VERTICES = {
-		//region
-			// Pos x y z
-			0, 0, 0,
-			1, 0, 0,
-			1, 1, 0,
-			0, 1, 0,
-			0, 0, 1,
-			1, 0, 1,
-			1, 1, 1,
-			0, 1, 1,
-		//endregion
-	};
-	
-	private static final int[] BOX_OUTLINE_INDICES = {
-		//region
-			0, 1,
-			1, 2,
-			2, 3,
-			3, 0,
-			
-			4, 5,
-			5, 6,
-			6, 7,
-			7, 4,
-			
-			0, 4,
-			1, 5,
-			2, 6,
-			3, 7,
-		//endregion
-	};
+	///** A box from 0,0,0 to 1,1,1 */
+	//private static final float[] BOX_VERTICES = {
+	//	//region
+	//		// Pos x y z
+	//		0, 0, 0,
+	//		1, 0, 0,
+	//		1, 1, 0,
+	//		0, 1, 0,
+	//		0, 0, 1,
+	//		1, 0, 1,
+	//		1, 1, 1,
+	//		0, 1, 1,
+	//	//endregion
+	//};
+	//
+	//private static final int[] BOX_OUTLINE_INDICES = {
+	//	//region
+	//		0, 1,
+	//		1, 2,
+	//		2, 3,
+	//		3, 0,
+	//		
+	//		4, 5,
+	//		5, 6,
+	//		6, 7,
+	//		7, 4,
+	//		
+	//		0, 4,
+	//		1, 5,
+	//		2, 6,
+	//		3, 7,
+	//	//endregion
+	//};
 	
 	
 	
@@ -124,48 +120,45 @@ public class DebugRenderer
 	
 	private DebugRenderer() { }
 	
-	public void init()
-	{
-		if (this.init)
-		{
-			return;
-		}
-		this.init = true;
-		
-		this.va = AbstractVertexAttribute.create();
-		this.va.bind();
-		// Pos
-		this.va.setVertexAttribute(0, 0, VertexPointer.addVec3Pointer(false));
-		this.va.completeAndCheck(Float.BYTES * 3);
-		this.basicShader = new ShaderProgram(
-			"shaders/debug/vert.vert",
-			"shaders/debug/frag.frag",
-			"vPosition"
-		);
-		this.createBuffer();
-	}
-	
-	private void createBuffer()
-	{
-		// box vertices 
-		ByteBuffer boxVerticesBuffer = ByteBuffer.allocateDirect(BOX_VERTICES.length * Float.BYTES);
-		boxVerticesBuffer.order(ByteOrder.nativeOrder());
-		boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
-		boxVerticesBuffer.rewind();
-		//this.vertexBuffer = new GLVertexBuffer(false);
-		//this.vertexBuffer.bind();
-		//this.vertexBuffer.uploadBuffer(boxVerticesBuffer, 8, EDhApiGpuUploadMethod.DATA, BOX_VERTICES.length * Float.BYTES);
-		
-		
-		// outline vertex indexes
-		ByteBuffer boxOutlineBuffer = ByteBuffer.allocateDirect(BOX_OUTLINE_INDICES.length * Integer.BYTES);
-		boxOutlineBuffer.order(ByteOrder.nativeOrder());
-		boxOutlineBuffer.asIntBuffer().put(BOX_OUTLINE_INDICES);
-		boxOutlineBuffer.rewind();
-		this.outlineIndexBuffer = new GLElementBuffer(false);
-		this.outlineIndexBuffer.uploadBuffer(boxOutlineBuffer, EDhApiGpuUploadMethod.DATA, BOX_OUTLINE_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
-		
-	}
+	//public void init()
+	//{
+	//	if (this.init)
+	//	{
+	//		return;
+	//	}
+	//	this.init = true;
+	//	
+	//	this.va = AbstractVertexAttribute.create();
+	//	this.va.bind();
+	//	// Pos
+	//	this.va.setVertexAttribute(0, 0, VertexPointer.addVec3Pointer(false));
+	//	this.va.completeAndCheck(Float.BYTES * 3);
+	//	this.basicShader = new ShaderProgram(
+	//		"shaders/debug/vert.vert",
+	//		"shaders/debug/frag.frag",
+	//		"vPosition"
+	//	);
+	//	this.createBuffer();
+	//}
+	//
+	//private void createBuffer()
+	//{
+	//	// box vertices 
+	//	ByteBuffer boxVerticesBuffer = ByteBuffer.allocateDirect(BOX_VERTICES.length * Float.BYTES);
+	//	boxVerticesBuffer.order(ByteOrder.nativeOrder());
+	//	boxVerticesBuffer.asFloatBuffer().put(BOX_VERTICES);
+	//	boxVerticesBuffer.rewind();
+	//	
+	//	
+	//	// outline vertex indexes
+	//	ByteBuffer boxOutlineBuffer = ByteBuffer.allocateDirect(BOX_OUTLINE_INDICES.length * Integer.BYTES);
+	//	boxOutlineBuffer.order(ByteOrder.nativeOrder());
+	//	boxOutlineBuffer.asIntBuffer().put(BOX_OUTLINE_INDICES);
+	//	boxOutlineBuffer.rewind();
+	//	this.outlineIndexBuffer = new GLElementBuffer(false);
+	//	this.outlineIndexBuffer.uploadBuffer(boxOutlineBuffer, EDhApiGpuUploadMethod.DATA, BOX_OUTLINE_INDICES.length * Integer.BYTES, GL32.GL_STATIC_DRAW);
+	//	
+	//}
 	
 	//endregion
 	
@@ -201,59 +194,99 @@ public class DebugRenderer
 	//===========//
 	//region
 	
-	public void render(Mat4f transform)
+	public void render(RenderParams renderEventParam)
 	{
-		this.transformationMatrixThisFrame = transform;
-		Vec3d camPos = MC_RENDER.getCameraExactPosition();
-		this.camPosFloatThisFrame = new Vec3f((float) camPos.x, (float) camPos.y, (float) camPos.z);
+			//this.dhMvmProjMatrixThisFrame = dhMvmProjMatrix;
+			//Vec3d camPos = MC_RENDER.getCameraExactPosition();
+			//this.camPosFloatThisFrame = new Vec3f((float) camPos.x, (float) camPos.y, (float) camPos.z);
+
+			//this.init();
+
+			//GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
+			//GLMC.enableDepthTest();
+			//
+			//this.basicShader.bind();
+			//this.va.bind();
+			//
+			//
+			//this.outlineIndexBuffer.bind();
+			this.rendererLists.render(this);
+
+
+			// particle rendering		
+			BoxParticle head = null;
+			while ((head = this.particles.poll()) != null && head.isDead())
+			{ /* remove dead particles */ }
+			if (head != null)
+			{
+				// re-add the popped off head
+				this.particles.add(head);
+			}
 		
-		this.init();
+		IMcDebugRenderer renderer = SingletonInjector.INSTANCE.get(IMcDebugRenderer.class);
+		renderer.render(renderEventParam, this.particles);
 		
-		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
-		GLMC.enableDepthTest();
-		
-		this.basicShader.bind();
-		this.va.bind();
-		//this.va.bindBufferToAllBindingPoints(this.vertexBuffer.getId());
-		
-		
-		this.outlineIndexBuffer.bind();
-		this.rendererLists.render(this);
-		
-		
-		// particle rendering		
-		BoxParticle head = null;
-		while ((head = this.particles.poll()) != null && head.isDead())
-		{ /* remove dead particles */ }
-		if (head != null)
-		{
-			// re-add the popped off head
-			this.particles.add(head);
-		}
-		
-		
-		// box rendering
-		GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
-		for (BoxParticle particle : this.particles)
-		{
-			// a new box is created each time since the height will be different based on the time it's lived
-			this.renderBox(particle.createNewRenderBox());
-		}
 	}
 	
+	@Deprecated // TODO this should add all the boxes to a list so we can render them as a batch instead of individual draw calls
 	public void renderBox(Box box)
 	{
-		Mat4f boxTransform = Mat4f.createTranslateMatrix(box.minPos.x - this.camPosFloatThisFrame.x, box.minPos.y - this.camPosFloatThisFrame.y, box.minPos.z - this.camPosFloatThisFrame.z);
-		boxTransform.multiply(Mat4f.createScaleMatrix(box.maxPos.x - box.minPos.x, box.maxPos.y - box.minPos.y, box.maxPos.z - box.minPos.z));
-		
-		Mat4f transformMatrix = this.transformationMatrixThisFrame.copy();
-		transformMatrix.multiply(boxTransform);
-		this.basicShader.setUniform(this.basicShader.getUniformLocation("uTransform"), transformMatrix);
-		
-		this.basicShader.setUniform(this.basicShader.getUniformLocation("uColor"), box.color);
-		
-		GL32.glDrawElements(GL32.GL_LINES, BOX_OUTLINE_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
+		IMcDebugRenderer renderer = SingletonInjector.INSTANCE.get(IMcDebugRenderer.class);
+		renderer.render(box);
 	}
+	
+	//public void render(Mat4f dhMvmProjMatrix)
+	//{
+	//	this.dhMvmProjMatrixThisFrame = dhMvmProjMatrix;
+	//	Vec3d camPos = MC_RENDER.getCameraExactPosition();
+	//	this.camPosFloatThisFrame = new Vec3f((float) camPos.x, (float) camPos.y, (float) camPos.z);
+	//	
+	//	this.init();
+	//	
+	//	GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_LINE);
+	//	GLMC.enableDepthTest();
+	//	
+	//	this.basicShader.bind();
+	//	this.va.bind();
+	//	
+	//	
+	//	this.outlineIndexBuffer.bind();
+	//	this.rendererLists.render(this);
+	//	
+	//	
+	//	// particle rendering		
+	//	BoxParticle head = null;
+	//	while ((head = this.particles.poll()) != null && head.isDead())
+	//	{ /* remove dead particles */ }
+	//	if (head != null)
+	//	{
+	//		// re-add the popped off head
+	//		this.particles.add(head);
+	//	}
+	//	
+	//	
+	//	// box rendering
+	//	GL32.glPolygonMode(GL32.GL_FRONT_AND_BACK, GL32.GL_FILL);
+	//	for (BoxParticle particle : this.particles)
+	//	{
+	//		// a new box is created each time since the height will be different based on the time it's lived
+	//		this.renderBox(particle.createNewRenderBox());
+	//	}
+	//}
+	//
+	//public void renderBox(Box box)
+	//{
+	//	Mat4f boxTransform = Mat4f.createTranslateMatrix(box.minPos.x - this.camPosFloatThisFrame.x, box.minPos.y - this.camPosFloatThisFrame.y, box.minPos.z - this.camPosFloatThisFrame.z);
+	//	boxTransform.multiply(Mat4f.createScaleMatrix(box.maxPos.x - box.minPos.x, box.maxPos.y - box.minPos.y, box.maxPos.z - box.minPos.z));
+	//	
+	//	Mat4f transformMatrix = this.dhMvmProjMatrixThisFrame.copy();
+	//	transformMatrix.multiply(boxTransform);
+	//	this.basicShader.setUniform(this.basicShader.getUniformLocation("uTransform"), transformMatrix);
+	//	
+	//	this.basicShader.setUniform(this.basicShader.getUniformLocation("uColor"), box.color);
+	//	
+	//	GL32.glDrawElements(GL32.GL_LINES, BOX_OUTLINE_INDICES.length, GL32.GL_UNSIGNED_INT, 0);
+	//}
 	
 	//endregion
 	
