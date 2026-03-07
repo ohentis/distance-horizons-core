@@ -4,8 +4,8 @@ in vec2 TexCoord;
 
 out vec4 fragColor;
 
-uniform sampler2D uSsaoColorTexture;
-uniform sampler2D uDhDepthTexture;
+uniform sampler2D uSourceColorTexture;
+uniform sampler2D uSourceDepthTexture;
 
 uniform vec2 gViewSize;
 uniform int gBlurRadius;
@@ -38,8 +38,8 @@ float BilateralGaussianBlur(const in vec2 texcoord, const in float linearDepth, 
             float fx = Gaussian(g_sigmaX, ix);
 
             vec2 sampleTex = texcoord + ivec2(ix, iy) * pixelSize;
-            float sampleValue = textureLod(uSsaoColorTexture, sampleTex, 0).r;
-            float sampleDepth = textureLod(uDhDepthTexture, sampleTex, 0).r;
+            float sampleValue = textureLod(uSourceColorTexture, sampleTex, 0).r;
+            float sampleDepth = textureLod(uSourceDepthTexture, sampleTex, 0).r;
             float sampleLinearDepth = linearizeDepth(sampleDepth);
 
             float depthDiff = abs(sampleLinearDepth - linearDepth);
@@ -60,7 +60,7 @@ void main()
 {
     fragColor = vec4(1.0);
     
-    float fragmentDepth = textureLod(uDhDepthTexture, TexCoord, 0).r;
+    float fragmentDepth = textureLod(uSourceDepthTexture, TexCoord, 0).r;
 
     // a fragment depth of "1" means the fragment wasn't drawn to,
     // we only want to apply SSAO to LODs, not to the sky outside the LODs
@@ -73,7 +73,7 @@ void main()
         }
         else 
         {
-            fragColor.a = texelFetch(uSsaoColorTexture, ivec2(gl_FragCoord.xy), 0).r;
+            fragColor.a = texelFetch(uSourceColorTexture, ivec2(gl_FragCoord.xy), 0).r;
         }
     }
 }

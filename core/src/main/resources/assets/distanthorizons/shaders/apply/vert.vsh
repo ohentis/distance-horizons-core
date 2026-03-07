@@ -4,7 +4,10 @@ in vec2 vPosition;
 
 out vec2 TexCoord;
 
-// DH apply
+/** 
+ * This is specifically used by application shaders.
+ * IE post process or pixel transfer shaders, anything that is rendered using a single rectangle.
+ */
 void main()
 {
     gl_Position = vec4(vPosition, 0.0, 1.0);

@@ -4,22 +4,20 @@ in vec2 TexCoord;
 
 out vec4 fragColor;
 
-uniform sampler2D uDhColorTexture;
-uniform sampler2D uDhDepthTexture;
+uniform sampler2D uSourceColorTexture;
+uniform sampler2D uSourceDepthTexture;
 
 // DH apply frag
 void main()
 {
-    //fragColor = texture(uApplyTexture, TexCoord);
-
     fragColor = vec4(0.0);
 
     // a fragment depth of "1" means the fragment wasn't drawn to,
     // only update fragments that were drawn to
-    float fragmentDepth = texture(uDhDepthTexture, TexCoord).r;
+    float fragmentDepth = texture(uSourceDepthTexture, TexCoord).r;
     if (fragmentDepth != 1)
     {
-        fragColor = texture(uDhColorTexture, TexCoord);
+        fragColor = texture(uSourceColorTexture, TexCoord);
     }
     else
     {
