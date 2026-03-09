@@ -150,13 +150,6 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	/** @return true if the upload started, false if it wasn't able to for any reason */
 	public synchronized boolean uploadRenderDataToGpuAsync()
 	{
-		if (!GLProxy.hasInstance())
-		{
-			// it's possible to try uploading buffers before the GLProxy has been initialized
-			// which would cause the system to crash
-			return false;
-		}
-		
 		if (this.getAndBuildRenderDataFutureRef.get() != null)
 		{
 			// don't accidentally queue multiple uploads at the same time

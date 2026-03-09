@@ -31,6 +31,8 @@ import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
+import com.seibel.distanthorizons.core.render.RenderParams;
+import com.seibel.distanthorizons.core.render.RenderThreadTaskHandler;
 import com.seibel.distanthorizons.core.render.renderer.*;
 import com.seibel.distanthorizons.core.util.TimerUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
@@ -49,7 +51,6 @@ import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
-import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.world.DhClientWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -464,11 +465,8 @@ public class ClientApi
 			
 			try
 			{
-				// make sure the GLProxy is created for future use
-				GLProxy glProxy = GLProxy.getInstance();
-				
 				// these tasks always need to be called, regardless of whether the renderer is enabled or not to prevent memory leaks
-				glProxy.runRenderThreadTasks();
+				RenderThreadTaskHandler.INSTANCE.runRenderThreadTasks();
 			}
 			catch (Exception e)
 			{
