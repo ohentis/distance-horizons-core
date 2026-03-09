@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.render.renderer.shaders;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
 import com.seibel.distanthorizons.core.render.renderer.FogRenderer;
-import com.seibel.distanthorizons.core.render.renderer.McLodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.BlazeLodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 import org.lwjgl.opengl.GL32;
@@ -82,7 +82,7 @@ public class FogApplyShader extends AbstractShaderRenderer
 		GL32.glUniform1i(this.colorTextureUniform, 0);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
-		GLMC.glBindTexture(McLodRenderer.INSTANCE.getActiveDepthTextureId());
+		GLMC.glBindTexture(BlazeLodRenderer.INSTANCE.getActiveDepthTextureId());
 		GL32.glUniform1i(this.depthTextureUniform, 1);
 		
 	}
@@ -108,7 +108,7 @@ public class FogApplyShader extends AbstractShaderRenderer
 		
 		// apply the rendered Fog to DH's framebuffer
 		GLMC.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, FogShader.INSTANCE.frameBuffer);
-		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, McLodRenderer.INSTANCE.getActiveFramebufferId());
+		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, BlazeLodRenderer.INSTANCE.getActiveFramebufferId());
 		
 		ScreenQuad.INSTANCE.render();
 		

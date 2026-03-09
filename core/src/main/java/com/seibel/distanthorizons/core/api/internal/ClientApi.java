@@ -75,6 +75,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class ClientApi
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final DhLogger RATE_LIMITED_LOGGER = new DhLoggerBuilder().maxCountPerSecond(1).build();
 	
 	public static final ClientApi INSTANCE = new ClientApi();
 	
@@ -503,12 +504,6 @@ public class ClientApi
 		
 		///endregion
 		
-		IMcTestRenderer testRenderer = SingletonInjector.INSTANCE.get(IMcTestRenderer.class);
-		if (testRenderer == null)
-		{
-			return;
-		}
-		
 		
 		
 		
@@ -596,34 +591,46 @@ public class ClientApi
 		try
 		{
 			// render pass //
-			
-			if (!renderingDeferredLayer)
+			if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
 			{
-				boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderParams);
-				if (!renderingCancelled)
+				if (!renderingDeferredLayer)
 				{
-					//testRenderer.render();
+					boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderParams);
+					if (!renderingCancelled)
+					{
+						BlazeLodRenderer.INSTANCE.render(renderParams, profiler);
+					}
 					
-					McLodRenderer.INSTANCE.render(renderParams, profiler);
+					if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
+					{
+						ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, null);
+					}
 				}
-				
-				if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
+				else
 				{
-					ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, null);
+					boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDeferredRenderEvent.class, renderParams);
+					if (!renderingCancelled)
+					{
+						BlazeLodRenderer.INSTANCE.renderDeferred(renderParams, profiler);
+					}
+					
+					
+					if (DhApi.Delayed.renderProxy.getDeferTransparentRendering())
+					{
+						ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, null);
+					}
 				}
 			}
 			else
 			{
-				boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDeferredRenderEvent.class, renderParams);
-				if (!renderingCancelled)
+				IMcTestRenderer testRenderer = SingletonInjector.INSTANCE.get(IMcTestRenderer.class);
+				if (testRenderer != null)
 				{
-					//LodRenderer.INSTANCE.renderDeferred(renderParams, profiler);
+					testRenderer.render();
 				}
-				
-				
-				if (DhApi.Delayed.renderProxy.getDeferTransparentRendering())
+				else
 				{
-					ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterRenderEvent.class, null);
+					RATE_LIMITED_LOGGER.warn("Unable to find singleton ["+IMcTestRenderer.class.getSimpleName()+"]");
 				}
 			}
 		}

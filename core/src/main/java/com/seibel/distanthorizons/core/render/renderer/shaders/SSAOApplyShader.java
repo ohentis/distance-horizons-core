@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.renderer.McLodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.BlazeLodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.SSAORenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.util.RenderUtil;
@@ -86,7 +86,7 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 	protected void onApplyUniforms(float partialTicks)
 	{
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
-		GLMC.glBindTexture(McLodRenderer.INSTANCE.getActiveDepthTextureId());
+		GLMC.glBindTexture(BlazeLodRenderer.INSTANCE.getActiveDepthTextureId());
 		GL32.glUniform1i(this.gDepthMapUniform, 0);
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE1);
@@ -135,7 +135,7 @@ public class SSAOApplyShader extends AbstractShaderRenderer
 		
 		// apply the rendered SSAO to the LODs 
 		GLMC.glBindFramebuffer(GL32.GL_READ_FRAMEBUFFER, SSAOShader.INSTANCE.frameBuffer);
-		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, McLodRenderer.INSTANCE.getActiveFramebufferId());
+		GLMC.glBindFramebuffer(GL32.GL_DRAW_FRAMEBUFFER, BlazeLodRenderer.INSTANCE.getActiveFramebufferId());
 		
 		
 		ScreenQuad.INSTANCE.render();

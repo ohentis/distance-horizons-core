@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.render.renderer.shaders;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.renderer.McLodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.BlazeLodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.SSAORenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
@@ -133,7 +133,7 @@ public class SSAOShader extends AbstractShaderRenderer
 		GLMC.disableBlend();
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
-		GLMC.glBindTexture(McLodRenderer.INSTANCE.getActiveDepthTextureId());
+		GLMC.glBindTexture(BlazeLodRenderer.INSTANCE.getActiveDepthTextureId());
 		
 		ScreenQuad.INSTANCE.render();
 	}

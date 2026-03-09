@@ -29,19 +29,17 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.*;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
-import com.seibel.distanthorizons.core.util.math.Vec3f;
 
 /**
  * This is where all the magic happens. <br>
  * This is where LODs are draw to the world.
  */
-public class McLodRenderer
+public class BlazeLodRenderer
 {
 	public static final DhLogger LOGGER = new DhLoggerBuilder()
 			.fileLevelConfig(Config.Common.Logging.logRendererEventToFile)
@@ -54,7 +52,7 @@ public class McLodRenderer
 	
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	public static final McLodRenderer INSTANCE = new McLodRenderer();
+	public static final BlazeLodRenderer INSTANCE = new BlazeLodRenderer();
 	
 	
 	
@@ -66,7 +64,7 @@ public class McLodRenderer
 	// constructor //
 	//=============//
 	
-	private McLodRenderer() { }
+	private BlazeLodRenderer() { }
 	
 	
 	
@@ -206,8 +204,7 @@ public class McLodRenderer
 			if (Config.Client.Advanced.Graphics.Quality.dhFadeFarClipPlane.get())
 			{
 				profiler.popPush("Fade Far Clip Fade");
-				farFadeRenderer.render(
-						new Mat4f(renderParams.mcModelViewMatrix), new Mat4f(renderParams.mcProjectionMatrix));
+				farFadeRenderer.render(renderParams);
 			}
 			
 			// fog
@@ -301,20 +298,10 @@ public class McLodRenderer
 		
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderPassEvent.class, renderEventParam);
 		
-		if (Config.Client.Advanced.Debugging.rendererMode.get() == EDhApiRendererMode.DEFAULT)
+		SortedArraySet<LodBufferContainer> lodBufferContainer = lodBufferHandler.getColumnRenderBuffers();
+		if (lodBufferContainer != null)
 		{
-			// Normal LOD rendering
-			
-			SortedArraySet<LodBufferContainer> lodBufferContainer = lodBufferHandler.getColumnRenderBuffers();
-			if (lodBufferContainer != null)
-			{
-				lodRenderer.render(renderEventParam, opaquePass, lodBufferContainer, profilerWrapper);
-			}
-		}
-		else
-		{
-			IMcTestRenderer testRenderer = SingletonInjector.INSTANCE.get(IMcTestRenderer.class);
-			testRenderer.render();
+			lodRenderer.render(renderEventParam, opaquePass, lodBufferContainer, profilerWrapper);
 		}
 	}
 	

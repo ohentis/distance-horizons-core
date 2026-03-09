@@ -121,7 +121,7 @@ public class VanillaFadeRenderer
 	
 	public void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, IClientLevelWrapper level)
 	{
-		int depthTextureId = McLodRenderer.INSTANCE.getActiveDepthTextureId();
+		int depthTextureId = BlazeLodRenderer.INSTANCE.getActiveDepthTextureId();
 		if (depthTextureId == -1)
 		{
 			// the renderer hasn't been set up yet

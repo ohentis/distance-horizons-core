@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.render.renderer.McLodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.BlazeLodRenderer;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
@@ -85,13 +85,13 @@ public class DhApiRenderProxy implements IDhApiRenderProxy
 	@Override
 	public DhApiResult<Integer> getDhDepthTextureId()
 	{
-		int activeTexture = McLodRenderer.INSTANCE.getActiveDepthTextureId();
+		int activeTexture = BlazeLodRenderer.INSTANCE.getActiveDepthTextureId();
 		return (activeTexture == -1) ? DhApiResult.createFail("DH's depth texture hasn't been created and/or bound yet.", -1) : DhApiResult.createSuccess(activeTexture);
 	}
 	@Override
 	public DhApiResult<Integer> getDhColorTextureId()
 	{
-		int activeTexture = McLodRenderer.INSTANCE.getActiveColorTextureId();
+		int activeTexture = BlazeLodRenderer.INSTANCE.getActiveColorTextureId();
 		return (activeTexture == -1) ? DhApiResult.createFail("DH's color texture hasn't been created and/or bound yet.", -1) : DhApiResult.createSuccess(activeTexture);
 	}
 	

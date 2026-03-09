@@ -25,7 +25,7 @@ import com.seibel.distanthorizons.api.enums.rendering.EDhApiHeightFogMixMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.render.glObject.shader.ShaderProgram;
-import com.seibel.distanthorizons.core.render.renderer.McLodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.BlazeLodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.ScreenQuad;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -264,7 +264,7 @@ public class FogShader extends AbstractShaderRenderer
 		GLMC.disableBlend();
 		
 		GLMC.glActiveTexture(GL32.GL_TEXTURE0);
-		GLMC.glBindTexture(McLodRenderer.INSTANCE.getActiveDepthTextureId());
+		GLMC.glBindTexture(BlazeLodRenderer.INSTANCE.getActiveDepthTextureId());
 		GL32.glUniform1i(this.uDepthMap, 0);
 		
 		// this is necessary for MC 1.16 (IE Legacy OpenGL)
