@@ -106,10 +106,6 @@ public class LodUtil
 	 */
 	public static final int MAX_ALLOCATABLE_DIRECT_MEMORY = 64 * 1024 * 1024;
 	
-	/** the format of data stored in the GPU buffers */
-	@Deprecated
-	public static final LodVertexFormat DH_VERTEX_FORMAT = VertexFormats.POSITION_COLOR_BLOCK_LIGHT_SKY_LIGHT_MATERIAL_ID_NORMAL_INDEX;
-	
 	
 	
 	//=========//
