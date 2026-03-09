@@ -17,7 +17,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLW
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
 import java.io.Closeable;
 import java.util.*;
 import java.util.List;
@@ -69,9 +68,9 @@ public class RenderableBoxGroup
 	public Consumer<DhApiRenderParam> afterRenderFunc;
 	
 	// instance data
-	public IInstancedVboContainer instancedVbos = WRAPPER_FACTORY.createInstancedVboContainer();
+	public IGenericObjectVertexBufferContainer instancedVbos = WRAPPER_FACTORY.createInstancedVboContainer();
 	/** double buffering for thread safety and to prevent locking the render thread during update */
-	private IInstancedVboContainer altInstancedVbos = WRAPPER_FACTORY.createInstancedVboContainer();
+	private IGenericObjectVertexBufferContainer altInstancedVbos = WRAPPER_FACTORY.createInstancedVboContainer();
 	
 	
 	
@@ -197,12 +196,12 @@ public class RenderableBoxGroup
 	public void tryUpdateInstancedDataAsync()
 	{
 		// if the alt container is done, swap it in
-		if (this.altInstancedVbos.getState() == InstancedVboContainer.EState.READY_TO_UPLOAD)
+		if (this.altInstancedVbos.getState() == NativeGlGenericObjectVertexContainer.EState.READY_TO_UPLOAD)
 		{
 			this.altInstancedVbos.uploadDataToGpu();
 			
 			// swap VBO references for rendering
-			IInstancedVboContainer temp = this.instancedVbos;
+			IGenericObjectVertexBufferContainer temp = this.instancedVbos;
 			this.instancedVbos = this.altInstancedVbos;
 			this.altInstancedVbos = temp;
 			
@@ -226,11 +225,11 @@ public class RenderableBoxGroup
 		}
 		
 		// if the alternate container is already updating, don't double-queue it
-		if (this.altInstancedVbos.getState() == InstancedVboContainer.EState.UPDATING_DATA)
+		if (this.altInstancedVbos.getState() == NativeGlGenericObjectVertexContainer.EState.UPDATING_DATA)
 		{
 			return;
 		}
-		this.altInstancedVbos.setState(InstancedVboContainer.EState.UPDATING_DATA);
+		this.altInstancedVbos.setState(NativeGlGenericObjectVertexContainer.EState.UPDATING_DATA);
 		
 		
 		
@@ -254,14 +253,14 @@ public class RenderableBoxGroup
 				catch (Exception e)
 				{
 					LOGGER.error("Unexpected error updating instanced VBO data for: ["+this+"], error: ["+e.getMessage()+"].", e);
-					this.altInstancedVbos.setState(InstancedVboContainer.EState.ERROR);
+					this.altInstancedVbos.setState(NativeGlGenericObjectVertexContainer.EState.ERROR);
 				}
 			});
 		}
 		catch (RejectedExecutionException ignore) 
 		{
 			// the executor was shut down, it should be back up shortly and able to accept new jobs
-			this.altInstancedVbos.setState(InstancedVboContainer.EState.NEW);
+			this.altInstancedVbos.setState(NativeGlGenericObjectVertexContainer.EState.NEW);
 		}
 	}
 	

@@ -17,7 +17,7 @@ import java.util.List;
  * 
  * @see RenderableBoxGroup
  */
-public class InstancedVboContainer implements IInstancedVboContainer
+public class NativeGlGenericObjectVertexContainer implements IGenericObjectVertexBufferContainer
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
@@ -120,7 +120,7 @@ public class InstancedVboContainer implements IInstancedVboContainer
 			this.materialData[i] = box.material;
 		}
 		
-		this.state = InstancedVboContainer.EState.READY_TO_UPLOAD;
+		this.state = NativeGlGenericObjectVertexContainer.EState.READY_TO_UPLOAD;
 	}
 	
 	public void uploadDataToGpu()

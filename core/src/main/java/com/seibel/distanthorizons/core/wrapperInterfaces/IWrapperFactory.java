@@ -21,12 +21,11 @@ package com.seibel.distanthorizons.core.wrapperInterfaces;
 
 import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.render.renderer.generic.IInstancedVboContainer;
+import com.seibel.distanthorizons.core.render.renderer.generic.IGenericObjectVertexBufferContainer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.ILodContainerUniformBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IUniformBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IVertexBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -35,7 +34,6 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 import java.io.IOException;
-import java.util.HashSet;
 
 /**
  * This handles creating abstract wrapper objects.
@@ -109,10 +107,10 @@ public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 	
 	
 	
-	IVertexBufferWrapper createVboWrapper();
+	IVertexBufferWrapper createVboWrapper(String name);
 	ILodContainerUniformBufferWrapper createLodContainerUniformWrapper();
 	
-	IInstancedVboContainer createInstancedVboContainer();
+	IGenericObjectVertexBufferContainer createInstancedVboContainer();
 	
 	IMcGenericRenderer createGenericRenderer();
 	

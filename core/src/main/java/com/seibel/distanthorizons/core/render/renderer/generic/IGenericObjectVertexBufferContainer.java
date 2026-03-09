@@ -4,7 +4,7 @@ import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 
 import java.util.List;
 
-public interface IInstancedVboContainer extends AutoCloseable
+public interface IGenericObjectVertexBufferContainer extends AutoCloseable
 {
 	void uploadDataToGpu();
 	
@@ -34,5 +34,7 @@ public interface IInstancedVboContainer extends AutoCloseable
 	}
 	
 	//endregion
+	
+	
 	
 }

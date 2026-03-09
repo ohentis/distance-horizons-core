@@ -30,7 +30,6 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.ILodContainerUniformBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcLodRenderer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IUniformBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IVertexBufferWrapper;
 import org.lwjgl.system.MemoryUtil;
 
@@ -218,7 +217,7 @@ public class LodBufferContainer implements AutoCloseable
 			// get or create the VBO
 			if (vbos[vboIndex] == null)
 			{
-				vbos[vboIndex] = SingletonInjector.INSTANCE.get(IWrapperFactory.class).createVboWrapper();
+				vbos[vboIndex] = SingletonInjector.INSTANCE.get(IWrapperFactory.class).createVboWrapper("distantHorizons:McLodRenderer");
 			}
 			IVertexBufferWrapper vbo = vbos[vboIndex];
 			
