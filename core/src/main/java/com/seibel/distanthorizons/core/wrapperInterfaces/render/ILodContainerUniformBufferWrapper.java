@@ -21,6 +21,9 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.render;
 
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
 
+/**
+ * @see LodBufferContainer
+ */
 public interface ILodContainerUniformBufferWrapper extends IUniformBufferWrapper
 {
 	
