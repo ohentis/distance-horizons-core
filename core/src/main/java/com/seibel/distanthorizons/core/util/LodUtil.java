@@ -20,8 +20,6 @@
 package com.seibel.distanthorizons.core.util;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.render.vertexFormat.VertexFormats;
-import com.seibel.distanthorizons.core.render.vertexFormat.LodVertexFormat;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 

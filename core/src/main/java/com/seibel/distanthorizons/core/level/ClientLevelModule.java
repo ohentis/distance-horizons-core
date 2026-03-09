@@ -28,7 +28,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.QuadTree.LodQuadTree;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
-import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -54,9 +53,9 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
 	/** 
 	 * This is handled outside of the {@link ClientRenderState} to prevent destroying
-	 * the {@link GenericObjectRenderer} when changing render distances or enabling/disabling rendering. <br><br>
+	 * the {@link IMcGenericRenderer} when changing render distances or enabling/disabling rendering. <br><br>
 	 * 
-	 * Destroying the {@link GenericObjectRenderer} would cause any existing bindings to be 
+	 * Destroying the {@link IMcGenericRenderer} would cause any existing bindings to be 
 	 * erroneously removed.
 	 */
 	public final IMcGenericRenderer genericRenderer = WRAPPER_FACTORY.createGenericRenderer();

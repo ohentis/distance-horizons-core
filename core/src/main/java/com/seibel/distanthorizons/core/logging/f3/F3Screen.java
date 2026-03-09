@@ -31,7 +31,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
-import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
@@ -43,7 +42,6 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.concurrent.ThreadPoolExecutor;
 
 public class F3Screen
 {

@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.file.fullDatafile.V2;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.fullDatafile.IDataSourceUpdateListenerFunc;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
@@ -30,7 +31,6 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
@@ -38,6 +38,7 @@ import com.seibel.distanthorizons.core.sql.repo.FullDataSourceV2Repo;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcDebugRenderer;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -108,7 +109,8 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 		this.updatePropagator = new FullDataUpdatePropagatorV2(this, this.dataUpdater, this.levelId);
 		this.dataMigratorV1 = new DataMigratorV1(this.dataUpdater, this.level, this.levelId, this.saveDir);
 		
-		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
+		IMcDebugRenderer debugRenderer = SingletonInjector.INSTANCE.get(IMcDebugRenderer.class);
+		debugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
 		
 	}
 	
@@ -447,11 +449,10 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 	//===========//
 	
 	@Override
-	public void debugRender(DebugRenderer renderer)
+	public void debugRender(IMcDebugRenderer renderer)
 	{
 		this.dataUpdater.debugRender(renderer);
 		this.updatePropagator.debugRender(renderer);
-		this.dataMigratorV1.debugRender(renderer);
 	}
 	
 	@Override 
