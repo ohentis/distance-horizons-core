@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.core;
 
 import com.github.luben.zstd.ZstdOutputStream;
+import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderObjectFactory;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeRenderEvent;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
@@ -160,13 +161,17 @@ public class Initializer
 		DhApi.Delayed.terrainRepo = DhApiTerrainDataRepo.INSTANCE;
 		DhApi.Delayed.worldProxy = DhApiWorldProxy.INSTANCE;
 		DhApi.Delayed.renderProxy = DhApiRenderProxy.INSTANCE;
-		DhApi.Delayed.customRenderObjectFactory = GenericRenderObjectFactory.INSTANCE;
 		DhApi.Delayed.wrapperFactory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 		if (DhApi.Delayed.wrapperFactory == null)
 		{
-			LOGGER.error("Programmer Error: No ["+IWrapperFactory.class.getSimpleName()+"] assigned to the DhApi.");
+			MC_CLIENT.crashMinecraft("Programmer Error: No ["+IWrapperFactory.class.getSimpleName()+"] assigned to the DhApi.", new Exception());
 		}
 		
+		DhApi.Delayed.customRenderObjectFactory = SingletonInjector.INSTANCE.get(IDhApiCustomRenderObjectFactory.class);
+		if (DhApi.Delayed.customRenderObjectFactory == null)
+		{
+			MC_CLIENT.crashMinecraft("Programmer Error: No ["+IDhApiCustomRenderObjectFactory.class.getSimpleName()+"] assigned to the DhApi.", new Exception());
+		}
 		
 		DhApi.events.bind(DhApiBeforeRenderEvent.class, IgnoredDimensionCsvHandler.INSTANCE);
 		

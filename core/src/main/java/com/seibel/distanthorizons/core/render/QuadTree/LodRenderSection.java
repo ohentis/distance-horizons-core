@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.AbstractDebugWireframeRenderer;
 import com.seibel.distanthorizons.core.render.renderer.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
@@ -60,6 +61,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 {
 	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final AbstractDebugWireframeRenderer DEBUG_RENDERER = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
 	
 	
 	
@@ -135,7 +137,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		this.beaconRenderHandler = this.quadTree.beaconRenderHandler;
 		this.beaconBeamRepo = this.level.getBeaconBeamRepo();
 		
-		DebugRenderer.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus);
+		DEBUG_RENDERER.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus);
 	}
 	
 	//endregion constructor
@@ -443,9 +445,9 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 			if (Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get())
 			{
 				// show that this position has just been disabled
-				DebugRenderer.makeParticle(
-					new DebugRenderer.BoxParticle(
-						new DebugRenderer.Box(this.pos, 128f, 156f, 0.09f, Color.CYAN.darker()),
+				DEBUG_RENDERER.makeParticle(
+					new AbstractDebugWireframeRenderer.BoxParticle(
+						new AbstractDebugWireframeRenderer.Box(this.pos, 128f, 156f, 0.09f, Color.CYAN.darker()),
 						0.2, 32f
 					)
 				);
@@ -504,7 +506,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	//region base methods
 	
 	@Override
-	public void debugRender(DebugRenderer debugRenderer)
+	public void debugRender(AbstractDebugWireframeRenderer debugRenderer)
 	{
 		Color color = Color.red;
 		if (this.renderingEnabled)
@@ -530,7 +532,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		int levelHeightRange = (levelMaxY - levelMinY);
 		int maxY = levelMaxY - (levelHeightRange / 2);
 		
-		debugRenderer.renderBox(new DebugRenderer.Box(this.pos, levelMinY, maxY, 0.01f, color));
+		debugRenderer.render(new AbstractDebugWireframeRenderer.Box(this.pos, levelMinY, maxY, 0.01f, color));
 	}
 	
 	@Override
@@ -546,14 +548,14 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 	@Override
 	public void close()
 	{
-		DebugRenderer.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus);
+		DEBUG_RENDERER.unregister(this, Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus);
 		
 		if (Config.Client.Advanced.Debugging.DebugWireframe.showRenderSectionStatus.get())
 		{
 			// show a particle for the closed section
-			DebugRenderer.makeParticle(
-				new DebugRenderer.BoxParticle(
-					new DebugRenderer.Box(this.pos, 128f, 156f, 0.09f, Color.RED.darker()),
+			DEBUG_RENDERER.makeParticle(
+				new AbstractDebugWireframeRenderer.BoxParticle(
+					new AbstractDebugWireframeRenderer.Box(this.pos, 128f, 156f, 0.09f, Color.RED.darker()),
 					0.5, 32f
 				)
 			);

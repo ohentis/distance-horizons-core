@@ -24,9 +24,8 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
-import com.seibel.distanthorizons.core.render.glObject.GLProxy;
+import com.seibel.distanthorizons.core.render.RenderThreadTaskHandler;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.api.enums.config.EDhApiGpuUploadMethod;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.ILodContainerUniformBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcLodRenderer;
@@ -49,13 +48,6 @@ public class LodBufferContainer implements AutoCloseable
 	
 	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	
-	/** number of bytes a single quad takes */
-	public static final int QUADS_BYTE_SIZE = LodUtil.DH_VERTEX_FORMAT.getByteSize() * 4;
-	/** how big a single VBO can be in bytes */
-	public static final int MAX_VBO_BYTE_SIZE = 10 * 1024 * 1024; // 10 MB
-	public static final int MAX_QUADS_PER_BUFFER = MAX_VBO_BYTE_SIZE / QUADS_BYTE_SIZE;
-	public static final int FULL_SIZED_BUFFER = MAX_QUADS_PER_BUFFER * QUADS_BYTE_SIZE;
-	
 	
 	/** the position closest to minimum X/Z infinity and the level's lowest Y */
 	public final DhBlockPos minCornerBlockPos;
@@ -75,6 +67,7 @@ public class LodBufferContainer implements AutoCloseable
 	//==============//
 	// constructors //
 	//==============//
+	//region
 	
 	public LodBufferContainer(long pos, DhBlockPos minCornerBlockPos)
 	{
@@ -86,11 +79,14 @@ public class LodBufferContainer implements AutoCloseable
 		this.uniformContainer.createUniformData(this);
 	}
 	
+	//endregion
+	
 	
 	
 	//==================//
 	// buffer uploading //
 	//==================//
+	//region
 	
 	/** Should be run on a DH thread. */
 	public synchronized CompletableFuture<LodBufferContainer> makeAndUploadBuffersAsync(LodQuadBuilder builder)
@@ -128,12 +124,12 @@ public class LodBufferContainer implements AutoCloseable
 		ArrayList<ByteBuffer> opaqueBuffers = builder.makeOpaqueVertexBuffers();
 		ArrayList<ByteBuffer> transparentBuffers = builder.makeTransparentVertexBuffers();
 		
-		this.vbos = resizeBuffer(this.vbos, opaqueBuffers.size());
-		this.vbosTransparent = resizeBuffer(this.vbosTransparent, transparentBuffers.size());
+		this.vbos = resizeBufferArray(this.vbos, opaqueBuffers.size());
+		this.vbosTransparent = resizeBufferArray(this.vbosTransparent, transparentBuffers.size());
 		
 		
 		// upload on MC's render thread
-		GLProxy.queueRunningOnRenderThread(() ->
+		RenderThreadTaskHandler.INSTANCE.queueRunningOnRenderThread(() ->
 		{
 			try
 			{
@@ -144,11 +140,9 @@ public class LodBufferContainer implements AutoCloseable
 					throw new InterruptedException();
 				}
 				
-				EDhApiGpuUploadMethod gpuUploadMethod = GLProxy.getInstance().getGpuUploadMethod();
-				
 				// upload on the render thread
-				uploadBuffersDirect(this.vbos, opaqueBuffers, gpuUploadMethod);
-				uploadBuffersDirect(this.vbosTransparent, transparentBuffers, gpuUploadMethod);
+				uploadBuffers(this.vbos, opaqueBuffers);
+				uploadBuffers(this.vbosTransparent, transparentBuffers);
 				this.buffersUploaded = true;
 				
 				// success
@@ -182,7 +176,7 @@ public class LodBufferContainer implements AutoCloseable
 		
 		return future;
 	}
-	private static IVertexBufferWrapper[] resizeBuffer(IVertexBufferWrapper[] vbos, int newSize)
+	private static IVertexBufferWrapper[] resizeBufferArray(IVertexBufferWrapper[] vbos, int newSize)
 	{
 		if (vbos.length == newSize)
 		{
@@ -203,9 +197,7 @@ public class LodBufferContainer implements AutoCloseable
 		}
 		return newVbos;
 	}
-	private static void uploadBuffersDirect(
-		IVertexBufferWrapper[] vbos, ArrayList<ByteBuffer> byteBuffers, 
-			EDhApiGpuUploadMethod uploadMethod) throws InterruptedException
+	private static void uploadBuffers(IVertexBufferWrapper[] vbos, ArrayList<ByteBuffer> byteBuffers) throws InterruptedException
 	{
 		int vboIndex = 0;
 		for (int i = 0; i < byteBuffers.size(); i++)
@@ -227,7 +219,7 @@ public class LodBufferContainer implements AutoCloseable
 			
 			ByteBuffer buffer = byteBuffers.get(i);
 			int size = buffer.limit() - buffer.position();
-			int vertexCount = size / lodRenderer.getVertexSize();
+			int vertexCount = size / lodRenderer.getVertexByteSize();
 			
 			try
 			{
@@ -249,11 +241,14 @@ public class LodBufferContainer implements AutoCloseable
 		}
 	}
 	
+	//endregion
+	
 	
 	
 	//================//
 	// helper methods //
 	//================//
+	//region
 	
 	/** can be used when debugging */
 	public boolean hasNonNullVbos() { return this.vbos != null || this.vbosTransparent != null; }
@@ -278,11 +273,14 @@ public class LodBufferContainer implements AutoCloseable
 	
 	public boolean uploadInProgress() { return this.uploadFutureRef.get() != null; }
 	
+	//endregion
+	
 	
 	
 	//================//
 	// base overrides //
 	//================//
+	//region
 	
 	/**
 	 * This method is called when object is no longer in use.
@@ -295,7 +293,7 @@ public class LodBufferContainer implements AutoCloseable
 	{
 		this.buffersUploaded = false;
 		
-		GLProxy.queueRunningOnRenderThread(() -> 
+		RenderThreadTaskHandler.INSTANCE.queueRunningOnRenderThread(() -> 
 		{
 			for (IVertexBufferWrapper buffer : this.vbos)
 			{
@@ -316,5 +314,9 @@ public class LodBufferContainer implements AutoCloseable
 			this.uniformContainer.close();
 		});
 	}
+	
+	//endregion
+	
+	
 	
 }

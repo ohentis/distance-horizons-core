@@ -32,6 +32,7 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcLodRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.lwjgl.system.MemoryUtil;
@@ -306,7 +307,7 @@ public class LodQuadBuilder
 				// create a new buffer
 				if (buffer == null || !buffer.hasRemaining())
 				{
-					buffer = MemoryUtil.memAlloc(LodBufferContainer.FULL_SIZED_BUFFER);
+					buffer = MemoryUtil.memAlloc(getMaxBufferByteSize());
 					byteBufferList.add(buffer);
 				}
 				
@@ -481,17 +482,26 @@ public class LodQuadBuilder
 		return i;
 	}
 	
-	/** Returns how many GpuBuffers will be needed to render opaque quads in this builder. */
-	public int getCurrentNeededOpaqueVertexBufferCount() { return MathUtil.ceilDiv(this.getCurrentOpaqueQuadsCount(), LodBufferContainer.MAX_QUADS_PER_BUFFER); }
-	/** Returns how many GpuBuffers will be needed to render transparent quads in this builder. */
-	public int getCurrentNeededTransparentVertexBufferCount()
+	private static int maxBufferByteSize = -1;
+	public static int getMaxBufferByteSize()
 	{
-		if (!this.doTransparency)
+		if (maxBufferByteSize != -1)
 		{
-			return 0;
+			return maxBufferByteSize;
 		}
 		
-		return MathUtil.ceilDiv(this.getCurrentTransparentQuadsCount(), LodBufferContainer.MAX_QUADS_PER_BUFFER);
+		IMcLodRenderer LOD_RENDERER = SingletonInjector.INSTANCE.get(IMcLodRenderer.class);
+		
+		/** number of bytes a single quad takes */
+		int QUADS_BYTE_SIZE = LOD_RENDERER.getVertexByteSize() * 4;
+		/** how big a single VBO can be in bytes */
+		int MAX_VBO_BYTE_SIZE = 10 * 1024 * 1024; // 10 MB
+		int MAX_QUADS_PER_BUFFER = MAX_VBO_BYTE_SIZE / QUADS_BYTE_SIZE;
+		int FULL_SIZED_BUFFER = MAX_QUADS_PER_BUFFER * QUADS_BYTE_SIZE;
+		
+		maxBufferByteSize = FULL_SIZED_BUFFER;
+		
+		return FULL_SIZED_BUFFER;
 	}
 	
 	///endregion

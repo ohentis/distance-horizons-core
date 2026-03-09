@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.core.render.renderer;
 
-import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
@@ -28,6 +27,7 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
+import com.seibel.distanthorizons.core.render.RenderParams;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -148,6 +148,7 @@ public class BlazeLodRenderer
 		IMcSsaoRenderer ssaoRenderer = SingletonInjector.INSTANCE.get(IMcSsaoRenderer.class);
 		IMcFogRenderer fogRenderer = SingletonInjector.INSTANCE.get(IMcFogRenderer.class);
 		IMcFarFadeRenderer farFadeRenderer = SingletonInjector.INSTANCE.get(IMcFarFadeRenderer.class);
+		AbstractDebugWireframeRenderer debugWireframeRenderer = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
 		
 		
 		
@@ -231,7 +232,7 @@ public class BlazeLodRenderer
 				profiler.popPush("Debug wireframes");
 
 				// Note: this can be very slow if a lot of boxes are being rendered
-				DebugRenderer.INSTANCE.render(renderParams);
+				debugWireframeRenderer.renderPass(renderParams);
 			}
 			
 			profiler.popPush("Apply to MC");
@@ -258,8 +259,8 @@ public class BlazeLodRenderer
 
 					Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
 					combinedMatrix.multiply(renderParams.dhModelViewMatrix);
-
-					FogRenderer.INSTANCE.render(combinedMatrix, renderParams.partialTicks);
+					
+					fogRenderer.render(combinedMatrix, renderParams.partialTicks);
 				}
 			}
 		}

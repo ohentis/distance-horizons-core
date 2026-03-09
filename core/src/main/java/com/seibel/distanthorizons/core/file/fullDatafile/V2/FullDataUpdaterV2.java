@@ -7,11 +7,11 @@ import com.seibel.distanthorizons.core.file.fullDatafile.IDataSourceUpdateListen
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
+import com.seibel.distanthorizons.core.render.renderer.AbstractDebugWireframeRenderer;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.threading.PositionalLockProvider;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcDebugRenderer;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -225,13 +225,13 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 	//===========//
 	
 	@Override
-	public void debugRender(IMcDebugRenderer renderer)
+	public void debugRender(AbstractDebugWireframeRenderer renderer)
 	{
 		this.lockedPosSet
-				.forEach((pos) -> { renderer.render(new IMcDebugRenderer.Box(pos, -32f, 74f, 0.15f, Color.PINK)); });
+				.forEach((pos) -> { renderer.render(new AbstractDebugWireframeRenderer.Box(pos, -32f, 74f, 0.15f, Color.PINK)); });
 		
 		this.queuedUpdateCountsByPos
-				.forEach((pos, updateCountRef) -> { renderer.render(new IMcDebugRenderer.Box(pos, -32f, 80f + (updateCountRef.get() * 16f), 0.20f, Color.WHITE)); });
+				.forEach((pos, updateCountRef) -> { renderer.render(new AbstractDebugWireframeRenderer.Box(pos, -32f, 80f + (updateCountRef.get() * 16f), 0.20f, Color.WHITE)); });
 	}
 	
 	@Override

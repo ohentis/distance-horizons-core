@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.render.renderer.AbstractDebugWireframeRenderer;
 import com.seibel.distanthorizons.core.sql.repo.AbstractDhRepo;
 import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
@@ -57,6 +57,7 @@ public class SharedApi
 	/** will be null on the server-side */
 	@Nullable
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final AbstractDebugWireframeRenderer DEBUG_WIREFRAME_RENDERER = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
 	
 	public static final WorldChunkUpdateManager WORLD_CHUNK_UPDATE_MANAGER = WorldChunkUpdateManager.INSTANCE; // local fariable for quick access
 	
@@ -105,7 +106,8 @@ public class SharedApi
 		else
 		{
 			ThreadPoolUtil.shutdownThreadPools();
-			DebugRenderer.clearRenderables();
+			
+			DEBUG_WIREFRAME_RENDERER.clearRenderables();
 			
 			if (MC_RENDER != null)
 			{
