@@ -35,9 +35,7 @@ public abstract class AbstractDebugWireframeRenderer implements IBindable
 	protected final PriorityBlockingQueue<BoxParticle> particles = new PriorityBlockingQueue<>();
 	
 	// used when rendering
-	@Deprecated // all rendering should be done in a single pass
 	protected Mat4f dhMvmProjMatrixThisFrame;
-	@Deprecated // all rendering should be done in a single pass
 	protected Vec3f camPosFloatThisFrame;
 	
 	
@@ -316,7 +314,6 @@ public abstract class AbstractDebugWireframeRenderer implements IBindable
 	}
 	
 	//endregion
-	
 	
 	
 	
