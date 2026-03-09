@@ -68,9 +68,9 @@ public class RenderableBoxGroup
 	public Consumer<DhApiRenderParam> afterRenderFunc;
 	
 	// instance data
-	public IGenericObjectVertexBufferContainer instancedVbos = WRAPPER_FACTORY.createInstancedVboContainer();
+	public IGenericObjectVertexBufferContainer vertexBufferContainer = WRAPPER_FACTORY.createInstancedVboContainer();
 	/** double buffering for thread safety and to prevent locking the render thread during update */
-	private IGenericObjectVertexBufferContainer altInstancedVbos = WRAPPER_FACTORY.createInstancedVboContainer();
+	private IGenericObjectVertexBufferContainer altVertexBufferContainer = WRAPPER_FACTORY.createInstancedVboContainer();
 	
 	
 	
@@ -196,14 +196,14 @@ public class RenderableBoxGroup
 	public void tryUpdateInstancedDataAsync()
 	{
 		// if the alt container is done, swap it in
-		if (this.altInstancedVbos.getState() == NativeGlGenericObjectVertexContainer.EState.READY_TO_UPLOAD)
+		if (this.altVertexBufferContainer.getState() == NativeGlGenericObjectVertexContainer.EState.READY_TO_UPLOAD)
 		{
-			this.altInstancedVbos.uploadDataToGpu();
+			this.altVertexBufferContainer.uploadDataToGpu();
 			
 			// swap VBO references for rendering
-			IGenericObjectVertexBufferContainer temp = this.instancedVbos;
-			this.instancedVbos = this.altInstancedVbos;
-			this.altInstancedVbos = temp;
+			IGenericObjectVertexBufferContainer temp = this.vertexBufferContainer;
+			this.vertexBufferContainer = this.altVertexBufferContainer;
+			this.altVertexBufferContainer = temp;
 			
 			this.vertexDataDirty = false;
 			
@@ -225,11 +225,11 @@ public class RenderableBoxGroup
 		}
 		
 		// if the alternate container is already updating, don't double-queue it
-		if (this.altInstancedVbos.getState() == NativeGlGenericObjectVertexContainer.EState.UPDATING_DATA)
+		if (this.altVertexBufferContainer.getState() == NativeGlGenericObjectVertexContainer.EState.UPDATING_DATA)
 		{
 			return;
 		}
-		this.altInstancedVbos.setState(NativeGlGenericObjectVertexContainer.EState.UPDATING_DATA);
+		this.altVertexBufferContainer.setState(NativeGlGenericObjectVertexContainer.EState.UPDATING_DATA);
 		
 		
 		
@@ -248,19 +248,19 @@ public class RenderableBoxGroup
 			{
 				try
 				{
-					this.altInstancedVbos.updateVertexData(this.uploadBoxList);
+					this.altVertexBufferContainer.updateVertexData(this.uploadBoxList);
 				}
 				catch (Exception e)
 				{
 					LOGGER.error("Unexpected error updating instanced VBO data for: ["+this+"], error: ["+e.getMessage()+"].", e);
-					this.altInstancedVbos.setState(NativeGlGenericObjectVertexContainer.EState.ERROR);
+					this.altVertexBufferContainer.setState(NativeGlGenericObjectVertexContainer.EState.ERROR);
 				}
 			});
 		}
 		catch (RejectedExecutionException ignore) 
 		{
 			// the executor was shut down, it should be back up shortly and able to accept new jobs
-			this.altInstancedVbos.setState(NativeGlGenericObjectVertexContainer.EState.NEW);
+			this.altVertexBufferContainer.setState(NativeGlGenericObjectVertexContainer.EState.NEW);
 		}
 	}
 	
@@ -349,8 +349,8 @@ public class RenderableBoxGroup
 	{
 		GLProxy.queueRunningOnRenderThread(() ->
 		{
-			this.instancedVbos.close();
-			this.altInstancedVbos.close();
+			this.vertexBufferContainer.close();
+			this.altVertexBufferContainer.close();
 		});
 	}
 	

@@ -475,7 +475,7 @@ public class GenericObjectRenderer implements IMcGenericRenderer
 				boxGroup.tryUpdateInstancedDataAsync();	
 				
 				// skip groups that haven't been uploaded yet
-				if (boxGroup.instancedVbos.getState() != NativeGlGenericObjectVertexContainer.EState.RENDER)
+				if (boxGroup.vertexBufferContainer.getState() != NativeGlGenericObjectVertexContainer.EState.RENDER)
 				{
 					continue;
 				}
@@ -557,7 +557,7 @@ public class GenericObjectRenderer implements IMcGenericRenderer
 		// Bind instance data //
 		profiler.popPush("binding");
 		
-		NativeGlGenericObjectVertexContainer container = (NativeGlGenericObjectVertexContainer)(boxGroup.instancedVbos);
+		NativeGlGenericObjectVertexContainer container = (NativeGlGenericObjectVertexContainer)(boxGroup.vertexBufferContainer);
 		
 		GL32.glBindBuffer(GL32.GL_ARRAY_BUFFER, container.color);
 		GL32.glEnableVertexAttribArray(1);
