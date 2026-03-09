@@ -20,9 +20,12 @@
 package com.seibel.distanthorizons.core.wrapperInterfaces.render;
 
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
-import com.seibel.distanthorizons.core.render.renderer.RenderParams;
 
 public interface ILodContainerUniformBufferWrapper extends IUniformBufferWrapper
 {
-	void createBufferData(RenderParams renderEventParam, LodBufferContainer bufferContainer);
+	
+	void createUniformData(LodBufferContainer bufferContainer);
+	
+	void tryUpload();
+	
 }

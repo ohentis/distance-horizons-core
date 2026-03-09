@@ -66,7 +66,7 @@ public class LodBufferContainer implements AutoCloseable
 	public IVertexBufferWrapper[] vbos;
 	public IVertexBufferWrapper[] vbosTransparent;
 	
-	public ILodContainerUniformBufferWrapper uniforms = WRAPPER_FACTORY.createLodContainerUniformWrapper();
+	public ILodContainerUniformBufferWrapper uniformContainer = WRAPPER_FACTORY.createLodContainerUniformWrapper();
 	
 	private final AtomicReference<CompletableFuture<LodBufferContainer>> uploadFutureRef = new AtomicReference<>(null);
 	
@@ -82,6 +82,8 @@ public class LodBufferContainer implements AutoCloseable
 		this.minCornerBlockPos = minCornerBlockPos;
 		this.vbos = new IVertexBufferWrapper[0];
 		this.vbosTransparent = new IVertexBufferWrapper[0];
+		
+		this.uniformContainer.createUniformData(this);
 	}
 	
 	
@@ -311,7 +313,7 @@ public class LodBufferContainer implements AutoCloseable
 				}
 			}
 			
-			this.uniforms.close();
+			this.uniformContainer.close();
 		});
 	}
 	

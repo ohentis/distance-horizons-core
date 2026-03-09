@@ -24,6 +24,7 @@ layout (std140) uniform vertSharedUniformBlock
     float uMircoOffset;
     float uEarthRadius;
     
+    vec3 uCameraPos;
     mat4 uCombinedMatrix;
 };
 
@@ -36,7 +37,7 @@ void main()
 {
     vPos = vPosition; // This is so it can be passed to the fragment shader
     
-    vertexWorldPos = vPosition.xyz + uModelOffset;
+    vertexWorldPos = vPosition.xyz + (uModelOffset - uCameraPos);
     
     vertexYPos = vPosition.y + uWorldYOffset;
     
