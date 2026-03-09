@@ -38,7 +38,7 @@ import com.seibel.distanthorizons.core.sql.repo.ChunkHashRepo;
 import com.seibel.distanthorizons.core.util.KeyedLockContainer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
@@ -118,7 +118,7 @@ public abstract class AbstractDhLevel implements IDhLevel
 	/** handles any setup that needs the repos to be created */
 	protected void runRepoReliantSetup()
 	{
-		IMcGenericRenderer genericRenderer = this.getGenericRenderer();
+		IDhGenericRenderer genericRenderer = this.getGenericRenderer();
 		if (genericRenderer != null)
 		{
 			// only client levels can render clouds

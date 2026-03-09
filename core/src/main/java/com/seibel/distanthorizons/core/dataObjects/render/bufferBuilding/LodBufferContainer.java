@@ -27,9 +27,9 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.render.RenderThreadTaskHandler;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.ILodContainerUniformBufferWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcLodRenderer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IVertexBufferWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.objects.ILodContainerUniformBufferWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhTerrainRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.objects.IVertexBufferWrapper;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -215,7 +215,7 @@ public class LodBufferContainer implements AutoCloseable
 			}
 			IVertexBufferWrapper vbo = vbos[vboIndex];
 			
-			IMcLodRenderer lodRenderer = SingletonInjector.INSTANCE.get(IMcLodRenderer.class);
+			IDhTerrainRenderer lodRenderer = SingletonInjector.INSTANCE.get(IDhTerrainRenderer.class);
 			
 			ByteBuffer buffer = byteBuffers.get(i);
 			int size = buffer.limit() - buffer.position();

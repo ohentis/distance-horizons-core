@@ -34,7 +34,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.logging.DhLogger;
@@ -83,7 +83,7 @@ public class CloudRenderHandler
 			= new IDhApiRenderableBoxGroup[(CLOUD_INSTANCE_RADIUS_COUNT * 2) + 1][(CLOUD_INSTANCE_RADIUS_COUNT * 2) + 1];
 	
 	private final IDhClientLevel level;
-	private final IMcGenericRenderer renderer;
+	private final IDhGenericRenderer renderer;
 	
 	/** cached array so we don't need to re-create it each frame for each cloud group */
 	private final Vec3d[] cullingCorners = new Vec3d[]
@@ -105,7 +105,7 @@ public class CloudRenderHandler
 	//=============//
 	//region
 	
-	public CloudRenderHandler(IDhClientLevel level, IMcGenericRenderer renderer) 
+	public CloudRenderHandler(IDhClientLevel level, IDhGenericRenderer renderer) 
 	{
 		this.level = level;
 		this.renderer = renderer;

@@ -17,13 +17,17 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.wrapperInterfaces.render;
+package com.seibel.distanthorizons.core.wrapperInterfaces.render.objects;
 
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
-public interface IMcTestRenderer extends IBindable
+import java.nio.ByteBuffer;
+
+public interface IVertexBufferWrapper extends IBindable, AutoCloseable
 {
+	void upload(ByteBuffer buffer, int vertexCount);
 	
-	void render();
+	@Override
+	void close();
 	
 }

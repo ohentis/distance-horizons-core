@@ -17,18 +17,14 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.wrapperInterfaces.render;
+package com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass;
 
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
+import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
+import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
-/**
- * @see LodBufferContainer
- */
-public interface ILodContainerUniformBufferWrapper extends IUniformBufferWrapper
+public interface IDhSsaoRenderer extends IBindable
 {
 	
-	void createUniformData(LodBufferContainer bufferContainer);
-	
-	void tryUpload();
+	void render(DhApiMat4f dhProjectionMatrix);
 	
 }

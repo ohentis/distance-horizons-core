@@ -35,7 +35,7 @@ import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
 import com.seibel.distanthorizons.core.logging.DhLogger;
@@ -202,7 +202,7 @@ public class F3Screen
 				}
 				
 				// Generic rendering
-				IMcGenericRenderer genericRenderer = level.getGenericRenderer();
+				IDhGenericRenderer genericRenderer = level.getGenericRenderer();
 				if (genericRenderer != null)
 				{
 					messageList.add(genericRenderer.getVboRenderDebugMenuString());

@@ -17,17 +17,13 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.wrapperInterfaces.render;
+package com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass;
 
-import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
-import com.seibel.distanthorizons.core.render.RenderParams;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
-public interface IMcGenericRenderer extends IDhApiCustomRenderRegister, IBindable
+public interface IDhTestTriangleRenderer extends IBindable
 {
-	void render(RenderParams renderEventParam, IProfilerWrapper profiler, boolean renderingWithSsao);
 	
-	String getVboRenderDebugMenuString();
+	void render();
 	
 }

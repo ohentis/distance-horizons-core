@@ -44,7 +44,7 @@ import com.seibel.distanthorizons.core.util.objects.quadTree.QuadNode;
 import com.seibel.distanthorizons.core.util.objects.quadTree.QuadTree;
 import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -145,7 +145,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		this.fullDataSourceProvider = fullDataSourceProvider;
 		this.blockRenderDistanceDiameter = viewDiameterInBlocks;
 		
-		IMcGenericRenderer genericObjectRenderer = this.level.getGenericRenderer();
+		IDhGenericRenderer genericObjectRenderer = this.level.getGenericRenderer();
 		this.beaconRenderHandler = (genericObjectRenderer != null) ? new BeaconRenderHandler(genericObjectRenderer) : null;
 		
 		Config.Common.WorldGenerator.enableDistantGeneration.addListener(this);

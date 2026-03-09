@@ -17,16 +17,15 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.wrapperInterfaces.render;
+package com.seibel.distanthorizons.core.wrapperInterfaces.render.objects;
 
-import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
-public interface IMcSsaoRenderer extends IBindable
+public interface IUniformBufferWrapper extends IBindable, AutoCloseable
 {
+	void upload();
 	
-	void render(DhApiMat4f dhProjectionMatrix);
+	@Override
+	void close();
 	
 }

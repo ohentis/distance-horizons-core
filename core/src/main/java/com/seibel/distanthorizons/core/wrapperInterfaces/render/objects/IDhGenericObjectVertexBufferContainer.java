@@ -1,10 +1,10 @@
-package com.seibel.distanthorizons.core.wrapperInterfaces.render;
+package com.seibel.distanthorizons.core.wrapperInterfaces.render.objects;
 
 import com.seibel.distanthorizons.api.objects.render.DhApiRenderableBox;
 
 import java.util.List;
 
-public interface IGenericObjectVertexBufferContainer extends AutoCloseable
+public interface IDhGenericObjectVertexBufferContainer extends AutoCloseable
 {
 	void uploadDataToGpu();
 	

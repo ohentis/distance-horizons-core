@@ -40,8 +40,8 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcVanillaFadeRenderer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcTestRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhVanillaFadeRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhTestTriangleRenderer;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
@@ -621,14 +621,14 @@ public class ClientApi
 			}
 			else
 			{
-				IMcTestRenderer testRenderer = SingletonInjector.INSTANCE.get(IMcTestRenderer.class);
+				IDhTestTriangleRenderer testRenderer = SingletonInjector.INSTANCE.get(IDhTestTriangleRenderer.class);
 				if (testRenderer != null)
 				{
 					testRenderer.render();
 				}
 				else
 				{
-					RATE_LIMITED_LOGGER.warn("Unable to find singleton ["+IMcTestRenderer.class.getSimpleName()+"]");
+					RATE_LIMITED_LOGGER.warn("Unable to find singleton ["+ IDhTestTriangleRenderer.class.getSimpleName()+"]");
 				}
 			}
 		}
@@ -666,7 +666,7 @@ public class ClientApi
 	 */
 	public void renderFadeOpaque()
 	{
-		IMcVanillaFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IMcVanillaFadeRenderer.class);
+		IDhVanillaFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IDhVanillaFadeRenderer.class);
 		if (fadeRenderer == null)
 		{
 			return;
@@ -695,7 +695,7 @@ public class ClientApi
 	 */
 	public void renderFadeTransparent()
 	{
-		IMcVanillaFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IMcVanillaFadeRenderer.class);
+		IDhVanillaFadeRenderer fadeRenderer = SingletonInjector.INSTANCE.get(IDhVanillaFadeRenderer.class);
 		if (fadeRenderer == null)
 		{
 			return;

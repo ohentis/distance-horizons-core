@@ -23,10 +23,10 @@ import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IGenericObjectVertexBufferContainer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.ILodContainerUniformBufferWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IVertexBufferWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.objects.IDhGenericObjectVertexBufferContainer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.objects.ILodContainerUniformBufferWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.objects.IVertexBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration.IBatchGeneratorEnvironmentWrapper;
@@ -110,8 +110,8 @@ public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 	IVertexBufferWrapper createVboWrapper(String name);
 	ILodContainerUniformBufferWrapper createLodContainerUniformWrapper();
 	
-	IGenericObjectVertexBufferContainer createInstancedVboContainer();
+	IDhGenericObjectVertexBufferContainer createInstancedVboContainer();
 	
-	IMcGenericRenderer createGenericRenderer();
+	IDhGenericRenderer createGenericRenderer();
 	
 }

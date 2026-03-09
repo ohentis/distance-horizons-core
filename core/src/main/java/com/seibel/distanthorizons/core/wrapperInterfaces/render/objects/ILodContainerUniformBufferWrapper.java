@@ -17,17 +17,18 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.wrapperInterfaces.render;
+package com.seibel.distanthorizons.core.wrapperInterfaces.render.objects;
 
-import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
+import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
 
-import java.nio.ByteBuffer;
-
-public interface IVertexBufferWrapper extends IBindable, AutoCloseable
+/**
+ * @see LodBufferContainer
+ */
+public interface ILodContainerUniformBufferWrapper extends IUniformBufferWrapper
 {
-	void upload(ByteBuffer buffer, int vertexCount);
 	
-	@Override
-	void close();
+	void createUniformData(LodBufferContainer bufferContainer);
+	
+	void tryUpload();
 	
 }

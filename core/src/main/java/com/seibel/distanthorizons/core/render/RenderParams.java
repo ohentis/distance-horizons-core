@@ -17,7 +17,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftCli
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 
 /**
@@ -40,7 +40,7 @@ public class RenderParams extends DhApiRenderParam
 	public IClientLevelWrapper clientLevelWrapper;
 	public ILightMapWrapper lightmap;
 	public RenderBufferHandler renderBufferHandler;
-	public IMcGenericRenderer genericRenderer;
+	public IDhGenericRenderer genericRenderer;
 	public Vec3d exactCameraPosition;
 	/** @see DhRenderState#vanillaFogEnabled */
 	public boolean vanillaFogEnabled;

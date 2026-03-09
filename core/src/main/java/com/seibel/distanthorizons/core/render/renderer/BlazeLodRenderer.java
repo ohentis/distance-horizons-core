@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.*;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.*;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 
 /**
@@ -111,7 +111,7 @@ public class BlazeLodRenderer
 		}
 		
 		RenderBufferHandler renderBufferHandler = renderParams.renderBufferHandler;
-		IMcGenericRenderer genericRenderer = renderParams.genericRenderer;
+		IDhGenericRenderer genericRenderer = renderParams.genericRenderer;
 		
 		
 		
@@ -144,10 +144,10 @@ public class BlazeLodRenderer
 			renderBufferHandler.buildRenderList(renderParams);
 		}
 		
-		IMcLodRenderer lodRenderer = SingletonInjector.INSTANCE.get(IMcLodRenderer.class);
-		IMcSsaoRenderer ssaoRenderer = SingletonInjector.INSTANCE.get(IMcSsaoRenderer.class);
-		IMcFogRenderer fogRenderer = SingletonInjector.INSTANCE.get(IMcFogRenderer.class);
-		IMcFarFadeRenderer farFadeRenderer = SingletonInjector.INSTANCE.get(IMcFarFadeRenderer.class);
+		IDhTerrainRenderer lodRenderer = SingletonInjector.INSTANCE.get(IDhTerrainRenderer.class);
+		IDhSsaoRenderer ssaoRenderer = SingletonInjector.INSTANCE.get(IDhSsaoRenderer.class);
+		IDhFogRenderer fogRenderer = SingletonInjector.INSTANCE.get(IDhFogRenderer.class);
+		IDhFarFadeRenderer farFadeRenderer = SingletonInjector.INSTANCE.get(IDhFarFadeRenderer.class);
 		AbstractDebugWireframeRenderer debugWireframeRenderer = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
 		
 		
@@ -291,7 +291,7 @@ public class BlazeLodRenderer
 	//===============//
 	//region
 	
-	private void renderLodPass(IMcLodRenderer lodRenderer, RenderBufferHandler lodBufferHandler, RenderParams renderEventParam, boolean opaquePass, IProfilerWrapper profilerWrapper)
+	private void renderLodPass(IDhTerrainRenderer lodRenderer, RenderBufferHandler lodBufferHandler, RenderParams renderEventParam, boolean opaquePass, IProfilerWrapper profilerWrapper)
 	{
 		//===========//
 		// rendering //

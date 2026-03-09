@@ -17,27 +17,15 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.wrapperInterfaces.render;
+package com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass;
 
-import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
-import com.seibel.distanthorizons.core.render.RenderParams;
-import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
-public interface IMcLodRenderer extends IBindable
+public interface IDhVanillaFadeRenderer extends IBindable
 {
-	void render(
-		RenderParams renderEventParam, boolean opaquePass,
-		SortedArraySet<LodBufferContainer> bufferContainers,
-		IProfilerWrapper profiler);
 	
-	@Deprecated // TODO put somewhere else
-	int getVertexByteSize();
-	
-	// TODO should these go somewhere else?
-	void applyToMcTexture();
-	void clearDepth();
-	void clearColor();
+	void render(Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, IClientLevelWrapper level);
 	
 }

@@ -40,7 +40,7 @@ import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV2DTO;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.IMcGenericRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.jetbrains.annotations.NotNull;
@@ -296,7 +296,7 @@ public class DhClientLevel extends AbstractDhLevel implements IDhClientLevel
 	public ISaveStructure getSaveStructure() { return this.saveStructure; }
 	
 	@Override
-	public IMcGenericRenderer getGenericRenderer() { return this.clientside.genericRenderer; }
+	public IDhGenericRenderer getGenericRenderer() { return this.clientside.genericRenderer; }
 	@Override
 	public RenderBufferHandler getRenderBufferHandler()
 	{

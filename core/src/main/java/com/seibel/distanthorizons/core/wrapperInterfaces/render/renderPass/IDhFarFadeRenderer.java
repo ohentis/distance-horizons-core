@@ -17,12 +17,12 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.core.wrapperInterfaces.render;
+package com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass;
 
 import com.seibel.distanthorizons.core.render.RenderParams;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
-public interface IMcFarFadeRenderer extends IBindable
+public interface IDhFarFadeRenderer extends IBindable
 {
 	
 	void render(RenderParams renderParams);
