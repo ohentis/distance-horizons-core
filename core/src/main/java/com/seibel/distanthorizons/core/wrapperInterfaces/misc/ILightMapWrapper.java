@@ -27,7 +27,5 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
  */
 public interface ILightMapWrapper extends IBindable
 {
-	void bind();
-	void unbind();
 	
 }
