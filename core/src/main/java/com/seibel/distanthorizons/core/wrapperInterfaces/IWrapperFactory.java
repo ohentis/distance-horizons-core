@@ -110,7 +110,7 @@ public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 	IVertexBufferWrapper createVboWrapper(String name);
 	ILodContainerUniformBufferWrapper createLodContainerUniformWrapper();
 	
-	IDhGenericObjectVertexBufferContainer createInstancedVboContainer();
+	IDhGenericObjectVertexBufferContainer createGenericObjectVboContainer();
 	
 	IDhGenericRenderer createGenericRenderer();
 	

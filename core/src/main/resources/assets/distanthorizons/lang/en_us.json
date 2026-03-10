@@ -415,7 +415,11 @@
     "Ignored Dimension CSV",
   "distanthorizons.config.client.advanced.graphics.experimental.ignoredDimensionCsv.@tooltip":
     "A comma separated list of dimension resource locations where DH won't render. Example: \"minecraft:the_nether,minecraft:the_end\" \n\nNote: \nSome DH settings will be disabled and/or changed to improve \nvisuals when DH rendering is disabled.",
-
+  "distanthorizons.config.client.advanced.graphics.experimental.renderingApi":
+    "Rendering API",
+  "distanthorizons.config.client.advanced.graphics.experimental.renderingApi.@tooltip":
+    "",
+    
 
 
   "distanthorizons.config.client.advanced.autoUpdater":

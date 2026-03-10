@@ -22,9 +22,8 @@ package com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass;
 import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.core.render.RenderParams;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
-import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
 
-public interface IDhGenericRenderer extends IDhApiCustomRenderRegister, IBindable
+public interface IDhGenericRenderer extends IDhApiCustomRenderRegister
 {
 	void render(RenderParams renderEventParam, IProfilerWrapper profiler, boolean renderingWithSsao);
 	
