@@ -57,7 +57,6 @@ public class SharedApi
 	/** will be null on the server-side */
 	@Nullable
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
-	private static final AbstractDebugWireframeRenderer DEBUG_WIREFRAME_RENDERER = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
 	
 	public static final WorldChunkUpdateManager WORLD_CHUNK_UPDATE_MANAGER = WorldChunkUpdateManager.INSTANCE; // local fariable for quick access
 	
@@ -107,7 +106,9 @@ public class SharedApi
 		{
 			ThreadPoolUtil.shutdownThreadPools();
 			
-			DEBUG_WIREFRAME_RENDERER.clearRenderables();
+			// delayed get because SharedApi will be created before the singleton has been bound 
+			AbstractDebugWireframeRenderer debugWireframeRenderer = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
+			debugWireframeRenderer.clearRenderables();
 			
 			if (MC_RENDER != null)
 			{
