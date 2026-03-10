@@ -40,6 +40,7 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhMetaRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhTerrainRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhVanillaFadeRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhTestTriangleRenderer;
@@ -623,16 +624,18 @@ public class ClientApi
 			{
 				if (!renderingDeferredLayer)
 				{
-					IDhTerrainRenderer lodRenderer = SingletonInjector.INSTANCE.get(IDhTerrainRenderer.class);
+					IDhMetaRenderer metaRenderer = SingletonInjector.INSTANCE.get(IDhMetaRenderer.class);
 					IDhTestTriangleRenderer testRenderer = SingletonInjector.INSTANCE.get(IDhTestTriangleRenderer.class);
 					if (testRenderer != null
-						&& lodRenderer != null)
+						&& metaRenderer != null)
 					{
-						lodRenderer.runRenderPassSetup(renderParams);
+						// meta renderer needed for render state/texture
+						// for setup on some APIs (IE openGL)
+						metaRenderer.runRenderPassSetup(renderParams);
 						
 						testRenderer.render();
 						
-						lodRenderer.runRenderPassCleanup(renderParams);
+						metaRenderer.runRenderPassCleanup(renderParams);
 					}
 					else
 					{

@@ -27,6 +27,7 @@ public abstract class AbstractDhRenderApiDefinition implements IBindable
 	//============//
 	//region
 	
+	public abstract IDhMetaRenderer getMetaRenderer();
 	public abstract IDhTerrainRenderer getTerrainRenderer();
 	public abstract IDhSsaoRenderer getSsaoRenderer();
 	public abstract IDhFogRenderer getFogRenderer();
@@ -39,6 +40,7 @@ public abstract class AbstractDhRenderApiDefinition implements IBindable
 	{
 		SingletonInjector.INSTANCE.bind(AbstractDhRenderApiDefinition.class, this);
 		
+		SingletonInjector.INSTANCE.bind(IDhMetaRenderer.class, this.getMetaRenderer());
 		SingletonInjector.INSTANCE.bind(IDhTerrainRenderer.class, this.getTerrainRenderer());
 		SingletonInjector.INSTANCE.bind(IDhSsaoRenderer.class, this.getSsaoRenderer());
 		SingletonInjector.INSTANCE.bind(IDhFogRenderer.class, this.getFogRenderer());

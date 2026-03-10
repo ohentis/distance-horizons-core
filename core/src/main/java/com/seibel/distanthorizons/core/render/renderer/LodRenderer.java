@@ -55,8 +55,15 @@ public class LodRenderer
 	public static final LodRenderer INSTANCE = new LodRenderer();
 	
 	
-	
 	private boolean vanillaSettingsOverridden = false;
+	private boolean renderersBound = false;
+	
+	private IDhMetaRenderer metaRenderer;
+	private IDhTerrainRenderer terrainRenderer;
+	private IDhSsaoRenderer ssaoRenderer;
+	private IDhFogRenderer fogRenderer;
+	private IDhFarFadeRenderer farFadeRenderer;
+	private AbstractDebugWireframeRenderer debugWireframeRenderer;
 	
 	
 	
@@ -66,6 +73,16 @@ public class LodRenderer
 	//region
 	
 	private LodRenderer() { }
+	
+	private void bindRenderers()
+	{
+		this.metaRenderer = SingletonInjector.INSTANCE.get(IDhMetaRenderer.class);
+		this.terrainRenderer = SingletonInjector.INSTANCE.get(IDhTerrainRenderer.class);
+		this.ssaoRenderer = SingletonInjector.INSTANCE.get(IDhSsaoRenderer.class);
+		this.fogRenderer = SingletonInjector.INSTANCE.get(IDhFogRenderer.class);
+		this.farFadeRenderer = SingletonInjector.INSTANCE.get(IDhFarFadeRenderer.class);
+		this.debugWireframeRenderer = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
+	}
 	
 	//endregion
 	
@@ -98,6 +115,7 @@ public class LodRenderer
 		//====================//
 		// validate rendering //
 		//====================//
+		//region
 		
 		boolean deferTransparentRendering = DhApiRenderProxy.INSTANCE.getDeferTransparentRendering();
 		if (runningDeferredPass 
@@ -113,24 +131,29 @@ public class LodRenderer
 			throw new IllegalArgumentException("Render parameters validation");
 		}
 		
-		RenderBufferHandler renderBufferHandler = renderParams.renderBufferHandler;
-		IDhGenericRenderer genericRenderer = renderParams.genericRenderer;
+		//endregion
 		
-		IDhTerrainRenderer lodRenderer = SingletonInjector.INSTANCE.get(IDhTerrainRenderer.class);
-		IDhSsaoRenderer ssaoRenderer = SingletonInjector.INSTANCE.get(IDhSsaoRenderer.class);
-		IDhFogRenderer fogRenderer = SingletonInjector.INSTANCE.get(IDhFogRenderer.class);
-		IDhFarFadeRenderer farFadeRenderer = SingletonInjector.INSTANCE.get(IDhFarFadeRenderer.class);
-		AbstractDebugWireframeRenderer debugWireframeRenderer = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
 		
 		
 		//=================//
 		// rendering setup //
 		//=================//
+		//region
 		
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderSetupEvent.class, renderParams);
 		profiler.push("LOD GL setup");
 		
-		lodRenderer.runRenderPassSetup(renderParams);
+		if (!this.renderersBound)
+		{
+			this.bindRenderers();
+			this.renderersBound = true;
+		}
+		
+		RenderBufferHandler renderBufferHandler = renderParams.renderBufferHandler;
+		IDhGenericRenderer genericRenderer = renderParams.genericRenderer;
+		
+		
+		this.metaRenderer.runRenderPassSetup(renderParams);
 		
 		if (!this.vanillaSettingsOverridden)
 		{
@@ -149,10 +172,12 @@ public class LodRenderer
 		
 		if (firstPass)
 		{
-			// we only need to sort/cull the LODs during the first frame 
+			// we only need to sort/cull the LODs at the start of the frame
 			profiler.popPush("LOD build render list");
 			renderBufferHandler.buildRenderList(renderParams);
 		}
+		
+		//endregion
 		
 		
 		
@@ -162,8 +187,8 @@ public class LodRenderer
 		
 		if (!runningDeferredPass)
 		{
-			lodRenderer.clearColor();
-			lodRenderer.clearDepth();
+			this.metaRenderer.clearDhDepthAndColorTextures(renderParams);
+			
 			
 			
 			//=========================//
@@ -174,7 +199,7 @@ public class LodRenderer
 			// opaque LODs
 			profiler.popPush("LOD Opaque");
 			
-			this.renderLodPass(lodRenderer, renderBufferHandler, renderParams, /*opaquePass*/ true, profiler);
+			this.renderLodPass(this.terrainRenderer, renderBufferHandler, renderParams, /*opaquePass*/ true, profiler);
 			
 			// custom objects with SSAO
 			if (Config.Client.Advanced.Graphics.GenericRendering.enableGenericRendering.get())
@@ -187,7 +212,7 @@ public class LodRenderer
 			if (Config.Client.Advanced.Graphics.Ssao.enableSsao.get())
 			{
 				profiler.popPush("LOD SSAO");
-				ssaoRenderer.render(renderParams.dhProjectionMatrix);
+				this.ssaoRenderer.render(renderParams.dhProjectionMatrix);
 			}
 			
 			// custom objects without SSAO
@@ -202,14 +227,14 @@ public class LodRenderer
 				&& Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
 			{
 				profiler.popPush("LOD Transparent");
-				this.renderLodPass(lodRenderer, renderBufferHandler, renderParams, /*opaquePass*/ false, profiler);
+				this.renderLodPass(this.terrainRenderer, renderBufferHandler, renderParams, /*opaquePass*/ false, profiler);
 			}
 			
 			// far plane clip fading
 			if (Config.Client.Advanced.Graphics.Quality.dhFadeFarClipPlane.get())
 			{
 				profiler.popPush("Fade Far Clip Fade");
-				farFadeRenderer.render(renderParams);
+				this.farFadeRenderer.render(renderParams);
 			}
 			
 			// fog
@@ -222,7 +247,7 @@ public class LodRenderer
 				Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
 				combinedMatrix.multiply(renderParams.dhModelViewMatrix);
 				
-				fogRenderer.render(combinedMatrix, renderParams.partialTicks);
+				this.fogRenderer.render(combinedMatrix, renderParams.partialTicks);
 			}
 			
 			
@@ -236,11 +261,21 @@ public class LodRenderer
 				profiler.popPush("Debug wireframes");
 
 				// Note: this can be very slow if a lot of boxes are being rendered
-				debugWireframeRenderer.renderPass(renderParams);
+				this.debugWireframeRenderer.renderPass(renderParams);
 			}
 			
-			profiler.popPush("Apply to MC");
-			lodRenderer.applyToMcTexture();
+			
+			
+			//=============================//
+			// Apply to the MC Framebuffer //
+			//=============================//
+			
+			boolean cancelApplyShader = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeApplyShaderRenderEvent.class, renderParams);
+			if (!cancelApplyShader)
+			{
+				profiler.popPush("Apply to MC");
+				this.metaRenderer.applyToMcTexture();
+			}
 			
 		}
 		else
@@ -252,7 +287,7 @@ public class LodRenderer
 			if (Config.Client.Advanced.Graphics.Quality.transparency.get().transparencyEnabled)
 			{
 				profiler.popPush("LOD Transparent");
-				this.renderLodPass(lodRenderer, renderBufferHandler, renderParams, /*opaquePass*/ false, profiler);
+				this.renderLodPass(this.terrainRenderer, renderBufferHandler, renderParams, /*opaquePass*/ false, profiler);
 
 
 				if (Config.Client.Advanced.Graphics.Fog.enableDhFog.get()
@@ -264,7 +299,7 @@ public class LodRenderer
 					Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
 					combinedMatrix.multiply(renderParams.dhModelViewMatrix);
 					
-					fogRenderer.render(combinedMatrix, renderParams.partialTicks);
+					this.fogRenderer.render(combinedMatrix, renderParams.partialTicks);
 				}
 			}
 		}
@@ -278,7 +313,7 @@ public class LodRenderer
 		profiler.popPush("LOD cleanup");
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderCleanupEvent.class, renderParams);
 		
-		lodRenderer.runRenderPassCleanup(renderParams);
+		this.metaRenderer.runRenderPassCleanup(renderParams);
 		
 		
 		

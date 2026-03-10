@@ -32,12 +32,4 @@ public interface IDhTerrainRenderer extends IBindable
 		SortedArraySet<LodBufferContainer> bufferContainers,
 		IProfilerWrapper profiler);
 	
-	
-	// TODO should these go somewhere else?
-	void runRenderPassSetup(RenderParams renderParams);
-	void runRenderPassCleanup(RenderParams renderParams);
-	void applyToMcTexture();
-	void clearDepth();
-	void clearColor();
-	
 }
