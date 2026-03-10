@@ -14,8 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class RenderThreadTaskHandler
 {
 	public static final DhLogger LOGGER = new DhLoggerBuilder()
-		.fileLevelConfig(Config.Common.Logging.logRendererGLEventToFile)
-		.chatLevelConfig(Config.Common.Logging.logRendererGLEventToChat)
+		.fileLevelConfig(Config.Common.Logging.logRendererEventToFile)
 		.build();
 	
 	private static final ConcurrentLinkedQueue<Runnable> RENDER_THREAD_RUNNABLE_QUEUE = new ConcurrentLinkedQueue<>();
