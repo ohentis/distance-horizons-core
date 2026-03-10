@@ -633,7 +633,7 @@ public class ClientApi
 						// for setup on some APIs (IE openGL)
 						metaRenderer.runRenderPassSetup(renderParams);
 						
-						testRenderer.render();
+						testRenderer.render(renderParams);
 						
 						metaRenderer.runRenderPassCleanup(renderParams);
 					}
@@ -695,7 +695,8 @@ public class ClientApi
 			// don't fade when Iris shaders are active, otherwise the rendering can get weird
 			&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
 		{
-			fadeRenderer.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.clientLevelWrapper);
+			RenderParams renderParams = new RenderParams(EDhApiRenderPass.OPAQUE, RENDER_STATE);
+			fadeRenderer.render(renderParams);
 		}
 	}
 	/** 
@@ -725,7 +726,8 @@ public class ClientApi
 				&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering();
 			if (renderFade)
 			{
-				fadeRenderer.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.clientLevelWrapper);
+				RenderParams renderParams = new RenderParams(EDhApiRenderPass.TRANSPARENT, RENDER_STATE);
+				fadeRenderer.render(renderParams);
 			}
 		}
 	}

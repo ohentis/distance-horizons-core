@@ -11,7 +11,7 @@ public interface IDhMetaRenderer extends IBindable
 {
 	void runRenderPassSetup(RenderParams renderParams);
 	void runRenderPassCleanup(RenderParams renderParams);
-	void applyToMcTexture();
+	void applyToMcTexture(RenderParams renderParams);
 	void clearDhDepthAndColorTextures(RenderParams renderParams);
 	
 }

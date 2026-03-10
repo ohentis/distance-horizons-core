@@ -215,7 +215,7 @@ public class LodRenderer
 			if (Config.Client.Advanced.Graphics.Ssao.enableSsao.get())
 			{
 				profiler.popPush("LOD SSAO");
-				this.ssaoRenderer.render(renderParams.dhProjectionMatrix);
+				this.ssaoRenderer.render(renderParams);
 			}
 			
 			// custom objects without SSAO
@@ -248,10 +248,7 @@ public class LodRenderer
 			{
 				profiler.popPush("LOD Fog");
 
-				Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
-				combinedMatrix.multiply(renderParams.dhModelViewMatrix);
-				
-				this.fogRenderer.render(combinedMatrix, renderParams.partialTicks);
+				this.fogRenderer.render(renderParams);
 			}
 			
 			
@@ -278,7 +275,7 @@ public class LodRenderer
 			if (!cancelApplyShader)
 			{
 				profiler.popPush("Apply to MC");
-				this.metaRenderer.applyToMcTexture();
+				this.metaRenderer.applyToMcTexture(renderParams);
 			}
 			
 		}
@@ -300,10 +297,7 @@ public class LodRenderer
 				{
 					profiler.popPush("LOD Fog");
 
-					Mat4f combinedMatrix = new Mat4f(renderParams.dhProjectionMatrix);
-					combinedMatrix.multiply(renderParams.dhModelViewMatrix);
-					
-					this.fogRenderer.render(combinedMatrix, renderParams.partialTicks);
+					this.fogRenderer.render(renderParams);
 				}
 			}
 		}
