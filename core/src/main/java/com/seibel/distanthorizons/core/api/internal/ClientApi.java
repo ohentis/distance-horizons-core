@@ -418,7 +418,6 @@ public class ClientApi
 	private void renderLodLayer(boolean renderingDeferredLayer)
 	{
 		IProfilerWrapper profiler = MC_CLIENT.getProfiler();
-		profiler.pop(); // get out of "terrain"
 		profiler.push("DH-RenderLevel");
 		
 		
@@ -648,7 +647,6 @@ public class ClientApi
 		
 		
 		profiler.pop(); // end LOD
-		profiler.push("terrain"); // go back into "terrain"
 	}
 	
 	///endregion
@@ -685,7 +683,6 @@ public class ClientApi
 			&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering())
 		{
 			fadeRenderer.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.clientLevelWrapper);
-			//VanillaFadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.partialTickTime, RENDER_STATE.clientLevelWrapper);
 		}
 	}
 	/** 
@@ -716,7 +713,6 @@ public class ClientApi
 			if (renderFade)
 			{
 				fadeRenderer.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.clientLevelWrapper);
-				//VanillaFadeRenderer.INSTANCE.render(RENDER_STATE.mcModelViewMatrix, RENDER_STATE.mcProjectionMatrix, RENDER_STATE.partialTickTime, RENDER_STATE.clientLevelWrapper);
 			}
 		}
 	}
