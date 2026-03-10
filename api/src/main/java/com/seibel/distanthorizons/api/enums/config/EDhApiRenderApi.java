@@ -8,7 +8,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
  * BLAZE_3D, <br><br>
  *
  * @since API 6.0.0
- * @version 2024-6-8
+ * @version 2026-3-10
  */
 public enum EDhApiRenderApi
 {

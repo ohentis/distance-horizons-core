@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.core.render.renderer;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.*;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.LodBufferContainer;
+import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -32,6 +33,7 @@ import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.*;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 
@@ -51,6 +53,7 @@ public class LodRenderer
 			.build();
 	
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final IIrisAccessor IRIS_ACCESSOR = ModAccessorInjector.INSTANCE.get(IIrisAccessor.class);
 	
 	public static final LodRenderer INSTANCE = new LodRenderer();
 	
@@ -231,7 +234,8 @@ public class LodRenderer
 			}
 			
 			// far plane clip fading
-			if (Config.Client.Advanced.Graphics.Quality.dhFadeFarClipPlane.get())
+			if (Config.Client.Advanced.Graphics.Quality.dhFadeFarClipPlane.get()
+				&& IRIS_ACCESSOR == null)
 			{
 				profiler.popPush("Fade Far Clip Fade");
 				this.farFadeRenderer.render(renderParams);
@@ -322,8 +326,6 @@ public class LodRenderer
 	}
 	
 	//endregion
-	
-	
 	
 	
 	
