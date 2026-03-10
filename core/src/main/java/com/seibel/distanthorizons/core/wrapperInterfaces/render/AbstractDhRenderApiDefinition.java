@@ -10,6 +10,18 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 
 public abstract class AbstractDhRenderApiDefinition implements IBindable
 {
+	//=========//
+	// getters //
+	//=========//
+	//region
+	
+	/** Used for debugging */
+	public abstract String getApiName();
+	
+	//endregion
+	
+	
+	
 	//============//
 	// singletons //
 	//============//

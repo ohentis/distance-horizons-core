@@ -57,7 +57,8 @@ public class LodQuadBuilder
 	private final EDhApiDebugRendering debugRenderingMode;
 	private final EDhApiGrassSideRendering grassSideRenderingMode;
 	
-	
+	/** the number of bytes for */
+	public static final int BYTES_PER_VERTEX = 14;
 	
 	public static final int[][][] DIRECTION_VERTEX_IBO_QUAD = new int[][][]
 	///region
@@ -117,6 +118,7 @@ public class LodQuadBuilder
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
 	public LodQuadBuilder(boolean doTransparency, IClientLevelWrapper clientLevelWrapper)
 	{
@@ -133,6 +135,8 @@ public class LodQuadBuilder
 		this.grassSideRenderingMode = Config.Client.Advanced.Graphics.Quality.grassSideRendering.get();
 		
 	}
+	
+	//endregion
 	
 	
 	
@@ -482,6 +486,11 @@ public class LodQuadBuilder
 	}
 	
 	private static int maxBufferByteSize = -1;
+	/** 
+	 * The max number of bytes we allow for a single Vertex buffer.
+	 * If an LOD has more data than this it will be split
+	 * up into multiple buffers.
+	 */
 	public static int getMaxBufferByteSize()
 	{
 		if (maxBufferByteSize != -1)
@@ -489,11 +498,9 @@ public class LodQuadBuilder
 			return maxBufferByteSize;
 		}
 		
-		IDhTerrainRenderer LOD_RENDERER = SingletonInjector.INSTANCE.get(IDhTerrainRenderer.class);
-		
-		/** number of bytes a single quad takes */
-		int QUADS_BYTE_SIZE = LOD_RENDERER.getVertexByteSize() * 4;
-		/** how big a single VBO can be in bytes */
+		// number of bytes a single quad takes
+		int QUADS_BYTE_SIZE = BYTES_PER_VERTEX * 4;
+		// how big a single VBO can be in bytes
 		int MAX_VBO_BYTE_SIZE = 10 * 1024 * 1024; // 10 MB
 		int MAX_QUADS_PER_BUFFER = MAX_VBO_BYTE_SIZE / QUADS_BYTE_SIZE;
 		int FULL_SIZED_BUFFER = MAX_QUADS_PER_BUFFER * QUADS_BYTE_SIZE;

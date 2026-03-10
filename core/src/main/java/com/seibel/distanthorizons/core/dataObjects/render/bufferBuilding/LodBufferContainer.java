@@ -215,11 +215,9 @@ public class LodBufferContainer implements AutoCloseable
 			}
 			IVertexBufferWrapper vbo = vbos[vboIndex];
 			
-			IDhTerrainRenderer lodRenderer = SingletonInjector.INSTANCE.get(IDhTerrainRenderer.class);
-			
 			ByteBuffer buffer = byteBuffers.get(i);
 			int size = buffer.limit() - buffer.position();
-			int vertexCount = size / lodRenderer.getVertexByteSize();
+			int vertexCount = size / LodQuadBuilder.BYTES_PER_VERTEX;
 			
 			try
 			{

@@ -45,7 +45,7 @@ public class RenderParams extends DhApiRenderParam
 	/** @see DhRenderState#vanillaFogEnabled */
 	public boolean vanillaFogEnabled;
 	
-	public boolean validationRun = false;
+	public boolean hasBeenValidated = false;
 	
 	
 	
@@ -120,7 +120,7 @@ public class RenderParams extends DhApiRenderParam
 	{
 		// Note: all strings here should be constants to prevent String allocations
 		
-		this.validationRun = true;
+		this.hasBeenValidated = true;
 		
 		
 		if (!MC_CLIENT.playerExists())

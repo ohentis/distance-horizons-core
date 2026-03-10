@@ -40,6 +40,7 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhTerrainRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhVanillaFadeRenderer;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhTestTriangleRenderer;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
@@ -595,7 +596,7 @@ public class ClientApi
 					boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderEvent.class, renderParams);
 					if (!renderingCancelled)
 					{
-						BlazeLodRenderer.INSTANCE.render(renderParams, profiler);
+						LodRenderer.INSTANCE.render(renderParams, profiler);
 					}
 					
 					if (!DhApi.Delayed.renderProxy.getDeferTransparentRendering())
@@ -608,7 +609,7 @@ public class ClientApi
 					boolean renderingCancelled = ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDeferredRenderEvent.class, renderParams);
 					if (!renderingCancelled)
 					{
-						BlazeLodRenderer.INSTANCE.renderDeferred(renderParams, profiler);
+						LodRenderer.INSTANCE.renderDeferred(renderParams, profiler);
 					}
 					
 					
@@ -620,14 +621,23 @@ public class ClientApi
 			}
 			else
 			{
-				IDhTestTriangleRenderer testRenderer = SingletonInjector.INSTANCE.get(IDhTestTriangleRenderer.class);
-				if (testRenderer != null)
+				if (!renderingDeferredLayer)
 				{
-					testRenderer.render();
-				}
-				else
-				{
-					RATE_LIMITED_LOGGER.warn("Unable to find singleton ["+ IDhTestTriangleRenderer.class.getSimpleName()+"]");
+					IDhTerrainRenderer lodRenderer = SingletonInjector.INSTANCE.get(IDhTerrainRenderer.class);
+					IDhTestTriangleRenderer testRenderer = SingletonInjector.INSTANCE.get(IDhTestTriangleRenderer.class);
+					if (testRenderer != null
+						&& lodRenderer != null)
+					{
+						lodRenderer.runRenderPassSetup(renderParams);
+						
+						testRenderer.render();
+						
+						lodRenderer.runRenderPassCleanup(renderParams);
+					}
+					else
+					{
+						RATE_LIMITED_LOGGER.warn("Unable to find singleton [" + IDhTestTriangleRenderer.class.getSimpleName() + "]");
+					}
 				}
 			}
 		}

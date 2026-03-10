@@ -104,7 +104,7 @@ public class RenderThreadTaskHandler
 		{
 			runnable.run();
 			
-			// only try running for 4ms (240 FPS) at a time to prevent random lag spikes
+			// only try running for a limited amount of time to prevent lag spikes
 			long currentTimeMs = System.currentTimeMillis();
 			long runDuration = currentTimeMs - startTimeMs;
 			if (runDuration > msMaxRunTime)

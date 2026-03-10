@@ -39,7 +39,7 @@ import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
  * This is where all the magic happens. <br>
  * This is where LODs are draw to the world.
  */
-public class BlazeLodRenderer
+public class LodRenderer
 {
 	public static final DhLogger LOGGER = new DhLoggerBuilder()
 			.fileLevelConfig(Config.Common.Logging.logRendererEventToFile)
@@ -52,19 +52,22 @@ public class BlazeLodRenderer
 	
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
-	public static final BlazeLodRenderer INSTANCE = new BlazeLodRenderer();
+	public static final LodRenderer INSTANCE = new LodRenderer();
 	
 	
 	
-	private boolean renderObjectsCreated = false;
+	private boolean vanillaSettingsOverridden = false;
 	
 	
 	
 	//=============//
 	// constructor //
 	//=============//
+	//region
 	
-	private BlazeLodRenderer() { }
+	private LodRenderer() { }
+	
+	//endregion
 	
 	
 	
@@ -105,7 +108,7 @@ public class BlazeLodRenderer
 		boolean firstPass = !runningDeferredPass;
 		
 		// RenderParams parameter validation should be done before this
-		if (!renderParams.validationRun)
+		if (!renderParams.hasBeenValidated)
 		{
 			throw new IllegalArgumentException("Render parameters validation");
 		}
@@ -113,6 +116,11 @@ public class BlazeLodRenderer
 		RenderBufferHandler renderBufferHandler = renderParams.renderBufferHandler;
 		IDhGenericRenderer genericRenderer = renderParams.genericRenderer;
 		
+		IDhTerrainRenderer lodRenderer = SingletonInjector.INSTANCE.get(IDhTerrainRenderer.class);
+		IDhSsaoRenderer ssaoRenderer = SingletonInjector.INSTANCE.get(IDhSsaoRenderer.class);
+		IDhFogRenderer fogRenderer = SingletonInjector.INSTANCE.get(IDhFogRenderer.class);
+		IDhFarFadeRenderer farFadeRenderer = SingletonInjector.INSTANCE.get(IDhFarFadeRenderer.class);
+		AbstractDebugWireframeRenderer debugWireframeRenderer = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
 		
 		
 		//=================//
@@ -122,7 +130,9 @@ public class BlazeLodRenderer
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderSetupEvent.class, renderParams);
 		profiler.push("LOD GL setup");
 		
-		if (!this.renderObjectsCreated)
+		lodRenderer.runRenderPassSetup(renderParams);
+		
+		if (!this.vanillaSettingsOverridden)
 		{
 			// only do this once, that way they can still be reverted if desired
 			if (Config.Client.Advanced.Graphics.overrideVanillaGraphicsSettings.get())
@@ -134,7 +144,7 @@ public class BlazeLodRenderer
 				MC.disableFabulousTransparency();
 			}
 			
-			this.renderObjectsCreated = true;
+			this.vanillaSettingsOverridden = true;
 		}
 		
 		if (firstPass)
@@ -143,12 +153,6 @@ public class BlazeLodRenderer
 			profiler.popPush("LOD build render list");
 			renderBufferHandler.buildRenderList(renderParams);
 		}
-		
-		IDhTerrainRenderer lodRenderer = SingletonInjector.INSTANCE.get(IDhTerrainRenderer.class);
-		IDhSsaoRenderer ssaoRenderer = SingletonInjector.INSTANCE.get(IDhSsaoRenderer.class);
-		IDhFogRenderer fogRenderer = SingletonInjector.INSTANCE.get(IDhFogRenderer.class);
-		IDhFarFadeRenderer farFadeRenderer = SingletonInjector.INSTANCE.get(IDhFarFadeRenderer.class);
-		AbstractDebugWireframeRenderer debugWireframeRenderer = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
 		
 		
 		
@@ -274,6 +278,8 @@ public class BlazeLodRenderer
 		profiler.popPush("LOD cleanup");
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeRenderCleanupEvent.class, renderParams);
 		
+		lodRenderer.runRenderPassCleanup(renderParams);
+		
 		
 		
 		// end of internal LOD profiling
@@ -305,24 +311,6 @@ public class BlazeLodRenderer
 			lodRenderer.render(renderEventParam, opaquePass, lodBufferContainer, profilerWrapper);
 		}
 	}
-	
-	//endregion
-	
-	
-	
-	//===============//
-	// API functions //
-	//===============//
-	//region
-	
-	/** @return -1 if no frame buffer has been bound yet */
-	public int getActiveFramebufferId() { return -1; }
-	
-	/** @return -1 if no texture has been bound yet */
-	public int getActiveColorTextureId() { return -1; }
-	
-	/** @return -1 if no texture has been bound yet */
-	public int getActiveDepthTextureId() { return -1; }
 	
 	//endregion
 	

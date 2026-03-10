@@ -35,6 +35,7 @@ import com.seibel.distanthorizons.core.util.threading.PriorityTaskPicker;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.render.AbstractDhRenderApiDefinition;
 import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
@@ -83,6 +84,7 @@ public class F3Screen
 	{
 		String r = MinecraftTextFormat.RED;
 		String y = MinecraftTextFormat.YELLOW;
+		String a = MinecraftTextFormat.AQUA;
 		String cf = MinecraftTextFormat.CLEAR_FORMATTING;
 		
 		
@@ -123,6 +125,9 @@ public class F3Screen
 				int posX = DhSectionPos.getX(sectionPos);
 				int posZ = DhSectionPos.getZ(sectionPos);
 				messageList.add("LOD Pos: "+y+detailLevel+"*"+posX+","+posZ+cf);
+				
+				AbstractDhRenderApiDefinition renderApiDef = SingletonInjector.INSTANCE.get(AbstractDhRenderApiDefinition.class);
+				messageList.add("Rendering API: "+a+renderApiDef.getApiName()+cf);
 			}
 			messageList.add("");
 		}

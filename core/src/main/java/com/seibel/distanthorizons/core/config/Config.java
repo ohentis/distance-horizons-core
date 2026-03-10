@@ -835,8 +835,9 @@ public class Config
 					
 					public static ConfigEntry<EDhApiRenderApi> renderingApi = new ConfigEntry.Builder<EDhApiRenderApi>()
 						.set(EDhApiRenderApi.AUTO)
-						.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // can't be changed while the game is running
 						.comment(""
+							+ "Requires a restart to change. \n"
+							+ " \n"
 							+ "Options: \n"
 							+ EDhApiRenderApi.AUTO + " \n"
 							+ EDhApiRenderApi.OPEN_GL + " \n"

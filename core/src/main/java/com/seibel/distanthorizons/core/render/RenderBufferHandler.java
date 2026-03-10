@@ -33,7 +33,7 @@ import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.render.QuadTree.LodQuadTree;
 import com.seibel.distanthorizons.core.render.QuadTree.LodRenderSection;
-import com.seibel.distanthorizons.core.render.renderer.BlazeLodRenderer;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.render.renderer.cullingFrustum.DhFrustumBounds;
 import com.seibel.distanthorizons.core.render.renderer.cullingFrustum.NeverCullFrustum;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
@@ -48,7 +48,7 @@ import org.joml.Matrix4fc;
 import java.util.ArrayList;
 
 /**
- * This object tells the {@link BlazeLodRenderer} what buffers to render
+ * This object tells the {@link LodRenderer} what buffers to render
  */
 public class RenderBufferHandler implements AutoCloseable
 {
