@@ -34,6 +34,6 @@ public interface IVersionConstants extends IBindable
 {
 	String getMinecraftVersion();
 	
-	EDhApiRenderApi getDefaultRenderer();
+	EDhApiRenderApi getDefaultRenderingApi();
 	
 }
