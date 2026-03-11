@@ -426,7 +426,7 @@ public abstract class AbstractFullDataNetworkRequestQueue implements IDebugRende
 				}
 			}
 			
-			renderer.render(new AbstractDebugWireframeRenderer.Box(pos, -32f, 64f, 0.05f, color));
+			renderer.renderBox(new AbstractDebugWireframeRenderer.Box(pos, -32f, 64f, 0.05f, color));
 		}
 	}
 	

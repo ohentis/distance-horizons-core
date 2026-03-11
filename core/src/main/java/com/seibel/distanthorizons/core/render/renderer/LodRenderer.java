@@ -29,7 +29,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
 import com.seibel.distanthorizons.core.render.RenderParams;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.objects.SortedArraySet;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
@@ -262,7 +261,7 @@ public class LodRenderer
 				profiler.popPush("Debug wireframes");
 
 				// Note: this can be very slow if a lot of boxes are being rendered
-				this.debugWireframeRenderer.renderPass(renderParams);
+				this.debugWireframeRenderer.render(renderParams);
 			}
 			
 			

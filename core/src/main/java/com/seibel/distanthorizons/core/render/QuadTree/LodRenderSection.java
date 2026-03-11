@@ -532,7 +532,7 @@ public class LodRenderSection implements IDebugRenderable, AutoCloseable
 		int levelHeightRange = (levelMaxY - levelMinY);
 		int maxY = levelMaxY - (levelHeightRange / 2);
 		
-		debugRenderer.render(new AbstractDebugWireframeRenderer.Box(this.pos, levelMinY, maxY, 0.01f, color));
+		debugRenderer.renderBox(new AbstractDebugWireframeRenderer.Box(this.pos, levelMinY, maxY, 0.01f, color));
 	}
 	
 	@Override

@@ -638,7 +638,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		// blue - queued
 		this.waitingTasks.keySet().forEach((Long pos) -> 
 		{ 
-			renderer.render(
+			renderer.renderBox(
 				new AbstractDebugWireframeRenderer.Box(pos, levelMinY, maxY, 0.05f, Color.blue)
 			); 
 		});
@@ -646,7 +646,7 @@ public class WorldGenerationQueue implements IFullDataSourceRetrievalQueue, IDeb
 		// red - in progress
 		this.inProgressGenTasksByLodPos.forEach((Long pos, DataSourceRetrievalTask task) -> 
 		{ 
-			renderer.render(
+			renderer.renderBox(
 				new AbstractDebugWireframeRenderer.Box(pos, levelMinY, maxY, 0.05f, Color.red)
 			); 
 		});

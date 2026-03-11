@@ -1016,7 +1016,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			int levelHeightRange = (levelMaxY - levelMinY);
 			int maxY = levelMaxY - (levelHeightRange / 2);
 			
-			debugRenderer.render(new AbstractDebugWireframeRenderer.Box(renderSection.pos, levelMinY, maxY, 0.05f, color));
+			debugRenderer.renderBox(new AbstractDebugWireframeRenderer.Box(renderSection.pos, levelMinY, maxY, 0.05f, color));
 		}
 	}
 	

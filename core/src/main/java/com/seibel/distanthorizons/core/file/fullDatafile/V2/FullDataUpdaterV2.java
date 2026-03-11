@@ -228,10 +228,10 @@ public class FullDataUpdaterV2 implements IDebugRenderable, AutoCloseable
 	public void debugRender(AbstractDebugWireframeRenderer renderer)
 	{
 		this.lockedPosSet
-				.forEach((pos) -> { renderer.render(new AbstractDebugWireframeRenderer.Box(pos, -32f, 74f, 0.15f, Color.PINK)); });
+				.forEach((pos) -> { renderer.renderBox(new AbstractDebugWireframeRenderer.Box(pos, -32f, 74f, 0.15f, Color.PINK)); });
 		
 		this.queuedUpdateCountsByPos
-				.forEach((pos, updateCountRef) -> { renderer.render(new AbstractDebugWireframeRenderer.Box(pos, -32f, 80f + (updateCountRef.get() * 16f), 0.20f, Color.WHITE)); });
+				.forEach((pos, updateCountRef) -> { renderer.renderBox(new AbstractDebugWireframeRenderer.Box(pos, -32f, 80f + (updateCountRef.get() * 16f), 0.20f, Color.WHITE)); });
 	}
 	
 	@Override

@@ -45,7 +45,7 @@ public abstract class AbstractDebugWireframeRenderer implements IBindable
 	//===========//
 	//region
 	
-	public void renderPass(RenderParams renderParams)
+	public void render(RenderParams renderParams)
 	{
 		this.dhMvmProjMatrixThisFrame = new Mat4f(renderParams.dhMvmProjMatrix);
 		Vec3d camPos = MC_RENDER.getCameraExactPosition();
@@ -55,7 +55,7 @@ public abstract class AbstractDebugWireframeRenderer implements IBindable
 		this.rendererLists.render(this);
 		
 		
-		// particle rendering		
+		// particle cleanup		
 		BoxParticle head = null;
 		while ((head = this.particles.poll()) != null && head.isDead())
 		{ /* remove dead particles */ }
@@ -64,9 +64,18 @@ public abstract class AbstractDebugWireframeRenderer implements IBindable
 			// re-add the popped off head
 			this.particles.add(head);
 		}
+		
+		
+		// particle rendering
+		for (BoxParticle particle : this.particles)
+		{
+			// a new box is created each time since the height will be different based on the time it's lived
+			this.renderBox(particle.createNewRenderBox());
+		}
+		
 	}
 	
-	public abstract void render(Box box);
+	public abstract void renderBox(Box box);
 	
 	//endregion
 	
