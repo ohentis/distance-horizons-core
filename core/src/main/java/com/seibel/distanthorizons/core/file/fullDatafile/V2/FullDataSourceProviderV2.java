@@ -111,10 +111,8 @@ public class FullDataSourceProviderV2 implements IDebugRenderable, AutoCloseable
 		this.updatePropagator = new FullDataUpdatePropagatorV2(this, this.dataUpdater, this.levelId);
 		this.dataMigratorV1 = new DataMigratorV1(this.dataUpdater, this.level, this.levelId, this.saveDir);
 		
-		if (DEBUG_WIREFRAME_RENDERER != null)
-		{
-			DEBUG_WIREFRAME_RENDERER.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
-		}
+		DEBUG_WIREFRAME_RENDERER.register(this, Config.Client.Advanced.Debugging.DebugWireframe.showFullDataUpdateStatus);
+		
 	}
 	
 	
