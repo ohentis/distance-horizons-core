@@ -346,7 +346,7 @@ public class RenderableBoxGroup
 	@Override 
 	public void close()
 	{
-		RenderThreadTaskHandler.INSTANCE.queueRunningOnRenderThread(() ->
+		RenderThreadTaskHandler.INSTANCE.queueRunningOnRenderThread("RenderBoxGroup Close", () ->
 		{
 			this.vertexBufferContainer.close();
 			this.altVertexBufferContainer.close();
