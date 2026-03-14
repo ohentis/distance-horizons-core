@@ -34,6 +34,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
+import com.seibel.distanthorizons.core.render.RenderThreadTaskHandler;
 import com.seibel.distanthorizons.core.render.renderer.AbstractDebugWireframeRenderer;
 import com.seibel.distanthorizons.core.render.renderer.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
@@ -371,16 +372,27 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		for (QuadNode<LodRenderSection> node : this.tickNodeHolder.getEnableDeleteChildrenNodes())
 		{
-			if (node == null || node.value == null) { continue; }
-			
-			node.deleteAllChildren((childRenderSection) ->
+			if (node == null
+				|| node.value == null
+				// only clear the children if there are children to clear
+				|| node.getDirectChildCount() == 0) 
 			{
-				if (childRenderSection != null)
+				continue; 
+			}
+			
+			// run this on the render thread to hopefully prevent
+			// closing render data while rendering is happening
+			RenderThreadTaskHandler.INSTANCE.queueRunningOnRenderThread("LodQuadTree delayed child cleanup", () -> 
+			{
+				node.deleteAllChildren((childRenderSection) ->
 				{
-					childRenderSection.setRenderingEnabled(false);
-					childRenderSection.tryDisableBeacons();
-					childRenderSection.close();
-				}
+					if (childRenderSection != null)
+					{
+						childRenderSection.setRenderingEnabled(false);
+						childRenderSection.tryDisableBeacons();
+						childRenderSection.close();
+					}
+				});
 			});
 		}
 		
