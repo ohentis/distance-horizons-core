@@ -56,7 +56,7 @@ public class RenderableBoxGroup
 	
 	public boolean active = true;
 	public boolean ssaoEnabled = true;
-	private boolean vertexDataDirty = true;
+	private boolean vertexDataDirty = false;
 	
 	public byte skyLight = LodUtil.MAX_MC_LIGHT;
 	public byte blockLight = LodUtil.MIN_MC_LIGHT;
