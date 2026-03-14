@@ -198,6 +198,7 @@ public class RenderableBoxGroup
 		if (this.altVertexBufferContainer.getState() == IDhGenericObjectVertexBufferContainer.EState.READY_TO_UPLOAD)
 		{
 			this.altVertexBufferContainer.uploadDataToGpu();
+			this.altVertexBufferContainer.setState(IDhGenericObjectVertexBufferContainer.EState.RENDER);
 			
 			// swap VBO references for rendering
 			IDhGenericObjectVertexBufferContainer temp = this.vertexBufferContainer;
@@ -248,6 +249,7 @@ public class RenderableBoxGroup
 				try
 				{
 					this.altVertexBufferContainer.updateVertexData(this.uploadBoxList);
+					this.altVertexBufferContainer.setState(IDhGenericObjectVertexBufferContainer.EState.READY_TO_UPLOAD);
 				}
 				catch (Exception e)
 				{
