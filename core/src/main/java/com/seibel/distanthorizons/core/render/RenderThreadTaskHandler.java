@@ -123,7 +123,7 @@ public class RenderThreadTaskHandler
 	{
 		long nowMs = System.currentTimeMillis();
 		long msSinceLast = nowMs - this.msSinceGlTasksRun;
-		if (msSinceLast > MS_BEFORE_RUN_CLEANUP_TIMER)
+		if (msSinceLast < MS_BEFORE_RUN_CLEANUP_TIMER)
 		{
 			return;
 		}
