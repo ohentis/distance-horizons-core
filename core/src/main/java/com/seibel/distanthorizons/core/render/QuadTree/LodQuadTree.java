@@ -38,6 +38,8 @@ import com.seibel.distanthorizons.core.render.RenderThreadTaskHandler;
 import com.seibel.distanthorizons.core.render.renderer.AbstractDebugWireframeRenderer;
 import com.seibel.distanthorizons.core.render.renderer.BeaconRenderHandler;
 import com.seibel.distanthorizons.core.render.renderer.IDebugRenderable;
+import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
+import com.seibel.distanthorizons.core.sql.repo.BeaconBeamRepo;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
 import com.seibel.distanthorizons.core.util.WorldGenUtil;
@@ -55,10 +57,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.WillNotClose;
 import java.awt.*;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -97,8 +96,19 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	private final AtomicBoolean queueThreadRunningRef = new AtomicBoolean(false);
 	
 	
+	/**
+	 * contains the list of beacons currently being rendered in this section 
+	 * if this list is modified the {@link LodQuadTree#beaconRenderHandler} should be updated to match.
+	 */
+	private final ArrayList<BeaconRenderHandler.BeaconBeamWithWidth> beaconList = new ArrayList<>();
 	@Nullable
-	public final BeaconRenderHandler beaconRenderHandler;
+	private final BeaconRenderHandler beaconRenderHandler;
+	@Nullable
+	private final BeaconBeamRepo beaconBeamRepo;
+	/** used to prevent updating the beacons concurrently */
+	@NotNull
+	private CompletableFuture<Void> beaconUpdateFuture = CompletableFuture.completedFuture(null);
+	
 	
 	/** the smallest numerical detail level number that can be rendered */
 	private byte maxLeafRenderDetailLevel;
@@ -148,6 +158,8 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		
 		IDhGenericRenderer genericObjectRenderer = this.level.getGenericRenderer();
 		this.beaconRenderHandler = (genericObjectRenderer != null) ? new BeaconRenderHandler(genericObjectRenderer) : null;
+		
+		this.beaconBeamRepo = this.level.getBeaconBeamRepo();
 		
 		Config.Common.WorldGenerator.enableDistantGeneration.addListener(this);
 		Config.Server.enableServerGeneration.addListener(this);
@@ -367,7 +379,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 			if (node == null || node.value == null) { continue; }
 			
 			node.value.setRenderingEnabled(false);
-			node.value.tryDisableBeacons();
 		}
 		
 		for (QuadNode<LodRenderSection> node : this.tickNodeHolder.getEnableDeleteChildrenNodes())
@@ -389,7 +400,6 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 					if (childRenderSection != null)
 					{
 						childRenderSection.setRenderingEnabled(false);
-						childRenderSection.tryDisableBeacons();
 						childRenderSection.close();
 					}
 				});
@@ -405,21 +415,7 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 		//=================//
 		//region
 		
-		// must be handled after beacon disabling
-		// otherwise the beacons will be missing
-		
-		for (QuadNode<LodRenderSection> node : this.tickNodeHolder.getEnabledNodes())
-		{
-			if (node == null || node.value == null) { continue; }
-
-			node.value.tryEnableBeacons();
-		}
-		for (QuadNode<LodRenderSection> node : this.tickNodeHolder.getEnableDeleteChildrenNodes())
-		{
-			if (node == null || node.value == null) { continue; }
-			
-			node.value.tryEnableBeacons();
-		}
+		this.tryRefreshRenderingBeaconsAsync(playerPos);
 		
 		//endregion
 		
@@ -872,6 +868,133 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	
 	
 	
+	//=================//
+	// beacon handling //
+	//=================//
+	//region beacon handling
+	
+	/** gets the active beacon list and stops/starts beacon rendering as necessary */
+	private void tryRefreshRenderingBeaconsAsync(DhBlockPos2D playerPos)
+	{
+		// do nothing if beacon rendering or repos are unavailable
+		if (this.beaconBeamRepo == null
+			|| this.beaconRenderHandler == null)
+		{
+			return;
+		}
+		
+		AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
+		if (executor == null)
+		{
+			// shouldn't normally happen, but just in case
+			return;
+		}
+		
+		if (!this.beaconUpdateFuture.isDone())
+		{
+			return;
+		}
+		CompletableFuture<Void> future = new CompletableFuture<>();
+		this.beaconUpdateFuture = future;
+		
+		try
+		{
+			executor.execute(() ->
+			{
+				this.refreshRenderingBeacons(playerPos);
+				
+				try { Thread.sleep(2_000); } catch (InterruptedException ignore) { }
+				future.complete(null);
+			});
+		}
+		catch (RejectedExecutionException e)
+		{
+			// the thread pool was probably shut down because it's size is being changed, just wait a sec and it should be back
+			future.completeExceptionally(e);
+		}
+	}
+	private void refreshRenderingBeacons(DhBlockPos2D playerPos)
+	{
+		if (this.beaconBeamRepo == null
+			|| this.beaconRenderHandler == null)
+		{
+			return;
+		}
+		
+		try
+		{
+			// Synchronized to prevent two threads for accessing the array at once
+			synchronized (this.beaconList)
+			{
+				// get beacons //
+				
+				int blockDistanceRadius = (this.blockRenderDistanceDiameter / 2);
+				int minBlockPosX = playerPos.x - blockDistanceRadius;
+				int minBlockPosZ = playerPos.z - blockDistanceRadius;
+				int maxBlockPosX = playerPos.x + blockDistanceRadius;
+				int maxBlockPosZ = playerPos.z + blockDistanceRadius;
+				
+				ArrayList<BeaconBeamDTO> dbBeacons = this.beaconBeamRepo.getAllBeamsInBlockPosRange(
+					minBlockPosX, maxBlockPosX,
+					minBlockPosZ, maxBlockPosZ
+				);
+				
+				
+				// convert DB beacons //
+				
+				ArrayList<BeaconRenderHandler.BeaconBeamWithWidth> newBeaconList = new ArrayList<>(this.beaconList.size());
+				for (BeaconBeamDTO beaconBeam : dbBeacons)
+				{
+					byte beaconDetailLevel = this.calcExpectedDetailLevel(playerPos, beaconBeam.blockPos.getX(), beaconBeam.blockPos.getZ());
+					newBeaconList.add(new BeaconRenderHandler.BeaconBeamWithWidth(beaconBeam, beaconDetailLevel));
+				}
+				
+				
+				boolean replaceBeacons = false;
+				if (this.beaconList.size() != newBeaconList.size())
+				{
+					// lists are different sizes
+					replaceBeacons = true;
+				}
+				else
+				{
+					// sort the beacons so they can be compared
+					this.beaconList.sort(BeaconRenderHandler.NegativeInfiniteBlockPosComparator.INSTANCE);
+					newBeaconList.sort(BeaconRenderHandler.NegativeInfiniteBlockPosComparator.INSTANCE);
+					
+					for (int i = 0; i < this.beaconList.size(); i++)
+					{
+						BeaconRenderHandler.BeaconBeamWithWidth oldBeam = this.beaconList.get(i);
+						BeaconRenderHandler.BeaconBeamWithWidth newBeam = newBeaconList.get(i);
+						if (!oldBeam.equals(newBeam))
+						{
+							replaceBeacons = true;
+							break;
+						}
+					}
+				}
+				
+				
+				// only replace the beacons if something changed
+				// this is done to prevent constantly re-uploading the render data
+				if (replaceBeacons)
+				{
+					this.beaconList.clear();
+					this.beaconList.addAll(newBeaconList);
+					this.beaconRenderHandler.replaceRenderingBeacons(this.beaconList);
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Unexpected issue updating beacons, error: ["+e.getMessage()+"].", e);
+		}
+	}
+	
+	//endregion beacon handling
+	
+	
+	
 	//====================//
 	// detail level logic //
 	//====================//
@@ -885,9 +1008,11 @@ public class LodQuadTree extends QuadTree<LodRenderSection> implements IDebugRen
 	 * @return detail level of this section pos
 	 */
 	public byte calcExpectedDetailLevel(DhBlockPos2D playerPos, long sectionPos) 
+	{ return this.calcExpectedDetailLevel(playerPos, DhSectionPos.getCenterBlockPosX(sectionPos), DhSectionPos.getCenterBlockPosZ(sectionPos)); }
+	public byte calcExpectedDetailLevel(DhBlockPos2D playerPos, int targetBlockPosX, int targetBlockPosZ)
 	{
-		double blockDistance = playerPos.dist(DhSectionPos.getCenterBlockPosX(sectionPos), DhSectionPos.getCenterBlockPosZ(sectionPos));
-		return this.calcDetailLevelFromDistance(blockDistance); 
+		double blockDistance = playerPos.dist(targetBlockPosX, targetBlockPosZ);
+		return this.calcDetailLevelFromDistance(blockDistance);
 	}
 	
 	private void updateDetailLevelVariables()
