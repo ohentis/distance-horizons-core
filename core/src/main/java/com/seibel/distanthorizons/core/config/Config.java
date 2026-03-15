@@ -834,8 +834,7 @@ public class Config
 						.build();
 					
 					public static ConfigEntry<EDhApiRenderApi> renderingApi = new ConfigEntry.Builder<EDhApiRenderApi>()
-						.set(EDhApiRenderApi.AUTO)
-						.setAppearance(EConfigEntryAppearance.ONLY_IN_FILE) // very experimental option and only supported 
+						.set(EDhApiRenderApi.AUTO) 
 						.comment(""
 							+ "Requires a restart to change. \n"
 							+ " \n"
