@@ -80,12 +80,8 @@ public class WorldChunkUpdateManager
 			// but this check confirms it
 			&& !(levelWrapper instanceof IClientLevelWrapper))
 		{
-			String errorMessage = "Unable to find chunk update manager for level ["+levelWrapper+"]-["+levelWrapper.getClass().getName()+"], world environment: ["+world.environment+"], chunk updates may fail. This message will only be logged once.";
-			if (LOGGED_GET_ERROR_MESSAGES.add(errorMessage))
-			{
-				LOGGER.warn(errorMessage);
-			}
-			
+			// how did we get a server level wrapper on the client?
+			// this shouldn't happen, but just in case
 			return null;
 		}
 		else if (
@@ -94,12 +90,7 @@ public class WorldChunkUpdateManager
 				// when hosting a server we only care about the server wrappers
 				&& !(levelWrapper instanceof IServerLevelWrapper))
 		{
-			String errorMessage = "Unable to find chunk update manager for level ["+levelWrapper+"]-["+levelWrapper.getClass().getName()+"], world environment: ["+world.environment+"], chunk updates may fail. This message will only be logged once.";
-			if (LOGGED_GET_ERROR_MESSAGES.add(errorMessage))
-			{
-				LOGGER.warn(errorMessage);
-			}
-			
+			// ignore client updates on the server
 			return null;
 		}
 		
