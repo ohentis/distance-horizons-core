@@ -87,6 +87,7 @@ public class RenderThreadTaskHandler
 		
 		// https://fpstoms.com/
 		int msPerFrame = 1000 / frameLimit;
+		msPerFrame /= 2; // divide the time in half so we can only impact half of the framerate at worst
 		this.runRenderThreadTasks(msPerFrame);
 	}
 	private void runRenderThreadTasks(long msMaxRunTime)
