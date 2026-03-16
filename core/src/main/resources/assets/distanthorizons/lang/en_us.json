@@ -391,12 +391,20 @@
   "distanthorizons.config.client.advanced.graphics.culling.ignoredRenderBlockCsv":
     "Ignored Block CSV",
   "distanthorizons.config.client.advanced.graphics.culling.ignoredRenderBlockCsv.@tooltip":
-    "A comma separated list of block resource locations that won't be rendered by DH. \nNote: air is always included in this list.",
+    "A comma separated list of block resource locations that won't be rendered by DH. \nAir is always included in this list. \n\nNote: \nIf you see gaps, or holes you may have to change \nworldCompression to [MERGE_SAME_BLOCKS] and re-generate the LODs.",
   "distanthorizons.config.client.advanced.graphics.culling.ignoredRenderCaveBlockCsv":
     "Ignored Cave Block CSV",
   "distanthorizons.config.client.advanced.graphics.culling.ignoredRenderCaveBlockCsv.@tooltip":
-    "A comma separated list of block resource locations that shouldn't be rendered \nif they are in a 0 sky light underground area. \nNote: air is always included in this list.",
-
+    "A comma separated list of block resource locations that shouldn't be rendered \nif they are in a 0 sky light underground area. \nAir is always included in this list. \n\nDefaults to an empty list since most cave blocks will be automatically ignored due to being: \ntransparent, non-solid, or liquids, but new blocks can be added here if needed.",
+  "distanthorizons.config.client.advanced.graphics.culling.waterSubSurfaceBlockReplacementCsv":
+    "Water Sub-Surface Replacement",
+  "distanthorizons.config.client.advanced.graphics.culling.waterSubSurfaceBlockReplacementCsv.@tooltip":
+    "A comma separated list of block resource locations that will be replaced by water \nif they're visible on the water's surface.",
+  "distanthorizons.config.client.advanced.graphics.culling.waterSurfaceBlockReplacementCsv":
+    "Water Surface Replacement",
+  "distanthorizons.config.client.advanced.graphics.culling.waterSurfaceBlockReplacementCsv.@tooltip":
+    "A comma separated list of block resource locations that will be removed \nwhen on top of water.",
+    
   "distanthorizons.config.client.advanced.graphics.overrideVanillaGraphicsSettings":
     "Override Vanilla Settings",
   "distanthorizons.config.client.advanced.graphics.overrideVanillaGraphicsSettings.@tooltip":
