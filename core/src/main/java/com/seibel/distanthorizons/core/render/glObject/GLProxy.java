@@ -54,7 +54,7 @@ public class GLProxy
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	public static final ConfigBasedLogger GL_LOGGER = new ConfigBasedLogger(LogManager.getLogger(GLProxy.class),
-		() -> Config.Common.Logging.logRendererGLEvent.get());
+			() -> Config.Common.Logging.logRendererGLEvent.get());
 	
 	public static final Set<String> LOGGED_GL_MESSAGES = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 	
@@ -76,7 +76,7 @@ public class GLProxy
 	
 	private final EDhApiGpuUploadMethod preferredUploadMethod;
 	
-	public final GLMessageBuilder vanillaDebugMessageBuilder =
+	public final GLMessageBuilder vanillaDebugMessageBuilder = 
 		new GLMessageBuilder(
 			(type) ->
 			{
@@ -98,7 +98,7 @@ public class GLProxy
 					return true;
 			},
 			null
-		);
+	);
 	
 	
 	
@@ -134,11 +134,11 @@ public class GLProxy
 			
 			// See full requirement at above.
 			String errorMessage = ModInfo.READABLE_NAME + " was initializing " + GLProxy.class.getSimpleName()
-				+ " and discovered this GPU doesn't meet the OpenGL requirements. Sorry I couldn't tell you sooner :(\n" +
-				"Additional info:\n" + supportedVersionInfo;
+					+ " and discovered this GPU doesn't meet the OpenGL requirements. Sorry I couldn't tell you sooner :(\n" +
+					"Additional info:\n" + supportedVersionInfo;
 			MC.crashMinecraft(errorMessage, new UnsupportedOperationException("Distant Horizon OpenGL requirements not met"));
 		}
-		GL_LOGGER.info("minecraftGlCapabilities:\n" + this.versionInfoToString(this.glCapabilities));
+	 	GL_LOGGER.info("minecraftGlCapabilities:\n" + this.versionInfoToString(this.glCapabilities));
 		
 		if (Config.Client.Advanced.Debugging.OpenGl.overrideVanillaGLLogger.get())
 		{
@@ -351,20 +351,20 @@ public class GLProxy
 	private String getFailedVersionInfo(GLCapabilities c)
 	{
 		return "Your OpenGL support:\n" +
-			"openGL version 3.2+: [" + c.OpenGL32 + "] <- REQUIRED\n" +
-			"Vertex Attribute Buffer Binding: [" + (c.glVertexAttribBinding != 0) + "] <- optional improvement\n" +
-			"Buffer Storage: [" + (c.glBufferStorage != 0) + "] <- optional improvement\n" +
-			"If you noticed that your computer supports higher OpenGL versions"
-			+ " but not the required version, try running the game in compatibility mode."
-			+ " (How you turn that on, I have no clue~)";
+				"openGL version 3.2+: [" + c.OpenGL32 + "] <- REQUIRED\n" +
+				"Vertex Attribute Buffer Binding: [" + (c.glVertexAttribBinding != 0) + "] <- optional improvement\n" +
+				"Buffer Storage: [" + (c.glBufferStorage != 0) + "] <- optional improvement\n" +
+				"If you noticed that your computer supports higher OpenGL versions"
+				+ " but not the required version, try running the game in compatibility mode."
+				+ " (How you turn that on, I have no clue~)";
 	}
 	
 	private String versionInfoToString(GLCapabilities c)
 	{
 		return "Your OpenGL support:\n" +
-			"openGL version 3.2+: [" + c.OpenGL32 + "] <- REQUIRED\n" +
-			"Vertex Attribute Buffer Binding: [" + (c.glVertexAttribBinding != 0) + "] <- optional improvement\n" +
-			"Buffer Storage: [" + (c.glBufferStorage != 0) + "] <- optional improvement\n";
+				"openGL version 3.2+: [" + c.OpenGL32 + "] <- REQUIRED\n" +
+				"Vertex Attribute Buffer Binding: [" + (c.glVertexAttribBinding != 0) + "] <- optional improvement\n" +
+				"Buffer Storage: [" + (c.glBufferStorage != 0) + "] <- optional improvement\n";
 	}
 	
 	

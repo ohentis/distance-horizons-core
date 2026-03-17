@@ -84,28 +84,28 @@ public final class EmbeddedFrameUtil
 				throw new IllegalStateException();
 		}
 	}
-	
-	private static long getEmbeddedFrameHandle(long window)
-	{
-		int properties = SDLVideo.SDL_GetWindowProperties(window);
-		switch (EPlatform.get())
-		{
-			case LINUX: {
-				long wayland = SDLProperties.SDL_GetPointerProperty(properties, SDLVideo.SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, 0);
-				if (wayland != 0) {
-					return wayland;
-				} else {
-					return SDLProperties.SDL_GetPointerProperty(properties, SDLVideo.SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
-				}
-			}
-			case WINDOWS:
-				return SDLProperties.SDL_GetPointerProperty(properties, SDLVideo.SDL_PROP_WINDOW_WIN32_HWND_POINTER, 0);
-			case MACOS:
-				return SDLProperties.SDL_GetPointerProperty(properties, SDLVideo.SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, 0);
-			default:
-				throw new IllegalStateException();
-		}
-	}
+
+    private static long getEmbeddedFrameHandle(long window)
+    {
+        int properties = SDLVideo.SDL_GetWindowProperties(window);
+        switch (EPlatform.get())
+        {
+            case LINUX: {
+                long wayland = SDLProperties.SDL_GetPointerProperty(properties, SDLVideo.SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, 0);
+                if (wayland != 0) {
+                    return wayland;
+                } else {
+                    return SDLProperties.SDL_GetPointerProperty(properties, SDLVideo.SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
+                }
+            }
+            case WINDOWS:
+                return SDLProperties.SDL_GetPointerProperty(properties, SDLVideo.SDL_PROP_WINDOW_WIN32_HWND_POINTER, 0);
+            case MACOS:
+                return SDLProperties.SDL_GetPointerProperty(properties, SDLVideo.SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, 0);
+            default:
+                throw new IllegalStateException();
+        }
+    }
 	
 	public static Frame embeddedFrameCreate(long window)
 	{
@@ -137,9 +137,9 @@ public final class EmbeddedFrameUtil
 			try
 			{
 				embeddedFrame
-					.getClass()
-					.getMethod("synthesizeWindowActivation", boolean.class)
-					.invoke(embeddedFrame, doActivate);
+						.getClass()
+						.getMethod("synthesizeWindowActivation", boolean.class)
+						.invoke(embeddedFrame, doActivate);
 			}
 			catch (Exception e)
 			{
@@ -159,9 +159,9 @@ public final class EmbeddedFrameUtil
 			try
 			{
 				Method setLocationPrivate = embeddedFrame
-					.getClass()
-					.getSuperclass()
-					.getDeclaredMethod("setBoundsPrivate", int.class, int.class, int.class, int.class);
+						.getClass()
+						.getSuperclass()
+						.getDeclaredMethod("setBoundsPrivate", int.class, int.class, int.class, int.class);
 				setLocationPrivate.setAccessible(true);
 				setLocationPrivate.invoke(embeddedFrame, x, y, width, height);
 			}

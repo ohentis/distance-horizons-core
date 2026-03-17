@@ -88,12 +88,12 @@ public class ClientApi
 	/** this includes the is dev build message and low allocated memory warning */
 	private static final int MS_BETWEEN_STATIC_STARTUP_MESSAGES = 4_000;
 	
-	/**
+	/** 
 	 * This isn't the cleanest way of storing variables before passing them to the LOD renderer, 
 	 * but due to how mixins work and the inconsistency between MC versions,
 	 * having a static object that stores a single frame's data
 	 * is often the easiest solution. <br><br>
-	 *
+	 * 
 	 * Only downside is making sure each variable is populated before rendering.
 	 */
 	public static final RenderState RENDER_STATE = new RenderState();
@@ -145,7 +145,7 @@ public class ClientApi
 	 * May be fired slightly before or after the associated
 	 * {@link ClientApi#clientLevelLoadEvent(IClientLevelWrapper)} event
 	 * depending on how the host mod loader functions. <br><br>
-	 *
+	 * 
 	 * Synchronized shouldn't be necessary, but is present to match {@see onClientOnlyDisconnected} and prevent any unforeseen issues. 
 	 */
 	public synchronized void onClientOnlyConnected()
@@ -401,17 +401,17 @@ public class ClientApi
 	public void renderLods(IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
 	{ this.renderLodLayer(levelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, false); }
 	
-	/**
+	/** 
 	 * Only necessary when Shaders are in use.
-	 * Should be called after {@link ClientApi#renderLods}
+	 * Should be called after {@link ClientApi#renderLods} 
 	 */
 	public void renderDeferredLodsForShaders(IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks)
 	{ this.renderLodLayer(levelWrapper, mcModelViewMatrix, mcProjectionMatrix, partialTicks, true); }
 	
 	
 	private void renderLodLayer(
-		IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks,
-		boolean renderingDeferredLayer)
+			IClientLevelWrapper levelWrapper, Mat4f mcModelViewMatrix, Mat4f mcProjectionMatrix, float partialTicks,
+			boolean renderingDeferredLayer)
 	{
 		// logging //
 		
@@ -443,14 +443,14 @@ public class ClientApi
 		}
 		
 		DhApiRenderParam renderEventParam =
-			new DhApiRenderParam(
-				renderPass,
-				partialTicks,
-				RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks), RenderUtil.getFarClipPlaneDistanceInBlocks(),
-				mcProjectionMatrix, mcModelViewMatrix,
-				RenderUtil.createLodProjectionMatrix(mcProjectionMatrix, partialTicks), RenderUtil.createLodModelViewMatrix(mcModelViewMatrix),
-				levelWrapper.getMinHeight()
-			);
+				new DhApiRenderParam(
+						renderPass,
+						partialTicks,
+						RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks), RenderUtil.getFarClipPlaneDistanceInBlocks(),
+						mcProjectionMatrix, mcModelViewMatrix,
+						RenderUtil.createLodProjectionMatrix(mcProjectionMatrix, partialTicks), RenderUtil.createLodModelViewMatrix(mcModelViewMatrix),
+						levelWrapper.getMinHeight()
+				);
 		
 		
 		
@@ -602,11 +602,11 @@ public class ClientApi
 				(
 					// only fade when requested
 					Config.Client.Advanced.Graphics.Quality.vanillaFadeMode.get() != EDhApiMcRenderingFadeMode.NONE
-						// or if LOD-only mode is enabled (fading is used to remove the MC render pass)
-						|| Config.Client.Advanced.Debugging.lodOnlyMode.get()
+					// or if LOD-only mode is enabled (fading is used to remove the MC render pass)
+					|| Config.Client.Advanced.Debugging.lodOnlyMode.get()
 				)
-					// don't fade when Iris shaders are active, otherwise the rendering can get weird
-					&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering();
+				// don't fade when Iris shaders are active, otherwise the rendering can get weird
+				&& !DhApiRenderProxy.INSTANCE.getDeferTransparentRendering();
 			if (renderFade)
 			{
 				FadeRenderer.INSTANCE.render(mcModelViewMatrix, mcProjectionMatrix, partialTicks, level);
@@ -622,32 +622,32 @@ public class ClientApi
 	//=================//
 	
 	/** Trigger once on key press, with CLIENT PLAYER. */
-	// i cant find any reference to that function
+    // i cant find any reference to that function
 	/**public void keyPressedEvent(int glfwKey)
-	 {
-	 if (!Config.Client.Advanced.Debugging.enableDebugKeybindings.get())
-	 {
-	 // keybindings are disabled
-	 return;
-	 }
-	 
-	 
-	 if (glfwKey == GLFW.GLFW_KEY_F8)
-	 {
-	 Config.Client.Advanced.Debugging.debugRendering.set(EDhApiDebugRendering.next(Config.Client.Advanced.Debugging.debugRendering.get()));
-	 MC_CLIENT.sendChatMessage("F8: Set debug mode to " + Config.Client.Advanced.Debugging.debugRendering.get());
-	 }
-	 else if (glfwKey == GLFW.GLFW_KEY_F6)
-	 {
-	 Config.Client.Advanced.Debugging.rendererMode.set(EDhApiRendererMode.next(Config.Client.Advanced.Debugging.rendererMode.get()));
-	 MC_CLIENT.sendChatMessage("F6: Set rendering to " + Config.Client.Advanced.Debugging.rendererMode.get());
-	 }
-	 else if (glfwKey == GLFW.GLFW_KEY_P)
-	 {
-	 prefLoggerEnabled = !prefLoggerEnabled;
-	 MC_CLIENT.sendChatMessage("P: Debug Pref Logger is " + (prefLoggerEnabled ? "enabled" : "disabled"));
-	 }
-	 }**/
+	{
+		if (!Config.Client.Advanced.Debugging.enableDebugKeybindings.get())
+		{
+			// keybindings are disabled
+			return;
+		}
+		
+		
+		if (glfwKey == GLFW.GLFW_KEY_F8)
+		{
+			Config.Client.Advanced.Debugging.debugRendering.set(EDhApiDebugRendering.next(Config.Client.Advanced.Debugging.debugRendering.get()));
+			MC_CLIENT.sendChatMessage("F8: Set debug mode to " + Config.Client.Advanced.Debugging.debugRendering.get());
+		}
+		else if (glfwKey == GLFW.GLFW_KEY_F6)
+		{
+			Config.Client.Advanced.Debugging.rendererMode.set(EDhApiRendererMode.next(Config.Client.Advanced.Debugging.rendererMode.get()));
+			MC_CLIENT.sendChatMessage("F6: Set rendering to " + Config.Client.Advanced.Debugging.rendererMode.get());
+		}
+		else if (glfwKey == GLFW.GLFW_KEY_P)
+		{
+			prefLoggerEnabled = !prefLoggerEnabled;
+			MC_CLIENT.sendChatMessage("P: Debug Pref Logger is " + (prefLoggerEnabled ? "enabled" : "disabled"));
+		}
+	}**/
 	
 	private void sendQueuedChatMessages()
 	{
@@ -661,7 +661,7 @@ public class ClientApi
 		{
 			return;
 		}
-		
+			
 		
 		// chat messages
 		while (!this.chatMessageQueueForNextFrame.isEmpty())
@@ -691,7 +691,7 @@ public class ClientApi
 	{
 		// memory
 		if (this.staticStartupMessageSentRecently()) return;
-		if (!this.lowMemoryWarningPrinted
+		if (!this.lowMemoryWarningPrinted 
 			&& Config.Common.Logging.Warning.showLowMemoryWarningOnStartup.get())
 		{
 			this.lowMemoryWarningPrinted = true;
@@ -705,8 +705,8 @@ public class ClientApi
 			if (maxMemoryInBytes < minimumRecommendedMemoryInBytes)
 			{
 				String message =
-					// orange text		
-					"\u00A76" + "Distant Horizons: Low memory detected." + "\u00A7r \n" +
+						// orange text		
+						"\u00A76" + "Distant Horizons: Low memory detected." + "\u00A7r \n" +
 						"Stuttering or low FPS may occur. \n" +
 						"Please increase Minecraft's available memory to 4 GB or more. \n" +
 						"This warning can be disabled in DH's config under Advanced -> Logging. \n";
@@ -717,7 +717,7 @@ public class ClientApi
 		
 		// high vanilla render distance
 		if (this.staticStartupMessageSentRecently()) return;
-		if (!this.highVanillaRenderDistanceWarningPrinted
+		if (!this.highVanillaRenderDistanceWarningPrinted 
 			&& Config.Common.Logging.Warning.showHighVanillaRenderDistanceWarning.get())
 		{
 			// DH generally doesn't need a vanilla render distance above 12 
@@ -727,8 +727,8 @@ public class ClientApi
 				this.lastStaticWarningMessageSentMsTime = System.currentTimeMillis();
 				
 				String message =
-					// yellow text
-					"\u00A7e" + "Distant Horizons: High vanilla render distance detected." + "\u00A7r \n" +
+						// yellow text
+						"\u00A7e" + "Distant Horizons: High vanilla render distance detected." + "\u00A7r \n" +
 						"Using a high vanilla render distance uses a lot of CPU power \n" +
 						"and doesn't improve graphics much after about 12.\n" +
 						"Lowing your vanilla render distance will give you better FPS\n" +
@@ -749,12 +749,12 @@ public class ClientApi
 			return false;
 		}
 		
-		long timeSinceLastMessage = System.currentTimeMillis() - this.lastStaticWarningMessageSentMsTime;
+		long timeSinceLastMessage = System.currentTimeMillis() - this.lastStaticWarningMessageSentMsTime; 
 		return timeSinceLastMessage <= MS_BETWEEN_STATIC_STARTUP_MESSAGES;
 	}
 	
 	
-	/**
+	/** 
 	 * Queues the given message to appear in chat the next valid frame.
 	 * Useful for queueing up messages that may be triggered before the user has loaded into the world. 
 	 */
