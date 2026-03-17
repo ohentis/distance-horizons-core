@@ -19,22 +19,13 @@
 
 package com.seibel.distanthorizons.core.world;
 
-import com.seibel.distanthorizons.core.api.internal.ClientApi;
-import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
-import com.seibel.distanthorizons.core.generation.PregenManager;
 import com.seibel.distanthorizons.core.level.DhServerLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.CompletableFuture;
-
 public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 {
-	private final PregenManager pregenManager = new PregenManager();
-	public PregenManager getPregenManager() { return this.pregenManager; }
-	
-	
 	//==============//
 	// constructors //
 	//==============//
@@ -60,23 +51,7 @@ public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 		}
 		
 		return this.dhLevelByLevelWrapper.computeIfAbsent(wrapper, 
-			(serverLevelWrapper) ->
-			{
-				try
-				{
-					return new DhServerLevel(this.saveStructure, (IServerLevelWrapper) serverLevelWrapper, this.getServerPlayerStateManager());
-				}
-				catch (Exception e)
-				{
-					LOGGER.fatal("Failed to load server level, error: ["+e.getMessage()+"].", e);
-					
-					ClientApi.INSTANCE.showChatMessageNextFrame(
-						MinecraftTextFormat.RED + "Distant Horizons: Server level loading failed." + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
-						"Unable to load level ["+serverLevelWrapper.getDhIdentifier()+"], LODs may not appear. See log for more information.");
-					
-					return null;
-				}
-			});
+				(serverLevelWrapper) -> new DhServerLevel(this.saveStructure, (IServerLevelWrapper) serverLevelWrapper, this.getServerPlayerStateManager()));
 	}
 	
 	@Override
@@ -89,23 +64,10 @@ public class DhServerWorld extends AbstractDhServerWorld<DhServerLevel>
 		
 		if (this.dhLevelByLevelWrapper.containsKey(wrapper))
 		{
-			DhServerLevel level = this.dhLevelByLevelWrapper.get(wrapper);
+			LOGGER.info("Unloading level {} ", this.dhLevelByLevelWrapper.get(wrapper));
 			wrapper.onUnload();
 			this.dhLevelByLevelWrapper.remove(wrapper).close();
 		}
-	}
-	
-	@Override
-	public void close()
-	{
-		CompletableFuture<Void> runningPregen = this.pregenManager.getRunningPregen();
-		if (runningPregen != null)
-		{
-			LOGGER.info("Stopping the running pregen task.");
-			runningPregen.cancel(true);
-		}
-		
-		super.close();
 	}
 	
 }

@@ -19,27 +19,30 @@
 
 package com.seibel.distanthorizons.core.generation;
 
-import com.seibel.distanthorizons.core.generation.tasks.DataSourceRetrievalResult;
+import com.seibel.distanthorizons.core.generation.tasks.IWorldGenTaskTracker;
+import com.seibel.distanthorizons.core.generation.tasks.WorldGenResult;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.render.QuadTree.LodQuadTree;
+import com.seibel.distanthorizons.core.render.LodQuadTree;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Used to track what some of the full data sources the system currently
+ * Used to track what full data sources the system currently
  * wants but doesn't have. <br>
  * IE, what sections should be generated via the world generator. <br><br>
  * 
  * Note: <br>
  * This won't contain every position that needs to be retrieved 
- * since that would cause issues when moving or with extreme
- * render distances. <br><br>
+ * (due to causing issues at extreme render distances).
+ * TODO does that mean this object isn't necessary or 
+ *      should just be renamed since it isn't the full queue <br><br>
  * 
- * Used by both world gen and server networking.
+ * Use by both world gen and server networking.
  * 
  * @see LodQuadTree
  */
@@ -48,7 +51,6 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	//=========//
 	// getters //
 	//=========//
-	//region
 	
 	/** 
 	 * The largest numerical detail level. <br>
@@ -63,14 +65,11 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	 */
 	byte highestDataDetail();
 	
-	//endregion
-	
 	
 	
 	//=======//
 	// setup //
 	//=======//
-	//region
 	
 	/** 
 	 * Starts the retrieval process if not already running,
@@ -81,14 +80,11 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	 * */
 	void startAndSetTargetPos(DhBlockPos2D targetPos);
 	
-	//endregion
-	
 	
 	
 	//===============//
 	// task handling //
 	//===============//
-	//region
 	
 	/** 
 	 * Generally the retrieval queue should be fairly small, so its faster to iterate over the existing list
@@ -96,16 +92,13 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	 */
 	void removeRetrievalRequestIf(DhSectionPos.ICancelablePrimitiveLongConsumer removeIf);
 	
-	CompletableFuture<DataSourceRetrievalResult> submitRetrievalTask(long pos, byte requiredDataDetail);
-	
-	//endregion
+	CompletableFuture<WorldGenResult> submitRetrievalTask(long pos, byte requiredDataDetail, IWorldGenTaskTracker tracker);
 	
 	
 	
 	//==========//
 	// shutdown //
 	//==========//
-	//region
 	
 	/** Can be used to let any lingering generation requests finish before fully shutting down the system */
 	CompletableFuture<Void> startClosingAsync(boolean cancelCurrentGeneration, boolean alsoInterruptRunning);
@@ -113,14 +106,11 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	@Override
 	void close();
 	
-	//endregion
-	
 	
 	
 	//===============//
 	// debug display //
 	//===============//
-	//region
 	
 	int getWaitingTaskCount();
 	int getInProgressTaskCount();
@@ -140,8 +130,6 @@ public interface IFullDataSourceRetrievalQueue extends Closeable
 	
 	/** Can be used to determine roughly how fast the world generator is running. */
 	RollingAverage getRollingAverageChunkGenTimeInMs();
-	
-	//endregion
 	
 	
 	

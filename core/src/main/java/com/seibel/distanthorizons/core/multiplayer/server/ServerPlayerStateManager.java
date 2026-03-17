@@ -1,6 +1,5 @@
 package com.seibel.distanthorizons.core.multiplayer.server;
 
-import com.seibel.distanthorizons.core.multiplayer.fullData.SharedBandwidthLimit;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +16,6 @@ public class ServerPlayerStateManager
 	private final ConcurrentMap<IServerPlayerWrapper, ServerPlayerState> connectedPlayerStateByPlayerWrapper = new ConcurrentHashMap<>();
 	private final ConcurrentMap<IServerPlayerWrapper, MessageQueueState> messageQueueByPlayerWrapper = new ConcurrentHashMap<>();
 	
-	private final SharedBandwidthLimit sharedBandwidthLimit = new SharedBandwidthLimit();
 	
 	
 	//========================//
@@ -26,7 +24,7 @@ public class ServerPlayerStateManager
 	
 	public ServerPlayerState registerJoinedPlayer(IServerPlayerWrapper serverPlayer)
 	{
-		ServerPlayerState playerState = new ServerPlayerState(serverPlayer, this.sharedBandwidthLimit);
+		ServerPlayerState playerState = new ServerPlayerState(serverPlayer);
 		this.connectedPlayerStateByPlayerWrapper.put(serverPlayer, playerState);
 		return playerState;
 	}

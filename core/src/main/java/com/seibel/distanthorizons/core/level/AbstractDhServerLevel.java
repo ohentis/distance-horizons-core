@@ -2,9 +2,10 @@ package com.seibel.distanthorizons.core.level;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
-import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.server.FullDataSourceRequestHandler;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerState;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
@@ -21,23 +22,19 @@ import com.seibel.distanthorizons.core.network.messages.requests.CancelMessage;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.util.WorldGenUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import com.seibel.distanthorizons.core.logging.DhLogger;
-import org.jetbrains.annotations.NotNull;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.*;
 
 public abstract class AbstractDhServerLevel extends AbstractDhLevel implements IDhServerLevel
 {
-	protected static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	public final ServerLevelModule serverside;
 	protected final IServerLevelWrapper serverLevelWrapper;
@@ -46,31 +43,28 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	
 	/**
 	 * This queue is used for ensuring fair generation speed for each player. <br>
-	 * Every tick the first player gets used for centering generation, and then is immediately moved into the back of the queue.
+	 * Every tick the first player gets used for centering generation, and then is immediately moved into the back of the queue. <br>
+	 * TODO only add players that actually have something to generate
 	 */
 	protected final ConcurrentLinkedQueue<IServerPlayerWrapper> worldGenPlayerCenteringQueue = new ConcurrentLinkedQueue<>();
 	
-	private final FullDataSourceRequestHandler requestHandler;
-	
+	private final FullDataSourceRequestHandler requestHandler = new FullDataSourceRequestHandler(this);
 	
 	
 	//=============//
 	// constructor //
 	//=============//
 	
-	public AbstractDhServerLevel(
-		ISaveStructure saveStructure, 
-		IServerLevelWrapper serverLevelWrapper, 
-		ServerPlayerStateManager serverPlayerStateManager
-		) throws SQLException, IOException
-	{ this(saveStructure, serverLevelWrapper, serverPlayerStateManager, true); }
-	
+	public AbstractDhServerLevel(ISaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
+	{
+		this(saveStructure, serverLevelWrapper, serverPlayerStateManager, true);
+	}
 	public AbstractDhServerLevel(
 			ISaveStructure saveStructure,
 			IServerLevelWrapper serverLevelWrapper,
 			ServerPlayerStateManager serverPlayerStateManager,
 			boolean runRepoReliantSetup
-		) throws SQLException, IOException
+		)
 	{
 		if (saveStructure.getSaveFolder(serverLevelWrapper).mkdirs())
 		{
@@ -87,7 +81,6 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		LOGGER.info("Started "+this.getClass().getSimpleName()+" for ["+serverLevelWrapper+"] at ["+saveStructure+"].");
 		
 		this.serverPlayerStateManager = serverPlayerStateManager;
-		this.requestHandler = new FullDataSourceRequestHandler(this);
 	}
 	
 	
@@ -97,16 +90,23 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	//=======//
 	
 	@Override
-	public boolean shouldDoWorldGen()
-	{ return Config.Common.WorldGenerator.enableDistantGeneration.get(); }
+	public void serverTick()
+	{
+		this.requestHandler.tick();
+	}
 	
 	@Override
+	public boolean shouldDoWorldGen()
+	{ return Config.Common.WorldGenerator.enableDistantGeneration.get() && !this.worldGenPlayerCenteringQueue.isEmpty(); }
+	
+	@Override
+	@Nullable
 	public DhBlockPos2D getTargetPosForGeneration()
 	{
 		IServerPlayerWrapper firstPlayer = this.worldGenPlayerCenteringQueue.peek();
 		if (firstPlayer == null)
 		{
-			return DhBlockPos2D.ZERO;
+			return null;
 		}
 		
 		// Put first player in back before removing from front, so it can be removed by other thread without blocking
@@ -117,6 +117,9 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 		Vec3d position = firstPlayer.getPosition();
 		return new DhBlockPos2D((int) position.x, (int) position.z);
 	}
+	
+	@Override 
+	public void worldGenTick() { this.serverside.worldGenModule.worldGenTick(); }
 	
 	
 	
@@ -146,15 +149,16 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 					return;
 				}
 				
-				boolean posInRange = WorldGenUtil.isPosInWorldGenRange(
-					message.sectionPos,
-					Config.Common.WorldGenerator.generationCenterChunkX.get(), Config.Common.WorldGenerator.generationCenterChunkZ.get(),
-					Config.Common.WorldGenerator.generationMaxChunkRadius.get()
-				);
-				if (!posInRange)
+				if (Config.Server.generationBoundsRadius.get() > 0)
 				{
-					message.sendResponse(new RequestOutOfRangeException("Section out of allowed bounds"));
-					return;
+					if (DhSectionPos.getChebyshevSignedBlockDistance(message.sectionPos, new DhBlockPos2D(
+							serverPlayerState.sessionConfig.getGenerationBoundsX(),
+							serverPlayerState.sessionConfig.getGenerationBoundsZ()
+					)) > Config.Server.generationBoundsRadius.get())
+					{
+						message.sendResponse(new RequestOutOfRangeException("Section out of allowed bounds"));
+						return;
+					}
 				}
 				
 				if (!Config.Server.Experimental.enableNSizedGeneration.get() && DhSectionPos.getDetailLevel(message.sectionPos) != DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL)
@@ -292,8 +296,28 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
-		this.serverside.fullDataFileHandler.addDebugMenuStringsToList(messageList);
-		this.serverside.lodRequestModule.addDebugMenuStringsToList(messageList);
+		// migration
+		boolean migrationErrored = this.serverside.fullDataFileHandler.getMigrationStoppedWithError();
+		if (!migrationErrored)
+		{
+			long legacyDeletionCount = this.serverside.fullDataFileHandler.getLegacyDeletionCount();
+			if (legacyDeletionCount > 0)
+			{
+				messageList.add("  Migrating - Deleting #: " + F3Screen.NUMBER_FORMAT.format(legacyDeletionCount));
+			}
+			long migrationCount = this.serverside.fullDataFileHandler.getTotalMigrationCount();
+			if (migrationCount > 0)
+			{
+				messageList.add("  Migrating - Conversion #: " + F3Screen.NUMBER_FORMAT.format(migrationCount));
+			}
+		}
+		else
+		{
+			messageList.add("  Migration Failed");
+		}
+		
+		// world gen
+		this.serverside.worldGenModule.addDebugMenuStringsToList(messageList);
 	}
 	
 	
@@ -303,10 +327,14 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	//=========//
 	
 	@Override
+	public int getMinY() { return this.getLevelWrapper().getMinHeight(); }
+	@Override
+	public int getMaxY() { return this.getLevelWrapper().getMaxHeight(); }
+	
+	@Override
 	public IServerLevelWrapper getServerLevelWrapper() { return this.serverLevelWrapper; }
 	
 	@Override
-	@NotNull
 	public ILevelWrapper getLevelWrapper() { return this.getServerLevelWrapper(); }
 	
 	@Override
@@ -314,6 +342,9 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	
 	@Override
 	public ISaveStructure getSaveStructure() { return this.serverside.saveStructure; }
+	
+	@Override
+	public boolean hasSkyLight() { return this.serverLevelWrapper.hasSkyLight(); }
 	
 	
 	
@@ -326,10 +357,7 @@ public abstract class AbstractDhServerLevel extends AbstractDhLevel implements I
 	{
 		super.close();
 		this.serverside.close();
-		this.requestHandler.close();
 		LOGGER.info("Closed DHLevel for [" + this.getLevelWrapper() + "].");
 	}
-	
-	
 	
 }

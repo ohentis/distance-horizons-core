@@ -26,24 +26,18 @@ import com.seibel.distanthorizons.core.util.objects.quadTree.iterators.QuadNodeD
 import com.seibel.distanthorizons.core.util.objects.quadTree.iterators.QuadNodeDirectChildPosIterator;
 import com.seibel.distanthorizons.core.util.objects.quadTree.iterators.QuadTreeNodeIterator;
 import it.unimi.dsi.fastutil.longs.LongIterator;
-import com.seibel.distanthorizons.core.logging.DhLogger;
-import org.jetbrains.annotations.Nullable;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Iterator;
 import java.util.function.Consumer;
 
 public class QuadNode<T>
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
 	public final long sectionPos;
-	/** 
-	 * this is the highest detail level this tree can provide.
-	 * IE the detail levels that the root nodes in the tree are.
-	 */
-	public final byte parentTreeLeafDetailLevel;
-	@Nullable
+	public final byte minimumDetailLevel;
 	public T value;
 	
 	
@@ -52,50 +46,35 @@ public class QuadNode<T>
 	 * index 0 <br>
 	 * relative pos (0,0)
 	 */
-	@Nullable
 	public QuadNode<T> nwChild;
 	/**
 	 * North East <br>
 	 * index 1 <br>
 	 * relative (1,0)
 	 */
-	@Nullable
 	public QuadNode<T> neChild;
 	/**
 	 * South West <br>
 	 * index 2 <br>
 	 * relative (0,1)
 	 */
-	@Nullable
 	public QuadNode<T> swChild;
 	/**
 	 * South East <br>
 	 * index 3 <br>
 	 * relative (1,1)
 	 */
-	@Nullable
 	public QuadNode<T> seChild;
 	
 	
 	
-	public QuadNode(long sectionPos, byte parentTreeLeafDetailLevel)
+	public QuadNode(long sectionPos, byte minimumDetailLevel)
 	{
 		this.sectionPos = sectionPos;
-		this.parentTreeLeafDetailLevel = parentTreeLeafDetailLevel;
+		this.minimumDetailLevel = minimumDetailLevel;
 	}
 	
 	
-	
-	/** @return the number of non-null direct child nodes */
-	public int getDirectChildCount()
-	{
-		int count = 0;
-		if (this.nwChild != null) { count++; }
-		if (this.neChild != null) { count++; }
-		if (this.swChild != null) { count++; }
-		if (this.seChild != null) { count++; }
-		return count;
-	}
 	
 	/**
 	 * Use {@link QuadNode#getNonNullChildCount()} if you want the number of non-null child values.
@@ -143,18 +122,18 @@ public class QuadNode<T>
 	 *
 	 * @param child0to3 must be an int between 0 and 3
 	 */
-	public @Nullable QuadNode<T> getChildByIndex(int child0to3) throws IllegalArgumentException
+	public QuadNode<T> getChildByIndex(int child0to3) throws IllegalArgumentException
 	{
 		switch (child0to3)
 		{
 			case 0:
-				return this.nwChild;
+				return nwChild;
 			case 1:
-				return this.swChild;
+				return swChild;
 			case 2:
-				return this.neChild;
+				return neChild;
 			case 3:
-				return this.seChild;
+				return seChild;
 			
 			default:
 				throw new IllegalArgumentException("child0to3 must be between 0 and 3");
@@ -212,12 +191,12 @@ public class QuadNode<T>
 		
 		if (DhSectionPos.getDetailLevel(inputSectionPos) == DhSectionPos.getDetailLevel(this.sectionPos) && inputSectionPos != this.sectionPos)
 		{
-			throw new IllegalArgumentException("Node and input detail level are equal, however positions are not; this tree doesn't contain the requested position. Node pos: " + this.sectionPos + ", input pos: " + DhSectionPos.toString(inputSectionPos));
+			throw new IllegalArgumentException("Node and input detail level are equal, however positions are not; this tree doesn't contain the requested position. Node pos: " + this.sectionPos + ", input pos: " + inputSectionPos);
 		}
 		
-		if (DhSectionPos.getDetailLevel(inputSectionPos) < this.parentTreeLeafDetailLevel)
+		if (DhSectionPos.getDetailLevel(inputSectionPos) < this.minimumDetailLevel)
 		{
-			throw new IllegalArgumentException("Input position is requesting a detail level lower than what this node can provide. Tree leaf detail level: " + this.parentTreeLeafDetailLevel + ", input pos: " + DhSectionPos.toString(inputSectionPos));
+			throw new IllegalArgumentException("Input position is requesting a detail level lower than what this node can provide. Node minimum detail level: " + this.minimumDetailLevel + ", input pos: " + inputSectionPos);
 		}
 		
 		
@@ -248,12 +227,11 @@ public class QuadNode<T>
 			QuadNode<T> childNode;
 			if (DhSectionPos.contains(nwPos, inputSectionPos))
 			{
-				// there's a bunch of duplicate code between the 4 children, but the code works, so leaving it duplicated will be fine
-				
+				// TODO merge duplicate code
 				if (replaceValue && this.nwChild == null)
 				{
 					// if no node exists for this position, but we want to insert a new value at this position, create a new node
-					this.nwChild = new QuadNode<>(nwPos, this.parentTreeLeafDetailLevel);
+					this.nwChild = new QuadNode<>(nwPos, this.minimumDetailLevel);
 				}
 				childNode = this.nwChild;
 				
@@ -262,10 +240,11 @@ public class QuadNode<T>
 			}
 			else if (DhSectionPos.contains(swPos, inputSectionPos))
 			{
+				// TODO merge duplicate code
 				if (replaceValue && this.swChild == null)
 				{
 					// if no node exists for this position, but we want to insert a new value at this position, create a new node
-					this.swChild = new QuadNode<>(swPos, this.parentTreeLeafDetailLevel);
+					this.swChild = new QuadNode<>(swPos, this.minimumDetailLevel);
 				}
 				childNode = this.swChild;
 				
@@ -274,10 +253,11 @@ public class QuadNode<T>
 			}
 			else if (DhSectionPos.contains(nePos, inputSectionPos))
 			{
+				// TODO merge duplicate code
 				if (replaceValue && this.neChild == null)
 				{
 					// if no node exists for this position, but we want to insert a new value at this position, create a new node
-					this.neChild = new QuadNode<>(nePos, this.parentTreeLeafDetailLevel);
+					this.neChild = new QuadNode<>(nePos, this.minimumDetailLevel);
 				}
 				childNode = this.neChild;
 				
@@ -286,10 +266,11 @@ public class QuadNode<T>
 			}
 			else if (DhSectionPos.contains(sePos, inputSectionPos))
 			{
+				// TODO merge duplicate code
 				if (replaceValue && this.seChild == null)
 				{
 					// if no node exists for this position, but we want to insert a new value at this position, create a new node
-					this.seChild = new QuadNode<>(sePos, this.parentTreeLeafDetailLevel);
+					this.seChild = new QuadNode<>(sePos, this.minimumDetailLevel);
 				}
 				childNode = this.seChild;
 				
@@ -309,9 +290,8 @@ public class QuadNode<T>
 	// iterators //
 	//===========//
 	
-	public Iterator<QuadNode<T>> getNodeIterator() { return new QuadTreeNodeIterator<>(this, false, null); }
-	public Iterator<QuadNode<T>> getNodeIterator(@Nullable QuadTree.INodeIteratorStoppingFunc<T> stopIteratingFunc) { return new QuadTreeNodeIterator<>(this, false, stopIteratingFunc); }
-	public Iterator<QuadNode<T>> getLeafNodeIterator() { return new QuadTreeNodeIterator<>(this, true, null); }
+	public Iterator<QuadNode<T>> getNodeIterator() { return new QuadTreeNodeIterator<>(this, false); }
+	public Iterator<QuadNode<T>> getLeafNodeIterator() { return new QuadTreeNodeIterator<>(this, true); }
 	
 	/** positions can point to null children */
 	public LongIterator getChildPosIterator() { return new QuadNodeDirectChildPosIterator<>(this); }

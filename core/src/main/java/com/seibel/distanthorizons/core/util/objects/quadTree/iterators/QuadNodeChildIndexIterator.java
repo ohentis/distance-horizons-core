@@ -34,7 +34,7 @@ public class QuadNodeChildIndexIterator<T> implements Iterator<Integer>
 	public QuadNodeChildIndexIterator(QuadNode<T> parentNode, boolean returnNullChildPos)
 	{
 		// only get the children if this section isn't at the bottom of the tree
-		if (DhSectionPos.getDetailLevel(parentNode.sectionPos) > parentNode.parentTreeLeafDetailLevel)
+		if (DhSectionPos.getDetailLevel(parentNode.sectionPos) > parentNode.minimumDetailLevel)
 		{
 			// go over each child pos
 			for (int i = 0; i < 4; i++)
@@ -42,6 +42,7 @@ public class QuadNodeChildIndexIterator<T> implements Iterator<Integer>
 				// add index to queue if either not null or we want to return null values as well
 				if (returnNullChildPos || parentNode.getChildByIndex(i) != null)
 				{
+					// TODO is it possible that a child could be outside the parent QuadTree's radius?
 					this.iteratorQueue.add(i);
 				}
 			}

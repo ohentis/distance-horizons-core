@@ -23,29 +23,25 @@ import com.google.common.cache.CacheBuilder;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
 import com.seibel.distanthorizons.core.generation.RemoteWorldRetrievalQueue;
-import com.seibel.distanthorizons.core.generation.tasks.DataSourceRetrievalResult;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.level.LodRequestModule;
+import com.seibel.distanthorizons.core.level.WorldGenModule;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.generation.tasks.ERetrievalResultState;
 import com.seibel.distanthorizons.core.multiplayer.client.SyncOnLoadRequestQueue;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Only handles {@link SyncOnLoadRequestQueue} requests (IE updating existing LODs based on a timestamp).
- * Missing data is handled by {@link LodRequestModule} and {@link RemoteWorldRetrievalQueue}.
+ * Missing data is handled by {@link WorldGenModule} and {@link RemoteWorldRetrievalQueue}.
  */
 public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvider
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	@Nullable
 	private final SyncOnLoadRequestQueue syncOnLoadRequestQueue;
@@ -62,8 +58,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	
 	public RemoteFullDataSourceProvider(
 			IDhLevel level, ISaveStructure saveStructure, @Nullable File saveDirOverride, 
-			@Nullable SyncOnLoadRequestQueue syncOnLoadRequestQueue
-		) throws SQLException, IOException
+			@Nullable SyncOnLoadRequestQueue syncOnLoadRequestQueue)
 	{
 		super(level, saveStructure, saveDirOverride);
 		this.syncOnLoadRequestQueue = syncOnLoadRequestQueue;
@@ -76,7 +71,7 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 	//==================//
 	
 	@Override
-	public boolean canQueueRetrievalNow() { return this.canQueueRetrievalNow(true); }
+	public boolean canQueueRetrieval() { return this.canQueueRetrieval(true); }
 	
 	@Override
 	@Nullable
@@ -104,20 +99,10 @@ public class RemoteFullDataSourceProvider extends GeneratedFullDataSourceProvide
 		Long timestamp = this.getTimestampForPos(pos);
 		if (timestamp != null)
 		{
-			this.syncOnLoadRequestQueue.submitRequest(pos, timestamp)
-				.thenAccept((DataSourceRetrievalResult result) ->
-				{
-					if (result.state == ERetrievalResultState.SUCCESS
-						&& result.dataSource != null)
-					{
-						this.updateDataSourceAsync(result.dataSource)
-							.handle((voidObj, throwable) ->
-							{
-								result.dataSource.close();
-								return null;
-							});
-					}
-				});
+			this.syncOnLoadRequestQueue.submitRequest(pos, timestamp, fullDataSource ->
+			{
+				this.updateDataSourceAsync(fullDataSource).whenComplete((result, throwable) -> fullDataSource.close());
+			});
 		}
 		
 		return super.get(pos);

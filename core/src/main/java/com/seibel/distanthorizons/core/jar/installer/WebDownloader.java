@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.jar.installer;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.json.JsonFormat;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
@@ -40,7 +40,7 @@ import java.util.ArrayList;
  */
 public class WebDownloader
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
 	public static boolean netIsAvailable()
@@ -85,6 +85,7 @@ public class WebDownloader
 					totalDataRead = totalDataRead + i;
 					bout.write(data, 0, i);
 					
+					// TODO: Link this to an atomic integer rather than printing it to log
                     int newPercent = (int) ((totalDataRead * 100) / filesize);
 					if (percent != newPercent)
 					{
@@ -99,6 +100,7 @@ public class WebDownloader
 	public static String downloadAsString(URL url) throws Exception
 	{
 		StringBuilder stringBuilder = new StringBuilder();
+//        URL url = new URL(urlS);
 		
 		URLConnection urlConnection = url.openConnection();
 		urlConnection.setConnectTimeout(1000);

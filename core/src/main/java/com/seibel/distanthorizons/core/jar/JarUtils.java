@@ -20,11 +20,10 @@
 package com.seibel.distanthorizons.core.jar;
 
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModChecker;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import org.apache.logging.log4j.LogManager;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -43,7 +42,7 @@ import java.util.Objects;
  */
 public class JarUtils
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = LogManager.getLogger();
 	
 	@Nullable
 	public static File jarFile = null;
@@ -53,7 +52,6 @@ public class JarUtils
 	//=============//
 	// constructor //
 	//=============//
-	//region
 	
 	static 
 	{
@@ -81,14 +79,11 @@ public class JarUtils
 		}
 	}
 	
-	//endregion
-	
 	
 	
 	//=========//
 	// methods //
 	//=========//
-	//region
 	
 	/**
 	 * Gets the URI of a resource
@@ -108,7 +103,7 @@ public class JarUtils
 	 */
 	public static InputStream accessFile(String resource)
 	{
-		final ClassLoader loader = JarUtils.class.getClassLoader();
+		final ClassLoader loader = Thread.currentThread().getContextClassLoader();
 		// this is the path within the jar file
 		InputStream input = loader.getResourceAsStream(resource);
 		if (input == null)
@@ -187,8 +182,27 @@ public class JarUtils
 		return sb.toString();
 	}
 	
-	//endregion
 	
-	
+	/** Please use the EPlatform enum instead */
+	@Deprecated
+	public enum OperatingSystem
+	{WINDOWS, MACOS, LINUX, NONE} // Easy to use enum for the 3 main os's
+	/** Please use the EPlatform enum instead */
+	@Deprecated
+	public static OperatingSystem getOperatingSystem()
+	{ 
+		// Get the os and turn it into that enum
+		switch (EPlatform.get())
+		{
+			case WINDOWS:
+				return OperatingSystem.WINDOWS;
+			case LINUX:
+				return OperatingSystem.LINUX;
+			case MACOS:
+				return OperatingSystem.MACOS;
+			default:
+				return OperatingSystem.NONE;
+		}
+	}
 	
 }

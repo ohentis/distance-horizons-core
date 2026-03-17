@@ -20,13 +20,12 @@
 package com.seibel.distanthorizons.core.config.types;
 
 
-import com.seibel.distanthorizons.core.config.ConfigHandler;
-import com.seibel.distanthorizons.core.util.NumberUtil;
-import com.seibel.distanthorizons.core.config.file.ConfigFileHandler;
+import com.seibel.distanthorizons.core.config.NumberUtil;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.listeners.IConfigListener;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance;
-import com.seibel.distanthorizons.core.config.types.enums.EConfigValidity;
+import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryPerformance;
+import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -34,39 +33,40 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 
 /**
- * This config type allows for entering text, number, or enum values.
+ * Use for making the config variables
+ * for types that are not supported by it look in ConfigBase
  *
  * @author coolGi
+ * @version 2023-7-16
  */
-public class ConfigEntry<T> extends AbstractConfigBase<T>
+public class ConfigEntry<T> extends AbstractConfigType<T, ConfigEntry<T>> implements IConfigEntry<T>
 {
-	private final String comment;
+	private String comment;
 	private T min;
 	private T max;
 	private final ArrayList<IConfigListener> listenerList;
 	private final String chatCommandName;
 	
+	private final EConfigEntryPerformance performance;
+	
+	// API control //
 	/**
 	 * If true this config can be controlled by the API <br>
 	 * and any get() method calls will return the apiValue if it is set.
 	 */
-	private final boolean allowApiOverride;
+	public final boolean allowApiOverride;
 	/** Will be null if un-set */
 	@Nullable
 	private T apiValue;
 	
 	
 	
-	//=============//
-	// constructor //
-	//=============//
-	//region
-	
+	/** Creates the entry */
 	private ConfigEntry(
 			EConfigEntryAppearance appearance, 
-			String comment, String chatCommandName, 
-			T value, T min, T max,
-			boolean allowApiOverride, 
+			T value, String comment, T min, T max, 
+			String chatCommandName, boolean allowApiOverride, 
+			EConfigEntryPerformance performance, 
 			ArrayList<IConfigListener> listenerList)
 	{
 		super(appearance, value);
@@ -76,74 +76,42 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 		this.max = max;
 		this.chatCommandName = chatCommandName;
 		this.allowApiOverride = allowApiOverride;
+		this.performance = performance;
 		this.listenerList = listenerList;
 	}
 	
-	//endregion
 	
 	
+	/** Gets the default value of the option */
+	@Override
+	public T getDefaultValue() { return super.defaultValue; }
 	
-	//==========================//
-	// property getters/setters //
-	//==========================//
-	//region
-	
-	/** the string used when entering the config into the command line or chat */
-	public String getChatCommandName() { return this.chatCommandName; }
-	
-	public String getComment() { return this.comment; }
-	
-	/**
-	 * If true this config can be controlled by the API <br>
-	 * and any get() method calls will return the apiValue if it is set.
-	 */
-	public boolean getAllowApiOverride() { return this.allowApiOverride; }
-	
-	public T getMin() { return this.min; }
-	public void setMin(T newMin) { this.min = newMin; }
-	public T getMax() { return this.max; }
-	public void setMax(T newMax) { this.max = newMax; }
-	
-	//endregion
-	
-	
-	
-	//===============//
-	// value setters //
-	//===============//
-	//region
-	
+	@Override
 	public void setApiValue(T newApiValue)
 	{
 		this.apiValue = newApiValue;
-		synchronized (this.listenerList)
-		{
-			this.listenerList.forEach(IConfigListener::onConfigValueSet);
-		}
+		this.listenerList.forEach(IConfigListener::onConfigValueSet);
 	}
+	@Override
+	public T getApiValue() { return this.apiValue; }
+	@Override
+	public boolean getAllowApiOverride() { return this.allowApiOverride; }
 	
-	public boolean apiIsOverriding() 
-	{ 
-		return this.allowApiOverride 
-				&& this.apiValue != null; 
-	}
-		
 	/** 
-	 * Should only be used when loading the config from file. <Br>
-	 * Sets the value without informing the rest of the code (ie, it doesn't call listeners, or saving the value to file).
-	 * @see ConfigFileHandler
+	 * DONT USE THIS IN YOUR CODE <br>
+	 * Sets the value without informing the rest of the code (ie, doesnt call listeners, or saves the value). <br>
+	 * Should only be used when loading the config from the file (in places like the {@link com.seibel.distanthorizons.core.config.file.ConfigFileHandling} or {@link com.seibel.distanthorizons.core.config.ConfigBase})
 	 */
-	public void setWithoutFiringEvents(T newValue) { super.set(newValue); }
+	public void pureSet(T newValue) {
+		super.set(newValue);
+	}
 	
 	/** Sets the value without saving */
+	@Override
 	public void setWithoutSaving(T newValue)
 	{
 		super.set(newValue);
-		
-		synchronized (this.listenerList)
-		{
-			this.listenerList.forEach(IConfigListener::onConfigValueSet);
-		}
+		this.listenerList.forEach(IConfigListener::onConfigValueSet);
 	}
 	@Override
 	public void set(T newValue)
@@ -155,58 +123,83 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 	public void uiSetWithoutSaving(T newValue)
 	{
 		this.setWithoutSaving(newValue);
-		
-		synchronized (this.listenerList)
-		{
-			this.listenerList.forEach(IConfigListener::onUiModify);
-		}
+		this.listenerList.forEach(IConfigListener::onUiModify);
 	}
 	public void uiSet(T newValue)
 	{
 		this.set(newValue);
-		
-		synchronized (this.listenerList)
-		{
-			this.listenerList.forEach(IConfigListener::onUiModify);
-		}
+		this.listenerList.forEach(IConfigListener::onUiModify);
 	}
 	
-	//endregion
-	
-	
-	
-	//===============//
-	// value getters //
-	//===============//
-	//region
 	
 	@Override
 	public T get()
 	{
-		if (this.allowApiOverride 
-			&& this.apiValue != null)
+		if (this.allowApiOverride && this.apiValue != null)
 		{
 			return this.apiValue;
 		}
 		
 		return super.get();
 	}
-	/** Ignores the API value if set. */
-	public T getTrueValue() { return super.get(); }
-	
-	public T getDefaultValue() { return super.defaultValue; }
-	
-	@Nullable
-	public T getApiValue() { return this.apiValue; }
-	
-	//endregion
+	@Override
+	public T getTrueValue()
+	{
+		return super.get();
+	}
 	
 	
+	/** Gets the min value */
+	@Override
+	public T getMin() { return this.min; }
+	/** Sets the min value */
+	@Override
+	public void setMin(T newMin) { this.min = newMin; }
+	/** Gets the max value */
+	@Override
+	public T getMax() { return this.max; }
+	/** Sets the max value */
+	@Override
+	public void setMax(T newMax) { this.max = newMax; }
+	/** Sets the min and max within a single setter */
+	@Override
+	public void setMinMax(T newMin, T newMax)
+	{
+		this.setMin(newMin);
+		this.setMax(newMax);
+	}
 	
-	//===========//
-	// listeners //
-	//===========//
-	//region
+	/**
+	 * Clamps the value within the set range
+	 *
+	 * @apiNote This does not save the value
+	 */
+	public void clampWithinRange() { this.clampWithinRange(this.min, this.max); }
+	/**
+	 * Clamps the value within a set range
+	 *
+	 * @param min The minimum that the value can be
+	 * @param max The maximum that the value can be
+	 * @apiNote This does not save the value
+	 */
+	@SuppressWarnings("unchecked") // Suppress due to its always safe
+	public void clampWithinRange(T min, T max)
+	{
+		byte validness = this.isValid(min, max);
+		if (validness == -1) this.value = (T) NumberUtil.getMinimum(this.value.getClass());
+		if (validness == 1) this.value = (T) NumberUtil.getMaximum(this.value.getClass());
+	}
+	
+	// TODO is this for command line use?
+	public String getChatCommandName() { return this.chatCommandName; }
+	
+	@Override
+	public String getComment() { return this.comment; }
+	@Override
+	public void setComment(String newComment) { this.comment = newComment; }
+	
+	/** Gets the performance impact of an option */
+	public EConfigEntryPerformance getPerformance() { return this.performance; }
 	
 	/** Fired whenever the config value changes to a new value. */
 	public void addValueChangeListener(Consumer<T> onValueChangeFunc)
@@ -215,153 +208,131 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 		this.addListener(changeListener);
 	}
 	/** Fired whenever the config value is updated, including when the value doesn't change (IE when the UI changes state or the config is reloaded). */
-	public void addListener(IConfigListener newListener) 
+	public void addListener(IConfigListener newListener) { this.listenerList.add(newListener); }
+	
+	//public void removeValueChangeListener(Consumer<T> onValueChangeFunc) { } // not currently implemented
+	public void removeListener(IConfigListener oldListener) { this.listenerList.remove(oldListener); }
+	
+	public void clearListeners() { this.listenerList.clear(); }
+	public ArrayList<IConfigListener> getListeners() { return this.listenerList; }
+	/** Replaces the listener list */
+	public void setListeners(ArrayList<IConfigListener> newListeners)
 	{
-		synchronized (this.listenerList)
-		{
-			this.listenerList.add(newListener);
-		}
+		this.listenerList.clear();
+		this.listenerList.addAll(newListeners);
 	}
+	public void setListeners(IConfigListener... newListeners) { this.listenerList.addAll(Arrays.asList(newListeners)); }
 	
-	public void removeListener(IConfigListener oldListener) 
+	
+	/**
+	 * Checks if the option is valid
+	 *
+	 * @return 0 == valid
+	 * <p>  2 == invalid
+	 * <p>  1 == number too high
+	 * <p> -1 == number too low
+	 */
+	@Override
+	public byte isValid() { return isValid(this.value, this.min, this.max); }
+	/**
+	 * Checks if a new value is valid
+	 *
+	 * @param value Value that is being checked whether valid
+	 * @return 0 == valid
+	 * <p>  2 == invalid
+	 * <p>  1 == number too high
+	 * <p> -1 == number too low
+	 */
+	@Override
+	public byte isValid(T value) { return this.isValid(value, this.min, this.max); }
+	/**
+	 * Checks if a new value is valid
+	 *
+	 * @param min The minimum that the value can be
+	 * @param max The maximum that the value can be
+	 * @return 0 == valid
+	 * <p>  2 == invalid
+	 * <p>  1 == number too high
+	 * <p> -1 == number too low
+	 */
+	public byte isValid(T min, T max) { return this.isValid(this.value, min, max); }
+	/**
+	 * Checks if a new value is valid
+	 *
+	 * @param value Value that is being checked whether valid
+	 * @param min The minimum that the value can be
+	 * @param max The maximum that the value can be
+	 * @return 0 == valid
+	 * <p>  2 == invalid
+	 * <p>  1 == number too high
+	 * <p> -1 == number too low
+	 */
+	public byte isValid(T value, T min, T max)
 	{
-		synchronized (this.listenerList)
+		if (this.configBase.disableMinMax)
 		{
-			this.listenerList.remove(oldListener);
+			return 0;
 		}
-	}
-	
-	public void clearListeners() 
-	{
-		synchronized (this.listenerList)
-		{
-			this.listenerList.clear();
-		}
-	}
-	
-	//endregion
-	
-	
-	
-	//====================//
-	// min/max validation //
-	//====================//
-	//region
-	
-	/** Checks if this config's current value is valid */
-	public EConfigValidity getValidity() { return this.getValidity(this.value, this.min, this.max); }
-	/** Checks if the given value is valid */
-	public EConfigValidity getValidity(@Nullable T value) { return this.getValidity(value, this.min, this.max); }
-	/** Checks if the given value is valid */
-	public EConfigValidity getValidity(@Nullable T value, @Nullable T min, @Nullable T max)
-	{
-		if (!ConfigHandler.INSTANCE.runMinMaxValidation)
-		{
-			return EConfigValidity.VALID;
-		}
-		else if (min == null 
-				&& max == null)
+		else if (min == null && max == null)
 		{
 			// no validation is needed for this field
-			return EConfigValidity.VALID;
+			return 0;
 		}
-		else if (value == null 
-				|| this.value == null
+		else if (value == null || this.value == null
 				|| value.getClass() != this.value.getClass())
 		{
-			// If the 2 variables aren't the same type
-			// or the input is missing
-			// then it will be invalid
-			return EConfigValidity.INVALID;
+			// If the 2 variables aren't the same type then it will be invalid
+			return 2;
 		}
-		else if (value instanceof Number)
+		else if (Number.class.isAssignableFrom(value.getClass()))
 		{ 
-			// Only check min/max if this config's type is a number
-			if (max != null 
-				&& NumberUtil.greaterThan((Number) value, (Number) max))
+			// Only check min max if it is a number
+			if (max != null && NumberUtil.greaterThan((Number) value, (Number) max))
 			{
-				return EConfigValidity.NUMBER_TOO_HIGH;
+				return 1;
+			}
+			if (min != null && NumberUtil.lessThan((Number) value, (Number) min))
+			{
+				return -1;
 			}
 			
-			if (min != null 
-				&& NumberUtil.lessThan((Number) value, (Number) min))
-			{
-				return EConfigValidity.NUMBER_TOO_LOW;
-			}
-			
-			return EConfigValidity.VALID;
+			return 0;
 		}
 		else
 		{
-			return EConfigValidity.VALID;
+			return 0;
 		}
 	}
 	
-	//endregion
-	
-	
-	
-	//===============//
-	// file handling //
-	//===============//
-	//region
-	
 	/** This should normally not be called since set() automatically calls this */
-	public void save() { ConfigHandler.INSTANCE.configFileHandler.saveEntry(this); }
+	public void save() { configBase.configFileINSTANCE.saveEntry(this); }
 	/** This should normally not be called except for special circumstances */
-	public void load() { ConfigHandler.INSTANCE.configFileHandler.loadEntry(this); }
-	
-	//endregion
+	public void load() { configBase.configFileINSTANCE.loadEntry(this); }
 	
 	
-	
-	//================//
-	// base overrides //
-	//================//
-	//region
-	
-	@Override 
-	public String toString() { return this.name + ": [" + this.get() + "]"; }
-	
-	public boolean equals(AbstractConfigBase<?> obj) 
-	{
-		return obj.getClass() == ConfigEntry.class 
-				&& this.equals((ConfigEntry<?>) obj); 
-	}
+	@Override
+	public boolean equals(IConfigEntry<?> obj) { return obj.getClass() == ConfigEntry.class && equals((ConfigEntry<?>) obj); }
 	/** Is the value of this equal to another */
 	public boolean equals(ConfigEntry<?> obj)
 	{
 		// Can all of this just be "return this.value.equals(obj.value)"?
 		
 		if (Number.class.isAssignableFrom(this.value.getClass()))
-		{
 			return this.value == obj.value;
-		}
 		else
-		{
 			return this.value.equals(obj.value);
-		}
 	}
 	
-	//endregion
 	
-	
-	
-	//=========//
-	// builder //
-	//=========//
-	//region
-	
-	public static class Builder<T> extends AbstractConfigBase.Builder<T, Builder<T>>
+	public static class Builder<T> extends AbstractConfigType.Builder<T, Builder<T>>
 	{
 		private String tmpComment = null;
 		private T tmpMin = null;
 		private T tmpMax = null;
 		protected String tmpChatCommandName = null;
 		private boolean tmpUseApiOverwrite = true;
+		private EConfigEntryPerformance tmpPerformance = EConfigEntryPerformance.DONT_SHOW;
 		protected ArrayList<IConfigListener> tmpIConfigListener = new ArrayList<>();
-		
-		
 		
 		public Builder<T> comment(String newComment)
 		{
@@ -408,6 +379,12 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 			return this;
 		}
 		
+		public Builder<T> setPerformance(EConfigEntryPerformance newPerformance)
+		{
+			this.tmpPerformance = newPerformance;
+			return this;
+		}
+		
 		
 		
 		public Builder<T> replaceListeners(ArrayList<IConfigListener> newConfigListener)
@@ -436,21 +413,15 @@ public class ConfigEntry<T> extends AbstractConfigBase<T>
 		
 		
 		
-		// build //
-		
 		public ConfigEntry<T> build()
 		{
 			return new ConfigEntry<>(
-					this.tmpAppearance,
-					this.tmpComment, this.tmpChatCommandName, this.tmpValue, this.tmpMin, this.tmpMax,
-					this.tmpUseApiOverwrite, 
-					this.tmpIConfigListener);
+					this.tmpAppearance, 
+					this.tmpValue, this.tmpComment, this.tmpMin, this.tmpMax, 
+					this.tmpChatCommandName, this.tmpUseApiOverwrite, 
+					this.tmpPerformance, this.tmpIConfigListener);
 		}
 		
 	}
-	
-	//endregion
-	
-	
 	
 }

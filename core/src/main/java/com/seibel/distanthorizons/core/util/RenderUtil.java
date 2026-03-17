@@ -19,59 +19,49 @@
 
 package com.seibel.distanthorizons.core.util;
 
-import com.seibel.distanthorizons.api.objects.math.DhApiMat4f;
-import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.core.world.IDhClientWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 
 /**
  * This holds miscellaneous helper code
- * used in the rendering process.
+ * to be used in the rendering process.
+ *
+ * @author James Seibel
+ * @version 2022-8-21
  */
 public class RenderUtil
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 	
-	/** 
-	 * all speeds are measured in blocks per second 
-	 * 
-	 * @see LodUtil#WALKING_SPEED_IN_BLOCKS_PER_SEC
-	 * @see LodUtil#SPRINTING_SPEED_IN_BLOCKS_PER_SEC
-	 * @see LodUtil#ROCKET_ELYTRA_SPEED_IN_BLOCKS_PER_SEC
-	 * @see LodUtil#MAX_SPECTATOR_SPEED_IN_BLOCKS_PER_SEC
-	 */
-	private static class DynamicOverdraw
-	{
-		public static final float MIN_SPEED = 10.0f; // a little faster than sprinting (7)
-		public static final float MAX_SPEED = (float)LodUtil.MAX_SPECTATOR_SPEED_IN_BLOCKS_PER_SEC;
-		public static final float MIN_OVERDRAW_RATIO = 0.2f;
-	}
-	
 	
 	
 	//=====================//
 	// matrix manipulation //
 	//=====================//
-	//region
 	
 	/**
 	 * create and return a new projection matrix based on MC's modelView and projection matrices
 	 *
 	 * @param mcProjMat Minecraft's current projection matrix
 	 */
-	public static Mat4f createLodProjectionMatrix(DhApiMat4f mcProjMat)
+	public static Mat4f createLodProjectionMatrix(Mat4f mcProjMat, float partialTicks)
 	{
 		// in James' testing a near clip plane distance of 2 blocks is enough to allow the fragment
 		// culling to take effect instead of seeing the near clip plane.
-		float nearClipDist = RenderUtil.getNearClipPlaneInBlocks();
+		float nearClipDist = RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks);
 		// limit the near clip plane if we are close to the ground
-		if (getHeightBasedNearClipOverrideBlockDistance() == -1)
+		if (getHeightBasedNearClipOverride() == -1)
 		{
 			// min() used to prevent the near clip plane from becoming visible at large vanilla render distances
 			// DH's dithering/discard shader handles everything farther away anyway so the near clip plane
@@ -82,38 +72,36 @@ public class RenderUtil
 		float farClipDist = (float) RenderUtil.getFarClipPlaneDistanceInBlocks();
 		
 		// Create a copy of the current matrix, so it won't be modified.
-		Mat4f lodProj = new Mat4f(mcProjMat);
+		Mat4f lodProj = mcProjMat.copy();
 		// Set new far and near clip plane values.
 		lodProj.setClipPlanes(nearClipDist, farClipDist);
 		return lodProj;
 	}
 	
 	/** create and return a new projection matrix based on MC's modelView and projection matrices */
-	public static Mat4f createLodModelViewMatrix(DhApiMat4f mcModelViewMat)
+	public static Mat4f createLodModelViewMatrix(Mat4f mcModelViewMat)
 	{
 		// nothing beyond copying needs to be done to MC's MVM currently,
 		// this method is just here in case that changes in the future
-		return new Mat4f(mcModelViewMat);
+		return mcModelViewMat.copy();
 	}
 	
-	//endregion
-	
-	
-	
-	//=================//
-	// near clip plane //
-	//=================//
-	//region
-	
-	public static float getNearClipPlaneInBlocks()
+	public static float getNearClipPlaneDistanceInBlocks(float partialTicks) 
+	{ 
+		// 0.2 should provide a decent distance so the clip plane isn't visible
+		// but far enough the fading will rarely overlap (IE only at extreme FOV)
+		return getNearClipPlaneDistanceInBlocks(partialTicks, 0.2f); 
+	}
+	/** TODO this should be moved into the config file or something, this is confusing and obtuse to use */
+	@Deprecated
+	public static float getAutoOverdrawPrevention()
 	{
-		float overdraw = Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get();
-		if (overdraw < 0)
+		float overdraw = Config.Client.Advanced.Graphics.Culling.overdrawPrevention.get().floatValue();
+		
+		// 0 or less 
+		if (overdraw <= 0)
 		{
-			// automatic mode,
-			// get overdraw based on vanilla render distance.
-			// At low render distances this hides the vanilla RD border
-			
+			// at low render distances this hides the vanilla RD border
 			int chunkRenderDistance = MC_RENDER.getRenderDistance();
 			if (chunkRenderDistance <= 2)
 			{
@@ -136,36 +124,15 @@ public class RenderUtil
 				overdraw = 0.9f;
 			}
 		}
-		else
-		{
-			// prevent setting an overdraw of 0
-			// since that will cause rendering issues
-			overdraw = MathUtil.clamp(0.05f, overdraw, 1.0f);
-		}
 		
-		
-		if (Config.Client.Advanced.Graphics.Culling.reduceOverdrawWithFastMovement.get())
-		{
-			double avgSpeed = ClientApi.INSTANCE.cameraSpeedRollingAverage.getAverage();
-			if (avgSpeed >= DynamicOverdraw.MIN_SPEED)
-			{
-				// if the player is moving fast enough,
-				// smoothly decrease the fade distance
-				// to give MC have a chance to load/generate.
-				
-				// convert the speed into a range of 0.0 - 1.0
-				float speedRange = (float)((DynamicOverdraw.MAX_SPEED - avgSpeed) / DynamicOverdraw.MAX_SPEED);
-				// if math.max isn't done here we could completely
-				// remove vanilla rendering at high speeds
-				speedRange = Math.max(speedRange, DynamicOverdraw.MIN_OVERDRAW_RATIO);
-				
-				overdraw *= speedRange;
-			}
-		}
-		
-		return getNearClipPlaneDistanceInBlocks(overdraw);
+		return overdraw;
 	}
-	private static float getNearClipPlaneDistanceInBlocks(float overdrawPreventionPercent)
+	public static float getNearClipPlaneInBlocksForFading(float partialTicks)
+	{
+		float overdraw = getAutoOverdrawPrevention();
+		return getNearClipPlaneDistanceInBlocks(partialTicks, overdraw);
+	}
+	private static float getNearClipPlaneDistanceInBlocks(float partialTicks, float overdrawPreventionPercent)
 	{
 		int chunkRenderDistance = MC_RENDER.getRenderDistance();
 		int vanillaBlockRenderedDistance = chunkRenderDistance * LodUtil.CHUNK_WIDTH;
@@ -177,6 +144,10 @@ public class RenderUtil
 		}
 		else
 		{
+			// TODO make this option dependent on player speed.
+			//  If the player is flying quickly, lower the near clip plane to account for slow chunk loading.
+			//  If the player is moving quickly they are less likely to notice overdraw.
+			
 			nearClipPlane = vanillaBlockRenderedDistance;
 			nearClipPlane *= overdrawPreventionPercent; 
 			
@@ -189,7 +160,8 @@ public class RenderUtil
 		}
 		
 		
-		float heightOverride = getHeightBasedNearClipOverrideBlockDistance();
+		// TODO move into method and use to override discard value in shader program
+		float heightOverride = getHeightBasedNearClipOverride();
 		if (heightOverride != -1.0f)
 		{
 			nearClipPlane = heightOverride;
@@ -202,22 +174,26 @@ public class RenderUtil
 		// therefore, the FOV is left at a fixed value of 70 (MC's default)
 		double fov = 70;
 		
-		double aspectRatio = (double) MC_RENDER.getTargetFramebufferViewportWidth() / MC_RENDER.getTargetFramebufferViewportHeight();
+		double aspectRatio = (double) MC_RENDER.getTargetFrameBufferViewportWidth() / MC_RENDER.getTargetFrameBufferViewportHeight();
 		
 		// source: https://stackoverflow.com/questions/8101119/how-do-i-methodically-choose-the-near-clip-plane-distance-for-a-perspective-proj/8101234#8101234
 		return (float) (nearClipPlane
 				/ Math.sqrt(1d + MathUtil.pow2(Math.tan(fov / 180d * Math.PI / 2d))
 				* (MathUtil.pow2(aspectRatio) + 1d)));
 	}
-	
-	/** 
-	 * Returns a new distance if the player is sufficiently far above the world.
-	 * @return -1 if no override is necessary 
-	 */
-	public static float getHeightBasedNearClipOverrideBlockDistance()
+	public static int getFarClipPlaneDistanceInBlocks()
 	{
-		// always using the client level like this might cause issues with immersive portals and the like,
-		// but for now it works well enough
+		int lodChunkDist = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get();
+		int lodBlockDist = lodChunkDist * LodUtil.CHUNK_WIDTH;
+		// * 2 to prevent clipping when high above the world
+		return (lodBlockDist + LodUtil.REGION_WIDTH) * 2;
+	}
+	
+	/** @return -1 if no override is necessary */
+	public static float getHeightBasedNearClipOverride()
+	{
+		// TODO always using the client level like this might cause issues with immersive portals and the like,
+		//  but for now it should work well enough
 		IClientLevelWrapper level = MC.getWrappedClientLevel();
 		// a level should always be loaded, but just in case
 		if (level != null)
@@ -235,26 +211,46 @@ public class RenderUtil
 		return -1.0f;
 	}
 	
-	//endregion
-	
-	
-	
-	//================//
-	// far clip plane //
-	//================//
-	
-	//region
-	
-	public static int getFarClipPlaneDistanceInBlocks()
+	/** @return a message if LODs shouldn't be rendered, null if the LODs can render */
+	public static String shouldLodsRender(ILevelWrapper levelWrapper, DhApiRenderParam renderEventParam)
 	{
-		int lodChunkDist = Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get();
-		int lodBlockDist = lodChunkDist * LodUtil.CHUNK_WIDTH;
-		// * 2 to prevent clipping when high above the world
-		return (lodBlockDist + LodUtil.REGION_WIDTH) * 2;
+		if (!MC.playerExists())
+		{
+			return "No Player Exists";
+		}
+		
+		if (levelWrapper == null)
+		{
+			return "No Level Given";
+		}
+		
+		IDhClientWorld clientWorld = SharedApi.getIDhClientWorld();
+		if (clientWorld == null)
+		{
+			return "No Client World Loaded";
+		}
+		
+		// TODO changing to getOrLoadClientLevel() fixes Immersive Portals only rendering the level the user starts in
+		//  however this may break how other level handling is done so James doesn't want to change it.
+		//  Special handling may be necessary when Immersive Portals is present, although additional testing is needed.
+		IDhClientLevel level = clientWorld.getClientLevel(levelWrapper);
+		if (level == null)
+		{
+			return "No Client Level Loaded"; //Level is not ready yet.
+		}
+		
+		if (MC_RENDER.getLightmapWrapper(levelWrapper) == null)
+		{
+			return "No Lightmap loaded";
+		}
+		
+		if (renderEventParam.dhModelViewMatrix == null 
+			|| renderEventParam.mcModelViewMatrix == null)
+		{
+			return "No MVM or Proj Matrix Given";
+		}
+		
+		return null;
 	}
-	
-	//endregion
-	
-	
 	
 }

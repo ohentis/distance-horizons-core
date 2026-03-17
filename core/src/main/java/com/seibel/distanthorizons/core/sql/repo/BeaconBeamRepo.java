@@ -19,20 +19,17 @@
 
 package com.seibel.distanthorizons.core.sql.repo;
 
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.sql.DbConnectionClosedException;
 import com.seibel.distanthorizons.core.sql.dto.BeaconBeamDTO;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -41,7 +38,7 @@ import java.util.List;
 
 public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
 	
@@ -49,7 +46,7 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 	// constructor //
 	//=============//
 	
-	public BeaconBeamRepo(String databaseType, File databaseFile) throws SQLException, IOException
+	public BeaconBeamRepo(String databaseType, File databaseFile) throws SQLException
 	{
 		super(databaseType, databaseFile, BeaconBeamDTO.class);
 	}
@@ -181,7 +178,7 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 		);
 	}
 	
-	public ArrayList<BeaconBeamDTO> getAllBeamsForPos(long pos)
+	public List<BeaconBeamDTO> getAllBeamsForPos(long pos)
 	{
 		int minBlockX = DhSectionPos.getMinCornerBlockX(pos);
 		int minBlockZ = DhSectionPos.getMinCornerBlockZ(pos);
@@ -200,7 +197,7 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 			"WHERE " +
 			"? <= BlockPosX AND BlockPosX <= ? AND " +
 			"? <= BlockPosZ AND BlockPosZ <= ?";
-	public ArrayList<BeaconBeamDTO> getAllBeamsInBlockPosRange(
+	public List<BeaconBeamDTO> getAllBeamsInBlockPosRange(
 			int minBlockX, int maxBlockX,
 			int minBlockZ, int maxBlockZ
 		)
@@ -231,13 +228,6 @@ public class BeaconBeamRepo extends AbstractDhRepo<DhBlockPos, BeaconBeamDTO>
 		}
 		catch (Exception e)
 		{
-			// done to handle resultSet.get() methods which can throw closed exceptions
-			if (e instanceof SQLException
-				&& DbConnectionClosedException.isClosedException((SQLException)e))
-			{
-				return beamList;
-			}
-			
 			throw new RuntimeException(e);
 		}
 		

@@ -24,13 +24,15 @@ import java.util.List;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
-import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkProcessingEvent;
 import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPosMutable;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -41,17 +43,14 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IMutableBlockPosWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 public class LodDataBuilder
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
-	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
-	private static final IBlockStateWrapper AIR = WRAPPER_FACTORY.getAirBlockStateWrapper();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final IBlockStateWrapper AIR = SingletonInjector.INSTANCE.get(IWrapperFactory.class).getAirBlockStateWrapper();
 	
 	private static boolean getTopErrorLogged = false;
 	
@@ -61,20 +60,17 @@ public class LodDataBuilder
 	// converters //
 	//============//
 	
-	public static FullDataSourceV2 createFromChunk(ILevelWrapper levelWrapper, IChunkWrapper chunkWrapper)
+	public static FullDataSourceV2 createFromChunk(IChunkWrapper chunkWrapper)
 	{
 		// only block lighting is needed here, sky lighting is populated at the data source stage
-		LodUtil.assertTrue(chunkWrapper.isDhBlockLightingCorrect(), "Provided chunk's DH Block lighting hasn't been baked.");
-		
-		int chunkPosX = chunkWrapper.getChunkPos().getX();
-		int chunkPosZ = chunkWrapper.getChunkPos().getZ();
+		LodUtil.assertTrue(chunkWrapper.isDhBlockLightingCorrect());
 		
 		int sectionPosX = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().getX());
 		int sectionPosZ = getXOrZSectionPosFromChunkPos(chunkWrapper.getChunkPos().getZ());
 		long pos = DhSectionPos.encode(DhSectionPos.SECTION_BLOCK_DETAIL_LEVEL, sectionPosX, sectionPosZ);
 		
 		FullDataSourceV2 dataSource = FullDataSourceV2.createEmpty(pos);
-		dataSource.isEmpty = false; // this will be set to "true" if any blocks are found
+		dataSource.isEmpty = false;
 		// chunk updates always propagate up
 		dataSource.applyToParent = true;
 		
@@ -116,14 +112,12 @@ public class LodDataBuilder
 		//==========================//
 		
 		EDhApiWorldCompressionMode worldCompressionMode = Config.Common.LodBuilding.worldCompression.get();
+		boolean ignoreHiddenBlocks = (worldCompressionMode != EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
 		
 		try
 		{
 			IMutableBlockPosWrapper mcBlockPos = chunkWrapper.getMutableBlockPosWrapper();
 			IBlockStateWrapper previousBlockState = null;
-			
-			DhApiChunkProcessingEvent.EventParam mutableChunkProcessedEventParam 
-					= new DhApiChunkProcessingEvent.EventParam(levelWrapper, chunkPosX, chunkPosZ);
 			
 			int minBuildHeight = chunkWrapper.getMinNonEmptyHeight();
 			int exclusiveMaxBuildHeight = chunkWrapper.getExclusiveMaxBuildHeight();
@@ -139,7 +133,7 @@ public class LodDataBuilder
 					int columnZ = relBlockZ + chunkOffsetZ;
 					
 					// Get column data
-					LongArrayList longs = dataSource.getColumnAtRelPos(columnX, columnZ);
+					LongArrayList longs = dataSource.get(columnX, columnZ);
 					if (longs == null)
 					{
 						longs = new LongArrayList(dataCapacity);
@@ -150,11 +144,11 @@ public class LodDataBuilder
 					}
 					
 					int lastY = exclusiveMaxBuildHeight;
-					IBiomeWrapper currentBiome = chunkWrapper.getBiome(relBlockX, lastY, relBlockZ);
-					IBlockStateWrapper currentBlockState = AIR;
-					int mappedId = dataSource.mapping.addIfNotPresentAndGetId(currentBiome, currentBlockState);
+					IBiomeWrapper biome = chunkWrapper.getBiome(relBlockX, lastY, relBlockZ);
+					IBlockStateWrapper blockState = AIR;
+					int mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
 					
-					// Determine lighting (we are at the height limit. There are no torches here, and sky is not obscured.)
+					// Determine lighting (we are at the height limit. There are no torches here, and sky is not obscured.) // TODO: Per face lighting someday?
 					byte blockLight = LodUtil.MIN_MC_LIGHT;
 					byte skyLight = LodUtil.MAX_MC_LIGHT;
 					
@@ -168,8 +162,7 @@ public class LodDataBuilder
 					
 					// Go up until we reach open air or the world limit
 					IBlockStateWrapper topBlockState = previousBlockState = chunkWrapper.getBlockState(relBlockX, y, relBlockZ, mcBlockPos, previousBlockState);
-					while (!topBlockState.isAir() 
-							&& y < exclusiveMaxBuildHeight)
+					while (!topBlockState.isAir() && y < exclusiveMaxBuildHeight)
 					{
 						try
 						{
@@ -201,58 +194,25 @@ public class LodDataBuilder
 						byte newSkyLight = (byte) chunkWrapper.getDhSkyLight(relBlockX, y + 1, relBlockZ);
 						
 						// Save the biome/block change if different from previous
-						if (!newBiome.equals(currentBiome) 
-							|| !newBlockState.equals(currentBlockState) 
-							|| forceSingleBlock)
+						if (!newBiome.equals(biome) || !newBlockState.equals(blockState) || forceSingleBlock)
 						{
 							// if the previous block potentially colors this block
 							// make this block a single entry, aka add the next block even if it is the same
 							// this is done to allow fire, snow, flowers, etc. to properly color the top of columns vs the whole column
 							forceSingleBlock = 
-									!currentBlockState.isAir()
-									&& !currentBlockState.isSolid()
-									&& !currentBlockState.isLiquid()
-									&& currentBlockState.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE;
-							
-							
-							// check for API overrides
-							{
-								mutableChunkProcessedEventParam.updateForPosition(relBlockX, y, relBlockZ, newBlockState, newBiome);
-								ApiEventInjector.INSTANCE.fireAllEvents(DhApiChunkProcessingEvent.class, mutableChunkProcessedEventParam);
-								
-								// did the API user override this block?
-								if (mutableChunkProcessedEventParam.getBlockOverride() != null)
-								{
-									// API users shouldn't be creating their own IBlockStateWrapper objects
-									newBlockState = (IBlockStateWrapper)mutableChunkProcessedEventParam.getBlockOverride();
-								}
-								
-								// did the API user override this biome?
-								if (mutableChunkProcessedEventParam.getBiomeOverride() != null)
-								{
-									// API users shouldn't be creating their own IBlockStateWrapper objects
-									newBiome = (IBiomeWrapper) mutableChunkProcessedEventParam.getBiomeOverride();
-								}
-							}
-							
+									!blockState.isAir()
+									&& !blockState.isSolid()
+									&& !blockState.isLiquid()
+									&& blockState.getOpacity() != LodUtil.BLOCK_FULLY_OPAQUE;
 							
 							longs.add(FullDataPointUtil.encode(mappedId, lastY - y, y + 1 - inclusiveMinBuildHeight, blockLight, skyLight));
-							currentBiome = newBiome;
-							currentBlockState = newBlockState;
+							biome = newBiome;
+							blockState = newBlockState;
 							
-							mappedId = dataSource.mapping.addIfNotPresentAndGetId(currentBiome, currentBlockState);
+							mappedId = dataSource.mapping.addIfNotPresentAndGetId(biome, blockState);
 							blockLight = newBlockLight;
 							skyLight = newSkyLight;
 							lastY = y;
-							
-							
-							// mark the data source as non-empty if we find any non-air blocks
-							if (dataSource.isEmpty
-								&& newBlockState != null 
-								&& !newBlockState.isAir())
-							{
-								dataSource.isEmpty = false;
-							}
 						}
 					}
 					
@@ -263,6 +223,11 @@ public class LodDataBuilder
 					dataSource.setSingleColumn(longs, columnX, columnZ, EDhApiWorldGenerationStep.LIGHT, worldCompressionMode);
 				}
 			}
+			
+			if (ignoreHiddenBlocks)
+			{
+				cullHiddenBlocks(dataSource, chunkOffsetX, chunkOffsetZ);
+			}
 		}
 		catch (DataCorruptedException e)
 		{
@@ -270,7 +235,149 @@ public class LodDataBuilder
 			return null;
 		}
 		
+		LodUtil.assertTrue(!dataSource.isEmpty);
 		return dataSource;
+	}
+	
+	private static void cullHiddenBlocks(FullDataSourceV2 dataSource, int chunkOffsetX, int chunkOffsetZ)
+	{
+		for (int relZ = 1; relZ < LodUtil.CHUNK_WIDTH - 1; relZ++)
+		{
+			for (int relX = 1; relX < LodUtil.CHUNK_WIDTH - 1; relX++)
+			{
+				LongArrayList
+						centerColumn = dataSource.get(relX + chunkOffsetX, relZ + chunkOffsetZ),
+						posXColumn = dataSource.get(relX + chunkOffsetX + 1, relZ + chunkOffsetZ),
+						negXColumn = dataSource.get(relX + chunkOffsetX - 1, relZ + chunkOffsetZ),
+						posZColumn = dataSource.get(relX + chunkOffsetX, relZ + chunkOffsetZ + 1),
+						negZColumn = dataSource.get(relX + chunkOffsetX, relZ + chunkOffsetZ - 1);
+				int
+						centerIndex = centerColumn.size() - 1,
+						posXIndex = posXColumn.size() - 1,
+						negXIndex = negXColumn.size() - 1,
+						posZIndex = posZColumn.size() - 1,
+						negZIndex = negZColumn.size() - 1;
+				for (; centerIndex >= 0; centerIndex--)
+				{
+					long currentPoint = centerColumn.getLong(centerIndex);
+					
+					// Translucent data points are not eligible to be culled.
+					if (isTranslucent(dataSource, currentPoint))
+					{
+						continue;
+					}
+					
+					// the top segment should never be culled.
+					if (centerIndex == 0
+							|| isTranslucent(dataSource, centerColumn.getLong(centerIndex - 1))
+					)
+					{
+						continue;
+					}
+					
+					// the bottom segment can sometimes be culled.
+					// assume it will not be seen from below,
+					// because this would imply the player is in the void.
+					if (centerIndex + 1 < centerColumn.size()
+							&& isTranslucent(dataSource, centerColumn.getLong(centerIndex + 1))
+					)
+					{
+						continue;
+					}
+					
+					posXIndex = checkOcclusion(dataSource, currentPoint, posXColumn, posXIndex);
+					if (posXIndex < 0)
+					{
+						posXIndex = ~posXIndex;
+						continue;
+					}
+					
+					negXIndex = checkOcclusion(dataSource, currentPoint, negXColumn, negXIndex);
+					if (negXIndex < 0)
+					{
+						negXIndex = ~negXIndex;
+						continue;
+					}
+					
+					posZIndex = checkOcclusion(dataSource, currentPoint, posZColumn, posZIndex);
+					if (posZIndex < 0)
+					{
+						posZIndex = ~posZIndex;
+						continue;
+					}
+					
+					negZIndex = checkOcclusion(dataSource, currentPoint, negZColumn, negZIndex);
+					if (negZIndex < 0)
+					{
+						negZIndex = ~negZIndex;
+						continue;
+					}
+					
+					// Current point is fully surrounded. remove it.
+					centerColumn.removeLong(centerIndex);
+					
+					// Make the above data point cover the area that the current point used to occupy.
+					// The element that was at `centerIndex - 1` is still at that position even after removal of centerIndex.
+					long above = centerColumn.getLong(centerIndex - 1);
+					above = FullDataPointUtil.setBottomY(above, FullDataPointUtil.getBottomY(currentPoint));
+					above = FullDataPointUtil.setHeight(above, FullDataPointUtil.getHeight(currentPoint) + FullDataPointUtil.getHeight(above));
+					centerColumn.set(centerIndex - 1, above);
+				}
+			}
+		}
+	}
+	
+	/**
+	 checks if centerPoint is "covered" by opaque data points in adjacentColumn.
+	 centerPoint counts as covered if, and only if, for all Y levels in its height range,
+	 there exists an opaque data point in adjacentColumn which overlaps with that Y level.
+	 
+	 @param source used to lookup blocks (and their opacities) based on their IDs.
+	 @param centerPoint the point being checked to see if it's fully covered.
+	 @param adjacentColumn the data points which might cover centerPoint.
+	 @param adjacentIndex the starting index in adjacentColumn to start scanning at.
+	 indices greater than adjacentIndex have already been checked and confirmed to
+	 not overlap or only overlap partially with centerPoint's Y range.
+	 
+	 @return if centerPoint is covered, returns the index of the segment which finishes covering it.
+	 the start of the covering may be a smaller index. in this case, the returned index may be used
+	 as the adjacentIndex provided to this method on the next iteration which yields a new centerPoint.
+	 
+	 if centerPoint is NOT covered, returns the bitwise negation of the index of the
+	 segment which did not cover it. this guarantees that the returned value is negative.
+	 the caller should check for negative return values and manually un-negate them to proceed with the loop.
+	 
+	 in other words, this function returns the index of the next adjacent data
+	 point to use in the loop, AND a boolean indicating whether or not the
+	 centerPoint is covered;	both are packed into the same int, and returned.
+	 */
+	private static int checkOcclusion(FullDataSourceV2 source, long centerPoint, LongArrayList adjacentColumn, int adjacentIndex)
+	{
+		int bottomOfCenter = FullDataPointUtil.getBottomY(centerPoint);
+		int topOfCenter = bottomOfCenter + FullDataPointUtil.getHeight(centerPoint);
+		for (; adjacentIndex >= 0; adjacentIndex--)
+		{
+			long adjacentPoint = adjacentColumn.getLong(adjacentIndex);
+			int topOfAdjacent = FullDataPointUtil.getBottomY(adjacentPoint) + FullDataPointUtil.getHeight(adjacentPoint);
+			if (topOfAdjacent <= bottomOfCenter)
+			{
+				continue;
+			}
+			else if (isTranslucent(source, adjacentPoint))
+			{
+				return ~adjacentIndex;
+			}
+			else if (topOfAdjacent >= topOfCenter)
+			{
+				return adjacentIndex;
+			}
+		}
+		
+		throw new LodUtil.AssertFailureException("Adjacent column ends before center column does.");
+	}
+	
+	private static boolean isTranslucent(FullDataSourceV2 source, long point) {
+		return source.mapping.getBlockStateWrapper(FullDataPointUtil.getId(point)).getOpacity() < LodUtil.BLOCK_FULLY_OPAQUE;
 	}
 	
 	
@@ -297,34 +404,21 @@ public class LodDataBuilder
 			for (int relBlockX = 0; relBlockX < LodUtil.CHUNK_WIDTH; relBlockX++)
 			{
 				List<DhApiTerrainDataPoint> columnDataPoints = apiChunk.getDataPoints(relBlockX, relBlockZ);
-				
-				// mark the data source as non-empty if we find any non-air blocks
-				if (dataSource.isEmpty)
-				{
-					for (int i = 0; i < columnDataPoints.size(); i++)
-					{
-						DhApiTerrainDataPoint dataPoint = columnDataPoints.get(i);
-						if (dataPoint.blockStateWrapper != null
-							&& !dataPoint.blockStateWrapper.isAir())
-						{
-							dataSource.isEmpty = false;
-							break;
-						}
-					}
-				}
-				
-				LodDataBuilder.putListInTopDownOrder(columnDataPoints);
+				LodDataBuilder.correctDataColumnOrder(columnDataPoints);
 				if (runAdditionalValidation)
 				{
 					validateOrThrowApiDataColumn(columnDataPoints);
 				}
 				
-				LongArrayList packedDataPoints = convertApiDataPointListToPackedLongArray(columnDataPoints, dataSource, apiChunk.bottomYBlockPos, runAdditionalValidation);
+				LongArrayList packedDataPoints = convertApiDataPointListToPackedLongArray(columnDataPoints, dataSource, apiChunk.bottomYBlockPos);
 				
+				// TODO add the ability for API users to define a different compression mode
+				//  or add a "unkown" compression mode
 				dataSource.setSingleColumn(
 						packedDataPoints,
 						relBlockX + relSourceBlockX, relBlockZ + relSourceBlockZ,
 						EDhApiWorldGenerationStep.LIGHT, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
+				dataSource.isEmpty = false;
 			}
 		}
 		return dataSource;
@@ -338,97 +432,41 @@ public class LodDataBuilder
 	
 	/** @see FullDataPointUtil */
 	public static LongArrayList convertApiDataPointListToPackedLongArray(
-			@Nullable List<DhApiTerrainDataPoint> topDownColumnDataPoints, FullDataSourceV2 dataSource,
-			int bottomYBlockPos, boolean runAdditionalValidation) throws DataCorruptedException
+			@Nullable List<DhApiTerrainDataPoint> columnDataPoints, FullDataSourceV2 dataSource,
+			int bottomYBlockPos) throws DataCorruptedException
 	{
-		if (topDownColumnDataPoints == null 
-			|| topDownColumnDataPoints.size() == 0)
+		// this null check does 2 nice things at the same time:
+		// if columnDataPoints is null,
+		// then packedDataPoints will be of length 0
+		// AND the below loop won't run.
+		int size = (columnDataPoints != null) ? columnDataPoints.size() : 0;
+		
+		// TODO make missing air LODs
+		// TODO merge duplicate datapoints
+		LongArrayList packedDataPoints = new LongArrayList(new long[size]);
+		for (int index = 0; index < size; index++)
 		{
-			return new LongArrayList(0);
-		}
-		
-		
-		
-		// array to store data
-		int size = topDownColumnDataPoints.size();
-		LongArrayList packedDataPoints = new LongArrayList(size);
-		packedDataPoints.clear();
-		
-		
-		if (runAdditionalValidation)
-		{
-			// check for missing data
-			int lastTopY = Integer.MAX_VALUE;
-			for (int i = 0; i < size; i++)
-			{
-				DhApiTerrainDataPoint apiDataPoint = topDownColumnDataPoints.get(i);
-				
-				if (lastTopY != apiDataPoint.topYBlockPos
-					// the first index won't have a lastTopY value
-					&& i != 0)
-				{
-					throw new DataCorruptedException("LOD data has a gap between ["+lastTopY+"] and ["+apiDataPoint.bottomYBlockPos+"]. Empty areas should be filled with air datapoints so light propagates correctly.");
-				}
-				lastTopY = apiDataPoint.bottomYBlockPos;
-			}
-		}
-		
-		
-		// go through data from top down
-		long lastDataPoint = FullDataPointUtil.EMPTY_DATA_POINT;
-		for (int i = 0; i < size; i++)
-		{
-			DhApiTerrainDataPoint apiDataPoint = topDownColumnDataPoints.get(i);
+			DhApiTerrainDataPoint dataPoint = columnDataPoints.get(index);
 			
-			int thisId = dataSource.mapping.addIfNotPresentAndGetId(
-					(IBiomeWrapper) (apiDataPoint.biomeWrapper),
-					(IBlockStateWrapper) (apiDataPoint.blockStateWrapper)
+			int id = dataSource.mapping.addIfNotPresentAndGetId(
+					(IBiomeWrapper) (dataPoint.biomeWrapper),
+					(IBlockStateWrapper) (dataPoint.blockStateWrapper)
 			);
-			int thisHeight = (apiDataPoint.topYBlockPos - apiDataPoint.bottomYBlockPos);
 			
-			int lastId = FullDataPointUtil.getId(lastDataPoint);
-			byte lastBlockLight = (byte)FullDataPointUtil.getBlockLight(lastDataPoint);
-			byte lastSkyLight = (byte)FullDataPointUtil.getSkyLight(lastDataPoint);
-			
-			
-			// if the ID and light are the same, merge the height
-			if (thisId == lastId
-				&& apiDataPoint.blockLightLevel == lastBlockLight
-				&& apiDataPoint.skyLightLevel == lastSkyLight
-				// the first index should always be added to the list
-				&& i != 0 )
-			{
-				// add adjacent height
-				int lastHeight = FullDataPointUtil.getHeight(lastDataPoint);
-				int newHeight = (lastHeight + thisHeight);
-				lastDataPoint = FullDataPointUtil.setHeight(lastDataPoint, newHeight);
-				
-				// subtract bottom Y
-				int lastBottomY = FullDataPointUtil.getBottomY(lastDataPoint);
-				int newBottomY = lastBottomY - thisHeight;
-				lastDataPoint = FullDataPointUtil.setBottomY(lastDataPoint, newBottomY);
-				 
-				packedDataPoints.set(packedDataPoints.size()-1, lastDataPoint);
-			}
-			else
-			{
-				// data changed, create a new datapoint
-				long dataPoint = FullDataPointUtil.encode(
-					thisId,
-					thisHeight,
-					apiDataPoint.bottomYBlockPos - bottomYBlockPos,
-					(byte) (apiDataPoint.blockLightLevel),
-					(byte) (apiDataPoint.skyLightLevel)
-				);
-				lastDataPoint = dataPoint;
-				packedDataPoints.add(dataPoint);
-			}
+			packedDataPoints.set(index, FullDataPointUtil.encode(
+					id,
+					dataPoint.topYBlockPos - dataPoint.bottomYBlockPos,
+					dataPoint.bottomYBlockPos - bottomYBlockPos,
+					(byte) (dataPoint.blockLightLevel),
+					(byte) (dataPoint.skyLightLevel)
+			));
 		}
 		
 		return packedDataPoints;
 	}
 	
-	public static void putListInTopDownOrder(List<DhApiTerrainDataPoint> dataPoints)
+	/** also corrects the order if it's backwards */
+	public static void correctDataColumnOrder(List<DhApiTerrainDataPoint> dataPoints)
 	{
 		// order doesn't need to be checked if there is 0 or 1 items
 		if (dataPoints.size() > 1)
@@ -500,11 +538,11 @@ public class LodDataBuilder
 	
 	
 	
-	//==================//
-	// internal helpers //
-	//==================//
+	//================//
+	// helper methods //
+	//================//
 	
-	private static int getXOrZSectionPosFromChunkPos(int chunkXOrZPos)
+	public static int getXOrZSectionPosFromChunkPos(int chunkXOrZPos)
 	{
 		// get the section position
 		int sectionPos = chunkXOrZPos;
@@ -512,7 +550,5 @@ public class LodDataBuilder
 		sectionPos = (sectionPos < 0) ? ((sectionPos + 1) / FullDataSourceV2.NUMB_OF_CHUNKS_WIDE) - 1 : (sectionPos / FullDataSourceV2.NUMB_OF_CHUNKS_WIDE);
 		return sectionPos;
 	}
-	
-	
 	
 }

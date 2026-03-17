@@ -22,9 +22,8 @@ package com.seibel.distanthorizons.core.jar;
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.core.io.ParsingMode;
 import com.electronwill.nightconfig.json.JsonFormat;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import org.apache.logging.log4j.LogManager;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Get info on the git for the mod <br>
@@ -34,7 +33,7 @@ import com.seibel.distanthorizons.core.logging.DhLogger;
  */
 public final class ModJarInfo
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = LogManager.getLogger();
 	private static final String FILE_NAME = "build_info.json";
 	
 	static

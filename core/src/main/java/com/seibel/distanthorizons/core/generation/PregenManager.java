@@ -5,18 +5,15 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.file.fullDatafile.GeneratedFullDataSourceProvider;
-import com.seibel.distanthorizons.core.generation.tasks.DataSourceRetrievalResult;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.util.FormatUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.objects.RollingAverage;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.text.MessageFormat;
@@ -29,9 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class PregenManager
 {
-	protected static final DhLogger LOGGER = new DhLoggerBuilder().build();
-	
-	private static final IMinecraftSharedWrapper MC_SERVER = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
+	protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private final AtomicReference<PregenState> pregenFuture = new AtomicReference<>();
 	
@@ -43,7 +38,7 @@ public class PregenManager
 	)
 	{
 		PregenState pregenState = new PregenState(
-				(GeneratedFullDataSourceProvider) SharedApi.tryGetDhServerWorld().getLevel(levelWrapper).getFullDataProvider(),
+				(GeneratedFullDataSourceProvider) SharedApi.getIDhServerWorld().getLevel(levelWrapper).getFullDataProvider(),
 				DhSectionPos.convertToDetailLevel(
 						DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL, origin.x, origin.z),
 						DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL
@@ -56,7 +51,6 @@ public class PregenManager
 			pregenState.completeExceptionally(new IllegalStateException("Pregen is already running."));
 			return pregenState;
 		}
-		
 		pregenState.whenComplete((result, throwable) -> {
 			this.pregenFuture.set(null);
 		});
@@ -92,8 +86,7 @@ public class PregenManager
 		private final AtomicInteger nextSectionSpiralIndex = new AtomicInteger(0);
 		
 		private final AtomicLong lastTaskFinishTime = new AtomicLong(System.currentTimeMillis());
-		private RollingAverage averageTaskCompletionIntervalMs = new RollingAverage(1000);
-		private final RollingAverage averageTaskCompletionIntervalMsShort = new RollingAverage(50);
+		private final RollingAverage averageTaskCompletionIntervalMs = new RollingAverage(1000);
 		
 		private final AtomicLong lastLogTime = new AtomicLong();
 		
@@ -111,8 +104,7 @@ public class PregenManager
 					}
 					
 					long timeSincePreviousTaskFinish = System.currentTimeMillis() - this.lastTaskFinishTime.getAndSet(System.currentTimeMillis());
-					this.averageTaskCompletionIntervalMs.add(timeSincePreviousTaskFinish);
-					this.averageTaskCompletionIntervalMsShort.add(timeSincePreviousTaskFinish);
+					this.averageTaskCompletionIntervalMs.addValue(timeSincePreviousTaskFinish);
 					
 					PregenState.this.fillPendingQueue();
 				})
@@ -148,25 +140,21 @@ public class PregenManager
 				}
 				
 				this.pendingGenerations.put(nextSectionPos, System.currentTimeMillis());
-				this.fullDataSourceProvider.getAsync(nextSectionPos)
-					.thenAccept(fullDataSource -> 
-				{
-					if (this.fullDataSourceProvider.generationStepsAreFullyGenerated(fullDataSource.columnGenerationSteps))
+				this.fullDataSourceProvider.getAsync(nextSectionPos).thenAccept(fullDataSource -> {
+					if (this.fullDataSourceProvider.isFullyGenerated(fullDataSource.columnGenerationSteps))
 					{
 						this.pendingGenerations.invalidate(fullDataSource.getPos());
 					}
 					else
 					{
-						this.fullDataSourceProvider.queuePositionForRetrieval(fullDataSource.getPos())
-							.whenComplete((DataSourceRetrievalResult result, Throwable throwable) ->
+						this.fullDataSourceProvider.queuePositionForRetrieval(fullDataSource.getPos()).thenAccept(result -> {
+							if (!result.success)
 							{
-								if (throwable != null)
-								{
-									LOGGER.warn("Failed to generate section " + DhSectionPos.toString(result.pos));
-								}
-								
-								this.pendingGenerations.invalidate(result.pos);
-							});
+								LOGGER.warn("Failed to generate section " + DhSectionPos.toString(result.pos));
+							}
+							
+							this.pendingGenerations.invalidate(result.pos);
+						});
 					}
 					
 					fullDataSource.close();
@@ -182,14 +170,7 @@ public class PregenManager
 			double chunksToGenerate = Math.ceil(Math.sqrt(this.sectionsToGenerate) / 2 * 4 * 10) / 10; // ceil to nearest 0.1
 			int chunkRatePerSecond = (int) (1000 / this.averageTaskCompletionIntervalMs.getAverage() * 4 * 4);
 			double etaMs = this.averageTaskCompletionIntervalMs.getAverage() * (this.sectionsToGenerate - this.nextSectionSpiralIndex.get());
-
-			// Reset long rolling average if short average diverged too much (<0.5 / >2.0)
-			double averageRatio = this.averageTaskCompletionIntervalMsShort.getAverage() / this.averageTaskCompletionIntervalMs.getAverage();
-			if (averageRatio < 0.5 || averageRatio > 2.0)
-			{
-				this.averageTaskCompletionIntervalMs = new RollingAverage(1000);
-			}
-
+			
 			return MessageFormat.format("Generated radius: {0,number,#.###} / {1,number,#.#} chunks ({2} cps, {3,number,#.###%}), ETA: {4}",
 					this.generatedRadius.getValue(),
 					chunksToGenerate,

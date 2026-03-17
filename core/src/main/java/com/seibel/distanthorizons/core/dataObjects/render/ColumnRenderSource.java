@@ -19,115 +19,128 @@
 
 package com.seibel.distanthorizons.core.dataObjects.render;
 
-import com.seibel.distanthorizons.api.enums.config.EDhApiVerticalQuality;
+import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer;
+import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.objects.pooling.AbstractPhantomArrayList;
-import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListPool;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnRenderView;
+import com.seibel.distanthorizons.core.util.ListUtil;
+import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
+import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnQuadView;
+import com.seibel.distanthorizons.core.level.IDhClientLevel;
+import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
+import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.util.RenderDataPointUtil;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Stores the render data used to generate OpenGL buffers.
  *
  * @see RenderDataPointUtil
  */
-public class ColumnRenderSource extends AbstractPhantomArrayList
+public class ColumnRenderSource extends PhantomArrayListParent
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	/** measured in data columns */
-	public static final int WIDTH = 64;
+	public static final boolean DO_SAFETY_CHECKS = ModInfo.IS_DEV_BUILD;
+	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
+	/** width of this data in columns */
+	public static final int SECTION_SIZE = BitShiftUtil.powerOfTwo(SECTION_SIZE_OFFSET); // 64
 	
 	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("Render Source");
 	
 	
 	
-	/** 
-	 * will be zero if an empty data source was created 
-	 * @see EDhApiVerticalQuality#calculateMaxNumberOfVerticalSlicesAtDetailLevel(byte) 
-	 */
-	public int maxVerticalSliceCount;
+	/** will be zero if an empty data source was created */
+	public int verticalDataCount;
 	public long pos;
 	public int yOffset;
 	
 	public final LongArrayList renderDataContainer;
 	
+	public final DebugSourceFlag[] debugSourceFlags;
+	
 	private boolean isEmpty = true;
+	
+	public AtomicLong localVersion = new AtomicLong(0); // used to track changes to the data source, so that buffers can be updated when necessary
 	
 	
 	
 	//==============//
 	// constructors //
 	//==============//
-	//region
 	
-	public static ColumnRenderSource createEmpty(long pos, int maxVertSliceCount, int yOffset)
-	{ return new ColumnRenderSource(pos, maxVertSliceCount, yOffset); }
+	public static ColumnRenderSource createEmpty(long pos, int maxVerticalSize, int yOffset)
+	{ return new ColumnRenderSource(pos, maxVerticalSize, yOffset); }
 	/**
 	 * Creates an empty ColumnRenderSource.
 	 *
 	 * @param pos the relative position of the container
-	 * @param maxVertSliceCount the maximum vertical size of the container
+	 * @param maxVerticalSize the maximum vertical size of the container
 	 */
-	private ColumnRenderSource(long pos, int maxVertSliceCount, int yOffset)
+	private ColumnRenderSource(long pos, int maxVerticalSize, int yOffset)
 	{
-		super(ARRAY_LIST_POOL, 0, 0, 1, 0);
+		super(ARRAY_LIST_POOL, 0, 0, 1);
 		
 		this.pos = pos;
 		this.yOffset = yOffset;
 		
-		this.maxVerticalSliceCount = maxVertSliceCount;
+		this.verticalDataCount = maxVerticalSize;
 		
-		this.renderDataContainer = this.pooledArraysCheckout.getLongArray(0, WIDTH * WIDTH * this.maxVerticalSliceCount);
+		this.renderDataContainer = this.pooledArraysCheckout.getLongArray(0, SECTION_SIZE * SECTION_SIZE * this.verticalDataCount);
+		
+		this.debugSourceFlags = new DebugSourceFlag[SECTION_SIZE * SECTION_SIZE];
 	}
-	
-	//endregion
 	
 	
 	
 	//========================//
 	// datapoint manipulation //
 	//========================//
-	//region
 	
-	public long getDataPoint(int posX, int posZ, int verticalIndex) { return this.renderDataContainer.getLong(posX * WIDTH * this.maxVerticalSliceCount + posZ * this.maxVerticalSliceCount + verticalIndex); }
+	public long getDataPoint(int posX, int posZ, int verticalIndex) { return this.renderDataContainer.getLong(posX * SECTION_SIZE * this.verticalDataCount + posZ * this.verticalDataCount + verticalIndex); }
 	
-	public void populateColumnView(ColumnRenderView view, int posX, int posZ) throws IllegalArgumentException
+	public ColumnArrayView getVerticalDataPointView(int posX, int posZ)
 	{
-		int offset = posX * WIDTH * this.maxVerticalSliceCount + posZ * this.maxVerticalSliceCount;
+		int offset = posX * SECTION_SIZE * this.verticalDataCount + posZ * this.verticalDataCount;
 		
 		// don't allow returning views that are outside this render source's bounds
 		if (offset >= this.renderDataContainer.size())
 		{
-			throw new IllegalArgumentException("Column View offset ["+offset+"] greater than parent render data container ["+DhSectionPos.toString(this.pos)+"] size ["+this.renderDataContainer.size()+"].");
+			return null;
 		}
-		else if (posX < 0 || posX >= WIDTH
-				|| posZ < 0 || posZ >= WIDTH)
+		else if (posX < 0 || posX >= SECTION_SIZE
+				|| posZ < 0 || posZ >= SECTION_SIZE)
 		{
-			throw new IllegalArgumentException("Column View pos outside valid range ["+posX+","+posZ+"].");
+			return null;
 		}
 		
-		view.populate(
-			this.renderDataContainer, this.maxVerticalSliceCount,
-			offset, this.maxVerticalSliceCount);
+		return new ColumnArrayView(this.renderDataContainer, this.verticalDataCount,
+				offset, this.verticalDataCount);
 	}
 	
-	//endregion
+	public ColumnQuadView getFullQuadView() { return this.getQuadViewOverRange(0, 0, SECTION_SIZE, SECTION_SIZE); }
+	public ColumnQuadView getQuadViewOverRange(int quadX, int quadZ, int quadXSize, int quadZSize) { return new ColumnQuadView(this.renderDataContainer, SECTION_SIZE, this.verticalDataCount, quadX, quadZ, quadXSize, quadZSize); }
 	
 	
 	
 	//=====================//
 	// data helper methods //
 	//=====================//
-	//region
 	
 	public Long getPos() { return this.pos; }
 	public Long getKey() { return this.pos; }
+	public String getKeyDisplayString() { return DhSectionPos.toString(this.pos); }
 	
-	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL); }
+	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.pos) - SECTION_SIZE_OFFSET); }
 	
 	public boolean isEmpty() { return this.isEmpty; }
 	public void markNotEmpty() { this.isEmpty = false; }
@@ -140,20 +153,18 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 			return false;
 		}
 		
-		try (ColumnRenderView columnView = ColumnRenderView.getPooled())
+		
+		for (int x = 0; x < SECTION_SIZE; x++)
 		{
-			for (int x = 0; x < WIDTH; x++)
+			for (int z = 0; z < SECTION_SIZE; z++)
 			{
-				for (int z = 0; z < WIDTH; z++)
+				ColumnArrayView columnArrayView = this.getVerticalDataPointView(x,z);
+				for (int i = 0; i < columnArrayView.size; i++)
 				{
-					this.populateColumnView(columnView, x, z);
-					for (int i = 0; i < columnView.size; i++)
+					long dataPoint = columnArrayView.get(i);
+					if (!RenderDataPointUtil.isVoid(dataPoint))
 					{
-						long dataPoint = columnView.get(i);
-						if (!RenderDataPointUtil.hasZeroHeight(dataPoint))
-						{
-							return true;
-						}
+						return true;
 					}
 				}
 			}
@@ -162,14 +173,31 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 		return false;
 	}
 	
-	//endregion
+	
+	
+	//=======//
+	// debug //
+	//=======//
+	
+	/** Sets the debug flag for the given area */
+	public void fillDebugFlag(int xStart, int zStart, int xWidth, int zWidth, DebugSourceFlag flag)
+	{
+		for (int x = xStart; x < xStart + xWidth; x++)
+		{
+			for (int z = zStart; z < zStart + zWidth; z++)
+			{
+				this.debugSourceFlags[x * SECTION_SIZE + z] = flag;
+			}
+		}
+	}
+	
+	public DebugSourceFlag debugGetFlag(int ox, int oz) { return this.debugSourceFlags[ox * SECTION_SIZE + oz]; }
 	
 	
 	
 	//==============//
 	// base methods //
 	//==============//
-	//region
 	
 	@Override
 	public String toString()
@@ -187,11 +215,11 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 		{
 			for (int x = 0; x < size; x++)
 			{
-				for (int y = 0; y < this.maxVerticalSliceCount; y++)
+				for (int y = 0; y < this.verticalDataCount; y++)
 				{
 					//Converting the dataToHex
 					stringBuilder.append(Long.toHexString(this.getDataPoint(x, z, y)));
-					if (y != this.maxVerticalSliceCount - 1)
+					if (y != this.verticalDataCount - 1)
 						stringBuilder.append(SUBDATA_DELIMITER);
 				}
 				
@@ -205,8 +233,21 @@ public class ColumnRenderSource extends AbstractPhantomArrayList
 		return stringBuilder.toString();
 	}
 	
-	//endregion
 	
 	
+	//==============//
+	// helper enums //
+	//==============//
+	
+	public enum DebugSourceFlag
+	{
+		FULL(ColorUtil.BLUE),
+		DIRECT(ColorUtil.WHITE),
+		FILE(ColorUtil.BROWN);
+		
+		public final int color;
+		
+		DebugSourceFlag(int color) { this.color = color; }
+	}
 	
 }

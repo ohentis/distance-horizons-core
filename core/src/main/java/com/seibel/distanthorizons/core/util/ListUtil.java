@@ -1,7 +1,6 @@
 package com.seibel.distanthorizons.core.util;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
-import it.unimi.dsi.fastutil.chars.CharArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 
@@ -41,13 +40,6 @@ public class ListUtil
 	
 	/** @see ListUtil#clearAndSetSize(LongArrayList, int) */
 	public static void clearAndSetSize(ByteArrayList arrayList, int size)
-	{
-		arrayList.clear();
-		arrayList.size(size);
-	}
-	
-	/** @see ListUtil#clearAndSetSize(LongArrayList, int) */
-	public static void clearAndSetSize(CharArrayList arrayList, int size)
 	{
 		arrayList.clear();
 		arrayList.size(size);

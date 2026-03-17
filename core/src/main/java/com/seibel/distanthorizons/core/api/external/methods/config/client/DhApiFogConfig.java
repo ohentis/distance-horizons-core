@@ -25,10 +25,9 @@ import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiFarFogConfig;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiFogConfig;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiHeightFogConfig;
-import com.seibel.distanthorizons.core.config.api.DhApiConfigValue;
+import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.api.converters.ApiFogDrawModeConverter;
-import com.seibel.distanthorizons.core.config.api.converters.InvertedBoolConverter;
+import com.seibel.distanthorizons.coreapi.util.converters.ApiFogDrawModeConverter;
 
 public class DhApiFogConfig implements IDhApiFogConfig
 {
@@ -68,7 +67,7 @@ public class DhApiFogConfig implements IDhApiFogConfig
 	@Override
 	@Deprecated
 	public IDhApiConfigValue<Boolean> disableVanillaFog()
-	{ return new DhApiConfigValue<>(Config.Client.Advanced.Graphics.Fog.enableVanillaFog, new InvertedBoolConverter()); }
+	{ return new DhApiConfigValue<>(Config.Client.Advanced.Graphics.Fog.disableVanillaFog); }
 	@Override
 	public IDhApiConfigValue<Boolean> enableVanillaFog()
 	{ return new DhApiConfigValue<>(Config.Client.Advanced.Graphics.Fog.enableVanillaFog); }

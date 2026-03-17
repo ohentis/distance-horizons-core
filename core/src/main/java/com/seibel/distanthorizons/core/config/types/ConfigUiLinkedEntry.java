@@ -23,24 +23,17 @@ import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance
 
 /**
  * Creates a UI element that copies everything from another element.
- * This element is only visible in the GUI.
+ * This only effects the UI
  *
  * @author coolGi
  */
-public class ConfigUiLinkedEntry extends AbstractConfigBase<AbstractConfigBase<?>>
+@Deprecated // FIXME doesn't work with localization
+public class ConfigUiLinkedEntry extends AbstractConfigType<AbstractConfigType<?, ?>, ConfigUiLinkedEntry>
 {
-	//=============//
-	// constructor //
-	//=============//
-	
-	public ConfigUiLinkedEntry(AbstractConfigBase<?> value)
-	{ super(EConfigEntryAppearance.ONLY_IN_GUI, value); }
-	
-	
-	
-	//=========//
-	// setters //
-	//=========//
+	public ConfigUiLinkedEntry(AbstractConfigType<?, ?> value)
+	{
+		super(EConfigEntryAppearance.ONLY_IN_GUI, value);
+	}
 	
 	/** Appearance shouldn't be changed */
 	@Override
@@ -48,15 +41,10 @@ public class ConfigUiLinkedEntry extends AbstractConfigBase<AbstractConfigBase<?
 	
 	/** Value shouldn't be changed after creation */
 	@Override
-	public void set(AbstractConfigBase<?> newValue) { }
+	public void set(AbstractConfigType<?, ?> newValue) { }
 	
 	
-	
-	//=========//
-	// builder //
-	//=========//
-	
-	public static class Builder extends AbstractConfigBase.Builder<AbstractConfigBase<?>, Builder>
+	public static class Builder extends AbstractConfigType.Builder<AbstractConfigType<?, ?>, Builder>
 	{
 		/** Appearance shouldn't be changed */
 		@Override
@@ -71,7 +59,5 @@ public class ConfigUiLinkedEntry extends AbstractConfigBase<AbstractConfigBase<?
 		}
 		
 	}
-	
-	
 	
 }

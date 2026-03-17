@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.core.util.threading;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.*;
 import java.util.function.Supplier;
@@ -33,7 +33,7 @@ import java.util.function.Supplier;
  */
 public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	public final ConfigEntry<Double> runTimeRatioConfig = Config.Common.MultiThreading.threadRunTimeRatio;
 	
@@ -96,7 +96,7 @@ public class RateLimitedThreadPoolExecutor extends ThreadPoolExecutor
 	 * Deprecated since most of the time this doesn't do what we want or need.
 	 * In James testing any tasks started with {@link CompletableFuture#runAsync(Runnable, Executor)}
 	 * or {@link CompletableFuture#supplyAsync(Supplier, Executor)} converted the {@link Runnable}
-	 * and {@link CompletableFuture} into objects that didn't support being canceled and removed
+	 * and {@link CompletableFuture} into objects that didn't support being cancled and removed
 	 * from the queue. The canceled tasks were correctly never run, but couldn't be purged.
 	 */
 	@Deprecated

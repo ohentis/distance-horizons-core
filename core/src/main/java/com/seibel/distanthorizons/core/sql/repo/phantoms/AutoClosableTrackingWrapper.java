@@ -18,7 +18,7 @@ import java.util.Set;
  */
 public class AutoClosableTrackingWrapper implements InvocationHandler
 {
-	//private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	//private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	/** 
 	 * should be enabled during development to

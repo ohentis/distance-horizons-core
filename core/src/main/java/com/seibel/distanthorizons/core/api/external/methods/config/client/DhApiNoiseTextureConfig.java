@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.core.api.external.methods.config.client;
 
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.IDhApiNoiseTextureConfig;
-import com.seibel.distanthorizons.core.config.api.DhApiConfigValue;
+import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
 import com.seibel.distanthorizons.core.config.Config;
 
 public class DhApiNoiseTextureConfig implements IDhApiNoiseTextureConfig
@@ -41,8 +41,8 @@ public class DhApiNoiseTextureConfig implements IDhApiNoiseTextureConfig
 	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.NoiseTexture.noiseSteps); }
 	
 	@Override
-	public IDhApiConfigValue<Float> noiseIntensity()
-	{ return new DhApiConfigValue<Float, Float>(Config.Client.Advanced.Graphics.NoiseTexture.noiseIntensity); }
+	public IDhApiConfigValue<Double> noiseIntensity()
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.NoiseTexture.noiseIntensity); }
 	
 	@Override
 	public IDhApiConfigValue<Integer> noiseDropoff()

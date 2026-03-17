@@ -28,7 +28,6 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -46,7 +45,7 @@ public class FullDataSourceV1Repo extends AbstractDhRepo<Long, FullDataSourceV1D
 	// constructor //
 	//=============//
 	
-	public FullDataSourceV1Repo(String databaseType, File databaseFile) throws SQLException, IOException
+	public FullDataSourceV1Repo(String databaseType, File databaseFile) throws SQLException
 	{
 		super(databaseType, databaseFile, FullDataSourceV1DTO.class);
 	}

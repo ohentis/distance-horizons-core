@@ -20,8 +20,8 @@
 package com.seibel.distanthorizons.core.dataObjects.fullData.sources;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
+import com.seibel.distanthorizons.core.file.IDataSource;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.logging.DhLogger;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.sql.dto.FullDataSourceV1DTO;
@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.core.util.objects.dataStreams.DhDataOutputStre
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
+import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.util.Arrays;
@@ -46,9 +47,9 @@ import java.util.Arrays;
  * @see FullDataPointUtil
  * @see FullDataSourceV2
  */
-public class FullDataSourceV1
+public class FullDataSourceV1 implements IDataSource<IDhLevel>
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	public static final byte SECTION_SIZE_OFFSET = DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL;
 	/** measured in dataPoints */
@@ -93,14 +94,29 @@ public class FullDataSourceV1
 	}
 	
 	
+	
+	
+	//======//
+	// data //
+	//======//
+	
+	@Deprecated
+	@Override
+	public boolean update(FullDataSourceV2 dataSource, IDhLevel level) { throw new UnsupportedOperationException("Deprecated"); }
+	
+	
+	
 	//=====================//
 	// setters and getters //
 	//=====================//
 	
+	@Override
 	public Long getKey() { return this.pos; }
+	@Override
 	public String getKeyDisplayString() { return DhSectionPos.toString(this.pos); }
 	
-	public long getPos() { return this.pos; }
+	@Override
+	public Long getPos() { return this.pos; }
 	
 	public void resizeDataStructuresForRepopulation(long pos)
 	{
@@ -108,6 +124,7 @@ public class FullDataSourceV1
 		this.pos = pos;
 	}
 	
+	@Override
 	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.pos) - SECTION_SIZE_OFFSET); }
 	
 	public boolean isEmpty() { return this.isEmpty; }
@@ -166,7 +183,8 @@ public class FullDataSourceV1
 		this.setDataPoints(dataPoints);
 		
 		
-		this.readIdMappings(this.mapping, inputStream, level.getLevelWrapper());
+		FullDataPointIdMap mapping = this.readIdMappings(inputStream, level.getLevelWrapper());
+		this.setIdMapping(mapping);
 		
 	}
 	
@@ -179,7 +197,7 @@ public class FullDataSourceV1
 	{
 		outputStream.writeInt(this.getDataDetailLevel());
 		outputStream.writeInt(WIDTH);
-		outputStream.writeInt(level.getLevelWrapper().getMinHeight());
+		outputStream.writeInt(level.getMinY());
 		outputStream.writeByte(this.worldGenStep.value);
 		
 	}
@@ -188,19 +206,19 @@ public class FullDataSourceV1
 		int dataDetail = inputStream.readInt();
 		if (dataDetail != dto.dataDetailLevel)
 		{
-			throw new IOException("Data level mismatch. Expected: ["+dto.dataDetailLevel+"], found ["+dataDetail+"].");
+			throw new IOException(LodUtil.formatLog("Data level mismatch. Expected: ["+dto.dataDetailLevel+"], found ["+dataDetail+"]."));
 		}
 		
 		int width = inputStream.readInt();
 		if (width != WIDTH)
 		{
-			throw new IOException("Section width mismatch: [" + width + "] != [" + WIDTH + "] (Currently only 1 section width is supported)");
+			throw new IOException(LodUtil.formatLog("Section width mismatch: " + width + " != " + WIDTH + " (Currently only 1 section width is supported)"));
 		}
 		
 		int minY = inputStream.readInt();
-		if (minY != level.getLevelWrapper().getMinHeight())
+		if (minY != level.getMinY())
 		{
-			LOGGER.warn("Data minY mismatch: [" + minY + "] != [" + level.getLevelWrapper().getMinHeight() + "]. Will ignore data's y level");
+			LOGGER.warn("Data minY mismatch: " + minY + " != " + level.getMinY() + ". Will ignore data's y level");
 		}
 		
 		byte worldGenByte = inputStream.readByte();
@@ -346,7 +364,7 @@ public class FullDataSourceV1
 		outputStream.writeInt(DATA_GUARD_BYTE);
 		this.mapping.serialize(outputStream);
 	}
-	public void readIdMappings(FullDataPointIdMap map, DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
+	public FullDataPointIdMap readIdMappings(DhDataInputStream inputStream, ILevelWrapper levelWrapper) throws IOException, InterruptedException, DataCorruptedException
 	{
 		int guardByte = inputStream.readInt();
 		if (guardByte != DATA_GUARD_BYTE)
@@ -354,8 +372,18 @@ public class FullDataSourceV1
 			throw new IOException("Invalid data content end guard for ID mapping");
 		}
 		
-		FullDataPointIdMap.deserialize(map, inputStream, this.pos, levelWrapper);
+		return FullDataPointIdMap.deserialize(inputStream, this.pos, levelWrapper);
 	}
+	public void setIdMapping(FullDataPointIdMap mappings) { this.mapping.mergeAndReturnRemappedEntityIds(mappings); }
+	
+	
+	//==================//
+	// override methods //
+	//==================//
+	
+	@Override
+	public void close()
+	{ /* not currently needed */ }
 	
 	
 	

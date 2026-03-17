@@ -19,24 +19,26 @@
 
 package com.seibel.distanthorizons.core.world;
 
-import com.seibel.distanthorizons.core.api.internal.ClientApi;
-import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.level.DhClientServerLevel;
-import com.seibel.distanthorizons.core.util.TimerUtil;
+import com.seibel.distanthorizons.core.util.ThreadUtil;
+import com.seibel.distanthorizons.core.util.objects.EventLoop;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLevel> implements IDhClientWorld
 {
 	private final Set<DhClientServerLevel> dhLevels = Collections.synchronizedSet(new HashSet<>());
 	
-	private final Timer clientTickTimer = TimerUtil.CreateTimer("ClientTickTimer");
+	public ExecutorService dhTickerThread = ThreadUtil.makeSingleThreadPool("Client Server World Ticker Thread", 2);
+	public EventLoop eventLoop = new EventLoop(this.dhTickerThread, this::_clientTick); //TODO: Rate-limit the loop
 	
 	
 	
@@ -48,15 +50,6 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 	{
 		super(EWorldEnvironment.CLIENT_SERVER);
 		LOGGER.info("Started DhWorld of type " + this.environment);
-		
-		this.clientTickTimer.scheduleAtFixedRate(new TimerTask() 
-		{
-			@Override 
-			public void run()
-			{
-				DhClientServerWorld.this.dhLevels.forEach(DhClientServerLevel::clientTick);
-			}
-		}, 0, IDhClientWorld.TICK_RATE_IN_MS);
 	}
 	
 	
@@ -72,22 +65,9 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 		{
 			return this.dhLevelByLevelWrapper.computeIfAbsent(wrapper, (levelWrapper) ->
 			{
-				try
-				{
-					DhClientServerLevel level = new DhClientServerLevel(this.saveStructure, (IServerLevelWrapper) levelWrapper, this.getServerPlayerStateManager());
-					this.dhLevels.add(level);
-					return level;
-				}
-				catch (Exception e)
-				{
-					LOGGER.fatal("Failed to load client-server level, error: ["+e.getMessage()+"].", e);
-					
-					ClientApi.INSTANCE.showChatMessageNextFrame(// red text		
-						MinecraftTextFormat.RED + "Distant Horizons: ClientServer level loading failed." + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
-						"Unable to load level ["+levelWrapper.getDhIdentifier()+"], LODs may not appear. See log for more information.");
-					
-					return null;
-				}
+				DhClientServerLevel level = new DhClientServerLevel(this.saveStructure, (IServerLevelWrapper) levelWrapper, this.getServerPlayerStateManager());
+				this.dhLevels.add(level);
+				return level;
 			});
 		}
 		else
@@ -109,8 +89,8 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 					return null;
 				}
 				
-				level.startRenderer();
-				clientLevelWrapper.setDhLevel(level);
+				level.startRenderer(clientLevelWrapper);
+				clientLevelWrapper.setParentLevel(level);
 				return level;
 			});
 		}
@@ -140,6 +120,19 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 		}
 	}
 	
+	private void _clientTick()
+	{
+		//LOGGER.info("Client world tick with {} levels", levels.size());
+		this.dhLevels.forEach(DhClientServerLevel::clientTick);
+	}
+	
+	@Override 
+	public void clientTick()
+	{
+		//LOGGER.info("Client world tick");
+		this.eventLoop.tick();
+	}
+	
 	
 	
 	//================//
@@ -150,13 +143,13 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 	@Override
 	public synchronized void close()
 	{
-		ArrayList<CompletableFuture<Void>> closeFutures = new ArrayList<>();
-		
 		synchronized (this.dhLevels)
 		{
 			// close each level
 			for (DhClientServerLevel level : this.dhLevels)
 			{
+				LOGGER.info("Unloading level [" + level.getServerLevelWrapper().getDhIdentifier() + "].");
+				
 				// level wrapper shouldn't be null, but just in case
 				IServerLevelWrapper serverLevelWrapper = level.getServerLevelWrapper();
 				if (serverLevelWrapper != null)
@@ -164,29 +157,13 @@ public class DhClientServerWorld extends AbstractDhServerWorld<DhClientServerLev
 					serverLevelWrapper.onUnload();
 				}
 				
-				// close levels asynchronously to speed up
-				// shutdown on servers with a lot of levels
-				CompletableFuture<Void> closeFuture = new CompletableFuture<>();
-				Thread closeThread = new Thread(() -> 
-				{
-					level.close();
-					closeFuture.complete(null);
-				}, "level shutdown");
-				closeThread.start();
-				closeFutures.add(closeFuture);
+				level.close();
 			}
 		}
 		
-		// wait for all the levels to finish closing
-		for (CompletableFuture<Void> future : closeFutures)
-		{
-			future.join();
-		}
-		
-		
 		this.dhLevelByLevelWrapper.clear();
-		this.clientTickTimer.cancel();
-		LOGGER.info("Closed DhWorld of type [" + this.environment + "].");
+		this.eventLoop.close();
+		LOGGER.info("Closed DhWorld of type " + this.environment);
 	}
 	
 }

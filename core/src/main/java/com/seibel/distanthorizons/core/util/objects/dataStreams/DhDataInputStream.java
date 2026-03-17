@@ -19,13 +19,12 @@
 
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
-import com.github.luben.zstd.*;
+import com.github.luben.zstd.RecyclingBufferPool;
+import com.github.luben.zstd.ZstdInputStream;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListCheckout;
-import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import net.jpountz.lz4.LZ4FrameInputStream;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.tukaani.xz.ResettableArrayCache;
 import org.tukaani.xz.XZInputStream;
 
@@ -45,38 +44,14 @@ public class DhDataInputStream extends DataInputStream
 {
 	private static final ThreadLocal<ResettableArrayCache> LZMA_RESETTABLE_ARRAY_CACHE_GETTER = ThreadLocal.withInitial(() -> new ResettableArrayCache(new LzmaArrayCache()));
 	
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = LogManager.getLogger();
 	
 	
-	
-	//=============//
-	// constructor //
-	//=============//
-	
-	public static DhDataInputStream create(ByteArrayList byteArrayList, EDhApiDataCompressionMode compressionMode, PhantomArrayListCheckout checkout) throws IOException
-	{ return create(byteArrayList.toByteArray(), compressionMode, checkout); }
-	public static DhDataInputStream create(byte[] byteArray, EDhApiDataCompressionMode compressionMode, PhantomArrayListCheckout checkout) throws IOException
-	{
-		// Z_Std handling compression outside the stream provides a significant performance boost
-		ByteArrayInputStream byteArrayInputStream;
-		if (compressionMode == EDhApiDataCompressionMode.Z_STD_BLOCK)
-		{
-			ByteArrayList pooledByteArrayList = PooledZstdDecompressor.decompressFrame(byteArray, checkout);
-			byteArrayInputStream = new ByteArrayInputStream(pooledByteArrayList.elements(), 0, pooledByteArrayList.size());
-		}
-		else
-		{
-			byteArrayInputStream = new ByteArrayInputStream(byteArray);
-		}
-		
-		return new DhDataInputStream(byteArrayInputStream, compressionMode);
-	}
-	private DhDataInputStream(ByteArrayInputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
+	public DhDataInputStream(InputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{ 
-		super(warpStream(stream, compressionMode)); 
+		super(warpStream(new BufferedInputStream(stream), compressionMode)); 
 	}
-	@SuppressWarnings("deprecation")
-	private static InputStream warpStream(ByteArrayInputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
+	private static InputStream warpStream(InputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
 		try
 		{
@@ -86,20 +61,16 @@ public class DhDataInputStream extends DataInputStream
 					return stream;
 				case LZ4:
 					return new LZ4FrameInputStream(stream);
-				case Z_STD_BLOCK:
-					// ZStd compression should be handled before this point
-					// just return the stream
-					return stream;
+				case Z_STD:
+					return new ZstdInputStream(stream, RecyclingBufferPool.INSTANCE);
 				case LZMA2:
 					// using an array cache significantly reduces GC pressure
 					ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();
 					arrayCache.reset();
+					
 					// Note: all LZMA/XZ compressors can be decompressed using this same InputStream
 					return new XZInputStream(stream, arrayCache);
 				
-				case Z_STD_STREAM: // deprecated, only used for legacy support
-					return new ZstdInputStream(stream, RecyclingBufferPool.INSTANCE);
-					
 				default:
 					throw new IllegalArgumentException("No compressor defined for [" + compressionMode + "]");
 			}
@@ -112,11 +83,6 @@ public class DhDataInputStream extends DataInputStream
 		}
 	}
 	
-	
-	
-	//================//
-	// base overrides //
-	//================//
 	
 	@Override 
 	public int read() throws IOException
@@ -147,6 +113,7 @@ public class DhDataInputStream extends DataInputStream
 		}
 	}
 	
-	
+	@Override
+	public void close() throws IOException { /* Do nothing. */ }
 	
 }

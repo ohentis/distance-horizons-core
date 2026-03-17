@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -41,7 +41,7 @@ public class ServerApi
 {
 	public static final ServerApi INSTANCE = new ServerApi();
 	
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
 	
@@ -50,6 +50,30 @@ public class ServerApi
 	//=============//
 	
 	private ServerApi() { }
+	
+	
+	
+	//=============//
+	// tick events //
+	//=============//
+	
+	public void serverTickEvent()
+	{
+		try
+		{
+			IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
+			if (serverWorld != null)
+			{
+				serverWorld.serverTick();
+				SharedApi.worldGenTick(serverWorld::worldGenTick);
+			}
+		}
+		catch (Exception e)
+		{
+			// try catch is necessary to prevent crashing the internal server when an exception is thrown
+			LOGGER.error("ServerTickEvent error: " + e.getMessage(), e);
+		}
+	}
 	
 	
 	
@@ -82,15 +106,15 @@ public class ServerApi
 	// level events //
 	//==============//
 	
-	public void serverLevelLoadEvent(IServerLevelWrapper levelWrapper)
+	public void serverLevelLoadEvent(IServerLevelWrapper level)
 	{
-		LOGGER.debug("Server Level " + levelWrapper + " loading");
+		LOGGER.debug("Server Level " + level + " loading");
 		
 		AbstractDhWorld serverWorld = SharedApi.getAbstractDhWorld();
 		if (serverWorld != null)
 		{
-			serverWorld.getOrLoadLevel(levelWrapper);
-			ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelLoadEvent.class, new DhApiLevelLoadEvent.EventParam(levelWrapper));
+			serverWorld.getOrLoadLevel(level);
+			ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelLoadEvent.class, new DhApiLevelLoadEvent.EventParam(level));
 		}
 	}
 	public void serverLevelUnloadEvent(IServerLevelWrapper level)
@@ -101,6 +125,7 @@ public class ServerApi
 		if (serverWorld != null)
 		{
 			serverWorld.unloadLevel(level);
+			SharedApi.INSTANCE.clearQueuedChunkUpdates();
 			ApiEventInjector.INSTANCE.fireAllEvents(DhApiLevelUnloadEvent.class, new DhApiLevelUnloadEvent.EventParam(level));
 		}
 	}
@@ -111,8 +136,8 @@ public class ServerApi
 	// chunk modified events //
 	//=======================//
 	
-	public void serverChunkLoadEvent(IChunkWrapper chunkWrapper, ILevelWrapper level) { SharedApi.INSTANCE.applyChunkUpdate(chunkWrapper, level); }
-	public void serverChunkSaveEvent(IChunkWrapper chunkWrapper, ILevelWrapper level) { SharedApi.INSTANCE.applyChunkUpdate(chunkWrapper, level); }
+	public void serverChunkLoadEvent(IChunkWrapper chunkWrapper, ILevelWrapper level) { SharedApi.INSTANCE.applyChunkUpdate(chunkWrapper, level, false); }
+	public void serverChunkSaveEvent(IChunkWrapper chunkWrapper, ILevelWrapper level) { SharedApi.INSTANCE.applyChunkUpdate(chunkWrapper, level, true); }
 	
 	
 	
@@ -127,7 +152,7 @@ public class ServerApi
 			return;
 		}
 		
-		IDhServerWorld serverWorld = SharedApi.tryGetDhServerWorld();
+		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		LOGGER.info("Player ["+player.getName()+"] joined.");
 		if (serverWorld != null)
 		{
@@ -141,7 +166,7 @@ public class ServerApi
 			return;
 		}
 		
-		IDhServerWorld serverWorld = SharedApi.tryGetDhServerWorld();
+		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		LOGGER.info("Player ["+player.getName()+"] disconnected.");
 		if (serverWorld != null)
 		{
@@ -155,7 +180,7 @@ public class ServerApi
 			return;
 		}
 		
-		IDhServerWorld serverWorld = SharedApi.tryGetDhServerWorld();
+		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		LOGGER.info("Player ["+player.getName()+"] changed level: ["+originLevel.getKeyedLevelDimensionName()+"] -> ["+destinationLevel.getKeyedLevelDimensionName()+"].");
 		if (serverWorld != null)
 		{
@@ -175,7 +200,7 @@ public class ServerApi
 			return;
 		}
 		
-		IDhServerWorld serverWorld = SharedApi.tryGetDhServerWorld();
+		IDhServerWorld serverWorld = SharedApi.getIDhServerWorld();
 		if (serverWorld != null)
 		{
 			serverWorld.getServerPlayerStateManager().handlePluginMessage(player, message);

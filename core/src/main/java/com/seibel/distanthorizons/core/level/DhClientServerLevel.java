@@ -19,22 +19,29 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
 import com.seibel.distanthorizons.core.file.structure.ISaveStructure;
+import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.core.multiplayer.server.ServerPlayerStateManager;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
+import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.sql.SQLException;
+import java.awt.*;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-/** The level used for a singleplayer world */
+/** The level used on a singleplayer world */
 public class DhClientServerLevel extends AbstractDhServerLevel implements IDhClientLevel
 {
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
@@ -46,57 +53,46 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	//=============//
 	// constructor //
 	//=============//
-	//region
 	
-	public DhClientServerLevel(
-		ISaveStructure saveStructure, 
-		IServerLevelWrapper serverLevelWrapper, 
-		ServerPlayerStateManager serverPlayerStateManager
-		) throws SQLException, IOException
+	public DhClientServerLevel(ISaveStructure saveStructure, IServerLevelWrapper serverLevelWrapper, ServerPlayerStateManager serverPlayerStateManager)
 	{
 		super(saveStructure, serverLevelWrapper, serverPlayerStateManager, false);
 		
-		this.serverLevelWrapper.setDhLevel(this);
+		this.serverLevelWrapper.setParentLevel(this);
 		this.clientside = new ClientLevelModule(this);
 		this.runRepoReliantSetup();
 	}
-	
-	//endregion
 	
 	
 	
 	//==============//
 	// tick methods //
 	//==============//
-	//region
 	
 	@Override
 	public void clientTick() { this.clientside.clientTick(); }
 	
-	//endregion
+	@Override
+	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
+	{ this.clientside.render(renderEventParam, profiler); }
 	
-	
+	@Override
+	public void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
+	{ this.clientside.renderDeferred(renderEventParam, profiler); }
 	
 	//========//
 	// render //
 	//========//
-	//region
 	
-	public void startRenderer() { this.clientside.startRenderer(); }
+	public void startRenderer(IClientLevelWrapper clientLevel) { this.clientside.startRenderer(clientLevel); }
 	
 	public void stopRenderer() { this.clientside.stopRenderer(); }
-	
-	@Override
-	public boolean isRendering() { return this.clientside.isRendering(); }
-	
-	//endregion
 	
 	
 	
 	//================//
 	// level handling //
 	//================//
-	//region
 	
 	@Nullable
 	@Override
@@ -105,36 +101,26 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 	@Override
 	public void clearRenderCache() { this.clientside.clearRenderCache(); }
 	
-	//endregion
-	
 	
 	
 	//===========//
 	// debugging //
 	//===========//
-	//region
 	
 	@Override
 	public void addDebugMenuStringsToList(List<String> messageList)
 	{
 		// header
-		String o = MinecraftTextFormat.ORANGE;
-		String y = MinecraftTextFormat.YELLOW;
-		String g = MinecraftTextFormat.GREEN;
-		String cf = MinecraftTextFormat.CLEAR_FORMATTING;
-		
-		
 		String dimName = this.serverLevelWrapper.getDhIdentifier();
 		boolean rendering = this.clientside.isRendering();
-		String renderingString = rendering ? (g+"yes"+cf) : (o+"no"+cf);
-		messageList.add("["+y+dimName+cf+"] rendering: "+renderingString);
+		messageList.add("["+dimName+"] rendering: "+(rendering ? "yes" : "no"));
 		
 		super.addDebugMenuStringsToList(messageList);
 	}
 	
 	
 	@Override
-	public IDhGenericRenderer getGenericRenderer() { return this.clientside.genericRenderer; }
+	public GenericObjectRenderer getGenericRenderer() { return this.clientside.genericRenderer; }
 	@Override
 	public RenderBufferHandler getRenderBufferHandler()
 	{
@@ -142,30 +128,32 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 		return (renderState != null) ? renderState.renderBufferHandler : null;
 	}
 	
-	//endregion
-	
 	
 	
 	//===============//
 	// data handling //
 	//===============//
-	//region
 	
 	@Override
 	public void onWorldGenTaskComplete(long pos)
 	{
 		super.onWorldGenTaskComplete(pos);
+		
+		DebugRenderer.makeParticle(
+				new DebugRenderer.BoxParticle(
+						new DebugRenderer.Box(pos, 128f, 156f, 0.09f, Color.red.darker()),
+						0.2, 32f
+				)
+		);
+		
 		this.clientside.reloadPos(pos);
 	}
-	
-	//endregion
 	
 	
 	
 	//================//
 	// base overrides //
 	//================//
-	//region
 	
 	@Override
 	public String toString() { return "DhClientServerLevel{"+this.serverLevelWrapper.getKeyedLevelDimensionName()+"}"; }
@@ -178,9 +166,5 @@ public class DhClientServerLevel extends AbstractDhServerLevel implements IDhCli
 		this.serverside.close();
 		LOGGER.info("Closed " + this.getClass().getSimpleName() + " for " + this.getServerLevelWrapper());
 	}
-	
-	//endregion
-	
-	
 	
 }

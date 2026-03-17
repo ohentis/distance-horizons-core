@@ -4,15 +4,13 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
-import com.seibel.distanthorizons.core.logging.DhLogger;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.event.internal.CloseInternalEvent;
 import com.seibel.distanthorizons.core.network.messages.base.LevelInitMessage;
 import com.seibel.distanthorizons.core.network.session.NetworkSession;
-import com.seibel.distanthorizons.core.render.RenderThreadTaskHandler;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import org.jetbrains.annotations.NotNull;
+import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
@@ -23,10 +21,8 @@ import java.util.function.Consumer;
  */
 public class ClientPluginChannelApi
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder()
-			.fileLevelConfig(Config.Common.Logging.logNetworkEventToFile)
-			.build();  
-			
+	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
+			() -> Config.Common.Logging.logNetworkEvent.get());
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IKeyedClientLevelManager KEYED_CLIENT_LEVEL_MANAGER = SingletonInjector.INSTANCE.get(IKeyedClientLevelManager.class);
 	
@@ -68,7 +64,7 @@ public class ClientPluginChannelApi
 	//================//
 	
 	/** fired when this client connects to a server with DH support */
-	public void onJoinServer(@NotNull NetworkSession networkSession)
+	public void onJoinServer(NetworkSession networkSession)
 	{
 		Objects.requireNonNull(networkSession);
 		this.networkSession = networkSession;
@@ -78,19 +74,14 @@ public class ClientPluginChannelApi
 	
 	private void onLevelInitMessage(LevelInitMessage msg)
 	{
-		if (!msg.serverKey.isEmpty() && !msg.serverKey.matches(LevelInitMessage.SERVER_KEY_REGEX))
-		{
-			throw new IllegalArgumentException("Server sent invalid server key.");
-		}
-		
-		if (!msg.levelKey.matches(LevelInitMessage.LEVEL_KEY_REGEX))
+		if (!msg.levelKey.matches(LevelInitMessage.VALIDATION_REGEX))
 		{
 			throw new IllegalArgumentException("Server sent invalid level key.");
 		}
 		
 		LOGGER.info("Server level key received: [" + msg.levelKey + "].");
 		
-		RenderThreadTaskHandler.INSTANCE.queueRunningOnRenderThread("ClientPluginChannelApi onLevelInitMessage", () -> 
+		MC.executeOnRenderThread(() -> 
 		{
 			IClientLevelWrapper clientLevel = MC.getWrappedClientLevel(true);
 			IServerKeyedClientLevel existingKeyedClientLevel = KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel();
@@ -113,12 +104,10 @@ public class ClientPluginChannelApi
 				this.levelUnloadHandler.accept(clientLevel);
 			}
 			
-			if (existingKeyedClientLevel == null
-					|| !existingKeyedClientLevel.getServerKey().equals(msg.serverKey)
-					|| !existingKeyedClientLevel.getServerLevelKey().equals(msg.levelKey))
+			if (existingKeyedClientLevel == null || !existingKeyedClientLevel.getServerLevelKey().equals(msg.levelKey))
 			{
 				LOGGER.info("Loading level with key: [" + msg.levelKey + "].");
-				IServerKeyedClientLevel keyedLevel = KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(clientLevel, msg.serverKey, msg.levelKey);
+				IServerKeyedClientLevel keyedLevel = KEYED_CLIENT_LEVEL_MANAGER.setServerKeyedLevel(clientLevel, msg.levelKey);
 				this.levelLoadHandler.accept(keyedLevel);
 			}
 		});

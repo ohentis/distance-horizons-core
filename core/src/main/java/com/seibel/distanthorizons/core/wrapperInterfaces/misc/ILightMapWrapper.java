@@ -28,4 +28,8 @@ import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindab
 public interface ILightMapWrapper extends IBindable
 {
 	
+	/** Returns the bound texture position */
+	void bind();
+	void unbind();
+	
 }

@@ -20,10 +20,13 @@
 package com.seibel.distanthorizons.core.util;
 
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.core.level.AbstractDhLevel;
+import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
+import com.seibel.distanthorizons.core.dataObjects.render.columnViews.ColumnArrayView;
+import com.seibel.distanthorizons.core.dataObjects.render.columnViews.IColumnDataView;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /**
@@ -66,7 +69,7 @@ public class RenderDataPointUtil
 	
 	public static final boolean RUN_VALIDATION = ModInfo.IS_DEV_BUILD;
 	
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = LogManager.getLogger();
 	
 	
 	public final static int EMPTY_DATA = 0;
@@ -200,9 +203,9 @@ public class RenderDataPointUtil
 		return dataPoint & ~(HEIGHT_SHIFTED_MASK | DEPTH_SHIFTED_MASK) | height | depth;
 	}
 	
-	/** AKA the ending/top/highest Y value above {@link ILevelWrapper#getMinHeight()} ()} */
+	/** AKA the ending/top/highest Y value above {@link AbstractDhLevel#getMinY()} */
 	public static short getYMax(long dataPoint) { return (short) ((dataPoint >>> HEIGHT_SHIFT) & HEIGHT_MASK); }
-	/** AKA the starting/bottom/lowest Y value above {@link ILevelWrapper#getMinHeight()} */
+	/** AKA the starting/bottom/lowest Y value above {@link AbstractDhLevel#getMinY()} */
 	public static short getYMin(long dataPoint) { return (short) ((dataPoint >>> DEPTH_SHIFT) & DEPTH_MASK); }
 	public static long setYMin(long dataPoint, int depth) { return (long) ((dataPoint & ~(DEPTH_MASK << DEPTH_SHIFT)) | (depth & DEPTH_MASK) << DEPTH_SHIFT); }
 	
@@ -217,7 +220,7 @@ public class RenderDataPointUtil
 	public static byte getBlockMaterialId(long dataPoint) { return (byte) ((dataPoint >>> IRIS_BLOCK_MATERIAL_ID_SHIFT) & IRIS_BLOCK_MATERIAL_ID_MASK); }
 	
 	
-	public static boolean hasZeroHeight(long dataPoint) { return (((dataPoint >>> DEPTH_SHIFT) & HEIGHT_DEPTH_MASK) == 0); }
+	public static boolean isVoid(long dataPoint) { return (((dataPoint >>> DEPTH_SHIFT) & HEIGHT_DEPTH_MASK) == 0); }
 	
 	public static boolean doesDataPointExist(long dataPoint) { return dataPoint != EMPTY_DATA; }
 	
@@ -238,7 +241,7 @@ public class RenderDataPointUtil
 		{
 			return "null";
 		}
-		else if (hasZeroHeight(dataPoint))
+		else if (isVoid(dataPoint))
 		{
 			return "void";
 		}
@@ -257,5 +260,57 @@ public class RenderDataPointUtil
 	}
 	
 	
+	
+	//=================//
+	// ColumnArrayView //
+	//=================//
+	// TODO this should probably be moved
+	
+	// TODO what is the purpose of these?
+	//these were needed by the old logic for mergeMultiData(),
+	//which has now been replaced by RenderDataPointReducingList.
+	//so, these are no longer necessary, but left here for the same
+	//reason the old logic is left here: in case it's ever needed again.
+	/*
+	private static final ThreadLocal<int[]> tLocalIndices = new ThreadLocal<>();
+	private static final ThreadLocal<boolean[]> tLocalIncreaseIndex = new ThreadLocal<>();
+	private static final ThreadLocal<boolean[]> tLocalIndexHandled = new ThreadLocal<>();
+	private static final ThreadLocal<short[]> tLocalHeightAndDepth = new ThreadLocal<>();
+	private static final ThreadLocal<int[]> tDataIndexCache = new ThreadLocal<>();
+	*/
+	
+	/**
+	 * This method merge column of multiple data together
+	 *
+	 * @param sourceData one or more columns of data
+	 * @param output one column of space for the result to be written to
+	 */
+	public static void mergeMultiData(IColumnDataView sourceData, ColumnArrayView output)
+	{
+		int target = output.verticalSize();
+		if (target <= 0)
+		{
+			// I expect this to never be the case,
+			// but RenderDataPointReducingList handles it sanely,
+			// so I might as well handle it sanely here too.
+			output.fill(EMPTY_DATA);
+		}
+		else if (target == 1)
+		{
+			output.set(0, RenderDataPointReducingList.reduceToOne(sourceData));
+			for (int index = 1, size = output.size(); index < size; index++)
+			{
+				output.set(index, EMPTY_DATA);
+			}
+		}
+		else
+		{
+			try (RenderDataPointReducingList list = new RenderDataPointReducingList(sourceData))
+			{
+				list.reduce(output.verticalSize());
+				list.copyTo(output);
+			}
+		}
+	}
 	
 }

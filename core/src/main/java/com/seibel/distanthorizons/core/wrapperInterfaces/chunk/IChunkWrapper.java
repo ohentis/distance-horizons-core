@@ -63,8 +63,6 @@ public interface IChunkWrapper extends IBindable
 	 */
 	int getMaxNonEmptyHeight();
 	
-	void createDhHeightMaps();
-	
 	/** @return The highest y position of a solid block at the given relative chunk position. */
 	int getSolidHeightMapValue(int xRel, int zRel);
 	/**
@@ -127,6 +125,8 @@ public interface IChunkWrapper extends IBindable
 	IMutableBlockPosWrapper getMutableBlockPosWrapper();
 	
 	IBiomeWrapper getBiome(int relX, int relY, int relZ);
+	
+	boolean isStillValid();
 	
 	
 	
@@ -405,9 +405,6 @@ public interface IChunkWrapper extends IBindable
 		
 		return beaconTintBlockFound ? new Color(red, green, blue) : Color.WHITE;
 	}
-	
-	IChunkWrapper copy();
-	
 	
 	
 }

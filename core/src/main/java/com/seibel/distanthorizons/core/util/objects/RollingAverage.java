@@ -41,7 +41,7 @@ public class RollingAverage
 	// input //
 	//=======//
 	
-	public void add(double value)
+	public void addValue(double value)
 	{
 		this.arrayLock.lock();
 		try

@@ -23,10 +23,10 @@ import com.seibel.distanthorizons.api.enums.config.*;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiTransparency;
 import com.seibel.distanthorizons.api.interfaces.config.IDhApiConfigValue;
 import com.seibel.distanthorizons.api.interfaces.config.client.*;
-import com.seibel.distanthorizons.core.config.api.DhApiConfigValue;
+import com.seibel.distanthorizons.api.objects.config.DhApiConfigValue;
 import com.seibel.distanthorizons.api.enums.rendering.EDhApiRendererMode;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.api.converters.RenderModeEnabledConverter;
+import com.seibel.distanthorizons.coreapi.util.converters.RenderModeEnabledConverter;
 
 public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 {
@@ -97,9 +97,10 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	public IDhApiConfigValue<Boolean> tintWithAvoidedBlocks()
 	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Graphics.Quality.tintWithAvoidedBlocks); }
 	
-	@Override
-	public IDhApiConfigValue<Integer> getBiomeBlending()
-	{ return new DhApiConfigValue<Integer, Integer>(Config.Client.Advanced.Graphics.Quality.lodBiomeBlending); }
+	// TODO re-implement
+//	@Override
+//	public IDhApiConfigValue<Integer> getBiomeBlending()
+//	{ return new DhApiConfigValue<Integer, Integer>(Quality.lodBiomeBlending); }
 	
 	
 	
@@ -108,16 +109,16 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	//===========================//
 
 	@Override
-	public IDhApiConfigValue<Float> overdrawPreventionRadius()
-	{ return new DhApiConfigValue<Float, Float>(Config.Client.Advanced.Graphics.Culling.overdrawPrevention); }
+	public IDhApiConfigValue<Double> overdrawPreventionRadius()
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Culling.overdrawPrevention); }
 	
 	@Override
-	public IDhApiConfigValue<Float> brightnessMultiplier()
-	{ return new DhApiConfigValue<Float, Float>(Config.Client.Advanced.Graphics.Quality.brightnessMultiplier); }
+	public IDhApiConfigValue<Double> brightnessMultiplier()
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Quality.brightnessMultiplier); }
 	
 	@Override
-	public IDhApiConfigValue<Float> saturationMultiplier()
-	{ return new DhApiConfigValue<Float, Float>(Config.Client.Advanced.Graphics.Quality.saturationMultiplier); }
+	public IDhApiConfigValue<Double> saturationMultiplier()
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Quality.saturationMultiplier); }
 	
 	@Override
 	public IDhApiConfigValue<Boolean> caveCullingEnabled()
@@ -134,6 +135,10 @@ public class DhApiGraphicsConfig implements IDhApiGraphicsConfig
 	@Override
 	public IDhApiConfigValue<Boolean> lodOnlyMode()
 	{ return new DhApiConfigValue<Boolean, Boolean>(Config.Client.Advanced.Debugging.lodOnlyMode); }
+	
+	@Override
+	public IDhApiConfigValue<Double> lodBias()
+	{ return new DhApiConfigValue<Double, Double>(Config.Client.Advanced.Graphics.Quality.lodBias); }
 	
 	@Override
 	public IDhApiConfigValue<EDhApiLodShading> lodShading()

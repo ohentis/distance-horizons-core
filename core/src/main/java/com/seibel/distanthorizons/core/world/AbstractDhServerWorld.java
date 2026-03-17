@@ -10,10 +10,8 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhServerLevel> extends AbstractDhWorld implements IDhServerWorld
@@ -54,13 +52,7 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	public void addPlayer(IServerPlayerWrapper serverPlayer)
 	{
 		ServerPlayerState playerState = this.serverPlayerStateManager.registerJoinedPlayer(serverPlayer);
-		AbstractDhServerLevel serverLevel = (AbstractDhServerLevel) this.getOrLoadServerLevel(serverPlayer.getLevel());
-		if (serverLevel == null)
-		{
-			return;
-		}
-		
-		serverLevel.addPlayer(serverPlayer);
+		((TDhServerLevel) this.getOrLoadServerLevel(serverPlayer.getLevel())).addPlayer(serverPlayer);
 		
 		Iterator<TDhServerLevel> it = this.dhLevelByLevelWrapper.values().stream().distinct().iterator();
 		while (it.hasNext())
@@ -75,21 +67,7 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	@Override
 	public void removePlayer(IServerPlayerWrapper serverPlayer)
 	{
-		IServerLevelWrapper playerLevel = serverPlayer.getLevel();
-		if (playerLevel == null)
-		{
-			// can happen during server shutdown
-			return;
-		}
-		
-		TDhServerLevel serverLevel = this.getLevel(playerLevel);
-		if (serverLevel == null)
-		{
-			// can happen during server shutdown
-			return;
-		}
-		
-		serverLevel.removePlayer(serverPlayer);
+		this.getLevel(serverPlayer.getLevel()).removePlayer(serverPlayer);
 		this.serverPlayerStateManager.unregisterLeftPlayer(serverPlayer);
 		
 		// If player's left, session is already closed
@@ -123,6 +101,18 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	
 	
 	
+	//==============//
+	// tick methods //
+	//==============//
+	
+	@Override
+	public void serverTick() { this.dhLevelByLevelWrapper.values().forEach(TDhServerLevel::serverTick); }
+	
+	@Override
+	public void worldGenTick() { this.dhLevelByLevelWrapper.values().forEach(TDhServerLevel::worldGenTick); }
+	
+	
+	
 	//================//
 	// base overrides //
 	//================//
@@ -130,9 +120,10 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 	@Override
 	public void close()
 	{
-		ArrayList<CompletableFuture<Void>> closeFutures = new ArrayList<>();
 		for (TDhServerLevel level : this.dhLevelByLevelWrapper.values())
 		{
+			LOGGER.info("Unloading level [" + level.getLevelWrapper().getDhIdentifier() + "].");
+			
 			// level wrapper shouldn't be null, but just in case
 			IServerLevelWrapper serverLevelWrapper = level.getServerLevelWrapper();
 			if (serverLevelWrapper != null)
@@ -140,23 +131,7 @@ public abstract class AbstractDhServerWorld<TDhServerLevel extends AbstractDhSer
 				serverLevelWrapper.onUnload();
 			}
 			
-			
-			// close levels asynchronously to speed up
-			// shutdown on servers with a lot of levels
-			CompletableFuture<Void> closeFuture = new CompletableFuture<>();
-			Thread closeThread = new Thread(() ->
-			{
-				level.close();
-				closeFuture.complete(null);
-			}, "level shutdown");
-			closeThread.start();
-			closeFutures.add(closeFuture);
-		}
-		
-		// wait for all the levels to finish closing
-		for (CompletableFuture<Void> future : closeFutures)
-		{
-			future.join();
+			level.close();
 		}
 		
 		this.dhLevelByLevelWrapper.clear();

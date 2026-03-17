@@ -23,7 +23,15 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 
 import java.util.HashSet;
 
+@Deprecated
 public interface IOptifineAccessor extends IModAccessor
 {
+	
+	/**
+	 * Returns the percentage multiplier of the screen's current resolution. <br>
+	 * 1.0 = 100% <br>
+	 * 1.5 = 150% <br>
+	 */
+	double getRenderResolutionMultiplier();
 	
 }

@@ -1,12 +1,9 @@
 package com.seibel.distanthorizons.core.multiplayer.client;
 
-import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
-import com.seibel.distanthorizons.core.logging.DhLogger;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
 import com.seibel.distanthorizons.core.multiplayer.fullData.FullDataPayloadReceiver;
 import com.seibel.distanthorizons.core.network.event.ScopedNetworkEventSource;
@@ -20,7 +17,7 @@ import com.seibel.distanthorizons.core.network.messages.fullData.FullDataPartial
 import com.seibel.distanthorizons.core.network.session.NetworkSession;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import org.jetbrains.annotations.NotNull;
+import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
@@ -28,13 +25,8 @@ import java.util.List;
 
 public class ClientNetworkState implements Closeable
 {
-	protected static final DhLogger LOGGER = new DhLoggerBuilder()
-			.fileLevelConfig(Config.Common.Logging.logNetworkEventToFile)
-			.build();
-	
-	protected static final DhLogger CONFIG_CHANGE_LOGGER = new DhLoggerBuilder()
-			.fileLevelConfig(Config.Common.Logging.logConnectionConfigChangesToFile)
-			.build();
+	protected static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
+			() -> Config.Common.Logging.logNetworkEvent.get());
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	
@@ -51,7 +43,6 @@ public class ClientNetworkState implements Closeable
 	 */
 	public NetworkSession getSession() { return this.networkSession; }
 	
-	@NotNull
 	public SessionConfig sessionConfig = new SessionConfig();
 	
 	private volatile boolean configReceived = false;
@@ -97,15 +88,6 @@ public class ClientNetworkState implements Closeable
 				|| Math.abs(event.protocolVersion - ModInfo.PROTOCOL_VERSION) < this.closestProtocolVersion)
 			{
 				this.closestProtocolVersion = event.protocolVersion;
-				
-				if (ModInfo.PROTOCOL_VERSION < event.protocolVersion)
-				{
-					ClientApi.INSTANCE.showChatMessageNextFrame(MinecraftTextFormat.ORANGE + "Distant Horizons: Your mod is outdated. Update to receive LODs on this server.");
-				}
-				else
-				{
-					ClientApi.INSTANCE.showChatMessageNextFrame(MinecraftTextFormat.ORANGE + "Distant Horizons: The server's mod is outdated. Ask the server's owner to update.");
-				}
 			}
 		});
 		
@@ -146,9 +128,7 @@ public class ClientNetworkState implements Closeable
 			{
 				this.serverSupportStatus = EServerSupportStatus.FULL;
 				
-				String configChanges = this.sessionConfig.getDifferencesAsString(message.config);
-				CONFIG_CHANGE_LOGGER.info("Connection config has been changed: [" + configChanges + "].");
-				
+				LOGGER.info("Connection config has been changed: [" + message.config + "].");
 				this.sessionConfig = message.config;
 				this.configReceived = true;
 			});
@@ -173,7 +153,7 @@ public class ClientNetworkState implements Closeable
 		
 		if (Config.Server.enableAdaptiveTransferSpeed.get())
 		{
-			sessionConfig.constrainValue(Config.Server.playerBandwidthLimit, this.congestionControl.getDesiredRate());
+			sessionConfig.constrainValue(Config.Server.maxDataTransferSpeed, this.congestionControl.getDesiredRate());
 		}
 		
 		if (blocking)

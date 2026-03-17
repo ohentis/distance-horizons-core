@@ -31,10 +31,9 @@ import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhLevel;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.pos.DhLodPos;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.render.renderer.AbstractDebugWireframeRenderer;
+import com.seibel.distanthorizons.core.render.renderer.DebugRenderer;
 import com.seibel.distanthorizons.core.util.DhApiTerrainDataPointUtil;
 import com.seibel.distanthorizons.core.util.FullDataPointUtil;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -49,7 +48,8 @@ import com.seibel.distanthorizons.coreapi.util.BitShiftUtil;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3i;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
@@ -64,9 +64,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 {
 	public static DhApiTerrainDataRepo INSTANCE = new DhApiTerrainDataRepo();
 	
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
-	
-	private static final AbstractDebugWireframeRenderer DEBUG_RENDERER = SingletonInjector.INSTANCE.get(AbstractDebugWireframeRenderer.class);
+	private static final Logger LOGGER = LogManager.getLogger(DhApiTerrainDataRepo.class.getSimpleName());
 	
 	// debugging values
 	private static volatile boolean debugThreadRunning = false;
@@ -91,30 +89,30 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	//================//
 	
 	@Override
-	public DhApiResult<DhApiTerrainDataPoint> getSingleDataPointAtBlockPos(IDhApiLevelWrapper levelWrapper, int blockPosX, int blockPosY, int blockPosZ, IDhApiTerrainDataCache dataCache)
-	{ return getTerrainDataAtBlockYPos(levelWrapper, DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ), blockPosY, dataCache); }
+	public DhApiResult<DhApiTerrainDataPoint> getSingleDataPointAtBlockPos(IDhApiLevelWrapper levelWrapper, int blockPosX, int blockPosY, int blockPosZ, @Nullable IDhApiTerrainDataCache dataCache)
+	{ return getTerrainDataAtBlockYPos(levelWrapper, new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ), blockPosY, dataCache); }
 	@Override
-	public DhApiResult<DhApiTerrainDataPoint[]> getColumnDataAtBlockPos(IDhApiLevelWrapper levelWrapper, int blockPosX, int blockPosZ, IDhApiTerrainDataCache dataCache)
-	{ return getTerrainDataColumnArray(levelWrapper, DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ), null, dataCache); }
+	public DhApiResult<DhApiTerrainDataPoint[]> getColumnDataAtBlockPos(IDhApiLevelWrapper levelWrapper, int blockPosX, int blockPosZ, @Nullable IDhApiTerrainDataCache dataCache)
+	{ return getTerrainDataColumnArray(levelWrapper, new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ), null, dataCache); }
 	
 	@Override
-	public DhApiResult<DhApiTerrainDataPoint[][][]> getAllTerrainDataAtChunkPos(IDhApiLevelWrapper levelWrapper, int chunkPosX, int chunkPosZ, IDhApiTerrainDataCache dataCache)
-	{ return getTerrainDataOverAreaForPositionDetailLevel(levelWrapper, DhSectionPos.encode(LodUtil.CHUNK_DETAIL_LEVEL, chunkPosX, chunkPosZ), dataCache); }
+	public DhApiResult<DhApiTerrainDataPoint[][][]> getAllTerrainDataAtChunkPos(IDhApiLevelWrapper levelWrapper, int chunkPosX, int chunkPosZ, @Nullable IDhApiTerrainDataCache dataCache)
+	{ return getTerrainDataOverAreaForPositionDetailLevel(levelWrapper, new DhLodPos(LodUtil.CHUNK_DETAIL_LEVEL, chunkPosX, chunkPosZ), dataCache); }
 	
 	@Override
-	public DhApiResult<DhApiTerrainDataPoint[][][]> getAllTerrainDataAtRegionPos(IDhApiLevelWrapper levelWrapper, int regionPosX, int regionPosZ, IDhApiTerrainDataCache dataCache)
-	{ return getTerrainDataOverAreaForPositionDetailLevel(levelWrapper, DhSectionPos.encode(LodUtil.REGION_DETAIL_LEVEL, regionPosX, regionPosZ), dataCache); }
+	public DhApiResult<DhApiTerrainDataPoint[][][]> getAllTerrainDataAtRegionPos(IDhApiLevelWrapper levelWrapper, int regionPosX, int regionPosZ, @Nullable IDhApiTerrainDataCache dataCache)
+	{ return getTerrainDataOverAreaForPositionDetailLevel(levelWrapper, new DhLodPos(LodUtil.REGION_DETAIL_LEVEL, regionPosX, regionPosZ), dataCache); }
 	
 	@Override
-	public DhApiResult<DhApiTerrainDataPoint[][][]> getAllTerrainDataAtDetailLevelAndPos(IDhApiLevelWrapper levelWrapper, byte detailLevel, int posX, int posZ, IDhApiTerrainDataCache dataCache)
-	{ return getTerrainDataOverAreaForPositionDetailLevel(levelWrapper, DhSectionPos.encode(detailLevel, posX, posZ), dataCache); }
+	public DhApiResult<DhApiTerrainDataPoint[][][]> getAllTerrainDataAtDetailLevelAndPos(IDhApiLevelWrapper levelWrapper, byte detailLevel, int posX, int posZ, @Nullable IDhApiTerrainDataCache dataCache)
+	{ return getTerrainDataOverAreaForPositionDetailLevel(levelWrapper, new DhLodPos(detailLevel, posX, posZ), dataCache); }
 	
 	
 	
 	// private getters //
 	
 	/** Returns a single API terrain datapoint that contains the given Y block position */
-	private static DhApiResult<DhApiTerrainDataPoint> getTerrainDataAtBlockYPos(IDhApiLevelWrapper levelWrapper, long requestedColumnPos, Integer blockYPos, IDhApiTerrainDataCache dataCache)
+	private static DhApiResult<DhApiTerrainDataPoint> getTerrainDataAtBlockYPos(IDhApiLevelWrapper levelWrapper, DhLodPos requestedColumnPos, Integer blockYPos, @Nullable IDhApiTerrainDataCache dataCache)
 	{
 		DhApiResult<DhApiTerrainDataPoint[]> result = getTerrainDataColumnArray(levelWrapper, requestedColumnPos, blockYPos, dataCache);
 		if (result.success && result.payload.length > 0)
@@ -128,7 +126,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	}
 	
 	/**
-	 * Returns all the block columns represented by the given {@link DhSectionPos}. <br>
+	 * Returns all the block columns represented by the given {@link DhLodPos}. <br>
 	 * IE, A position with the detail level: <br>
 	 * 0 (block): will return a 1x1 matrix of data. (don't do this, we have a specific method for that.) <br>
 	 * 1 (2 blocks): will return a 2x2 matrix of data. <br>
@@ -137,14 +135,11 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	 * will stop and return the in progress data if any errors are encountered.
 	 */
 	private static DhApiResult<DhApiTerrainDataPoint[][][]> getTerrainDataOverAreaForPositionDetailLevel(
-			IDhApiLevelWrapper levelWrapper, long requestedAreaPos, 
-			IDhApiTerrainDataCache dataCache)
+			IDhApiLevelWrapper levelWrapper, DhLodPos requestedAreaPos, 
+			@Nullable IDhApiTerrainDataCache dataCache)
 	{
-		byte requestedDetailLevel = DhSectionPos.getDetailLevel(requestedAreaPos);
-		long startingBlockPos = DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL,
-			DhSectionPos.getX(requestedAreaPos) * BitShiftUtil.powerOfTwo(requestedDetailLevel - LodUtil.BLOCK_DETAIL_LEVEL),
-			DhSectionPos.getZ(requestedAreaPos) * BitShiftUtil.powerOfTwo(requestedDetailLevel - LodUtil.BLOCK_DETAIL_LEVEL));
-		int widthOfAreaInBlocks = BitShiftUtil.powerOfTwo(requestedDetailLevel);
+		DhLodPos startingBlockPos = requestedAreaPos.getCornerLodPos(LodUtil.BLOCK_DETAIL_LEVEL);
+		int widthOfAreaInBlocks = BitShiftUtil.powerOfTwo(requestedAreaPos.detailLevel);
 		
 		DhApiTerrainDataPoint[][][] returnArray = new DhApiTerrainDataPoint[widthOfAreaInBlocks][widthOfAreaInBlocks][];
 		int dataColumnsReturned = 0;
@@ -154,7 +149,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		{
 			for (int z = 0; z < widthOfAreaInBlocks; z++)
 			{
-				long blockColumnPos = DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL, DhSectionPos.getX(startingBlockPos) + x, DhSectionPos.getZ(startingBlockPos) + z);
+				DhLodPos blockColumnPos = new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, startingBlockPos.x + x, startingBlockPos.z + z);
 				DhApiResult<DhApiTerrainDataPoint[]> result = getTerrainDataColumnArray(levelWrapper, blockColumnPos, null, dataCache);
 				if (result.success)
 				{
@@ -180,8 +175,8 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	 */
 	private static DhApiResult<DhApiTerrainDataPoint[]> getTerrainDataColumnArray(
 			IDhApiLevelWrapper levelWrapper, 
-			long requestedColumnPos, Integer nullableBlockYPos, 
-			IDhApiTerrainDataCache apiDataCache)
+			DhLodPos requestedColumnPos, Integer nullableBlockYPos, 
+			@Nullable IDhApiTerrainDataCache apiDataCache)
 	{
 		//============//
 		// validation //
@@ -202,14 +197,9 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		ILevelWrapper coreLevelWrapper = (ILevelWrapper) levelWrapper;
 		
 		
-		// require a data cache to prevent horrible performance (especially on ray-casts)
-		if (apiDataCache == null)
-		{
-			return DhApiResult.createFail("Missing [" + IDhApiTerrainDataCache.class.getSimpleName() + "], if a cache isn't provided your repo operations will be significantly slower.");
-		}
-		
-		// the data cache must be our own implementation
-		if (!(apiDataCache instanceof DhApiTerrainDataCache))
+		// the data cache can be null, but must be our own implementation
+		if (apiDataCache != null
+			&& !(apiDataCache instanceof DhApiTerrainDataCache))
 		{
 			return DhApiResult.createFail("Unsupported [" + IDhApiTerrainDataCache.class.getSimpleName() + "] implementation, only the core class [" + DhApiTerrainDataCache.class.getSimpleName() + "] is a valid parameter.");
 		}
@@ -223,12 +213,12 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		}
 		
 		// get the detail levels for this request
-		byte requestedDetailLevel = DhSectionPos.getDetailLevel(requestedColumnPos);
+		byte requestedDetailLevel = requestedColumnPos.detailLevel;
 		byte sectionDetailLevel = (byte) (requestedDetailLevel + DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
 		
 		// get the positions for this request
-		long sectionPos = DhSectionPos.convertToDetailLevel(requestedColumnPos, sectionDetailLevel);
-		long relativePos = DhSectionPos.getDhSectionRelativePositionForDetailLevel(requestedColumnPos, DhSectionPos.getDetailLevel(requestedColumnPos));
+		long sectionPos = requestedColumnPos.getSectionPosWithSectionDetailLevel(sectionDetailLevel);
+		DhLodPos relativePos = requestedColumnPos.getDhSectionRelativePositionForDetailLevel();
 		
 		
 		
@@ -268,7 +258,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			//===============================//
 			
 			FullDataPointIdMap mapping = dataSource.mapping;
-			LongArrayList dataColumn = dataSource.getColumnAtRelPos(DhSectionPos.getX(relativePos), DhSectionPos.getZ(relativePos));
+			LongArrayList dataColumn = dataSource.get(relativePos.x, relativePos.z);
 			if (dataColumn != null)
 			{
 				int dataColumnIndexCount = dataColumn.size();
@@ -287,7 +277,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					if (!getSpecificYCoordinate)
 					{
 						// if we aren't look for a specific datapoint, add each datapoint to the return array
-						returnArray[i] = DhApiTerrainDataPointUtil.createApiDatapoint(levelWrapper.getMinHeight(), mapping, requestedDetailLevel, dataPoint);
+						returnArray[i] = DhApiTerrainDataPointUtil.createApiDatapoint(levelWrapper, mapping, requestedDetailLevel, dataPoint);
 					}
 					else
 					{
@@ -304,7 +294,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 							if (bottomY <= requestedY && requestedY < topY) // blockPositions start from the bottom of the block, thus "<=" for bottomY, just "<" for topY
 							{
 								// this datapoint contains the requested block position, return it
-								DhApiTerrainDataPoint apiTerrainData = DhApiTerrainDataPointUtil.createApiDatapoint(levelWrapper.getMinHeight(), mapping, requestedDetailLevel, dataPoint);
+								DhApiTerrainDataPoint apiTerrainData = DhApiTerrainDataPointUtil.createApiDatapoint(levelWrapper, mapping, requestedDetailLevel, dataPoint);
 								return DhApiResult.createSuccess(new DhApiTerrainDataPoint[]{apiTerrainData});
 							}
 						}
@@ -355,10 +345,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			@Nullable
 			IDhApiTerrainDataCache dataCache)
 	{
-		return this.raycastLodData(levelWrapper, 
-				new Vec3d(rayOriginX, rayOriginY, rayOriginZ), 
-				new Vec3f(rayDirectionX, rayDirectionY, rayDirectionZ), 
-				maxRayBlockLength, dataCache);
+		return this.raycastLodData(levelWrapper, new Vec3d(rayOriginX, rayOriginY, rayOriginZ), new Vec3f(rayDirectionX, rayDirectionY, rayDirectionZ), maxRayBlockLength, dataCache);
 	}
 	
 	/**
@@ -376,8 +363,8 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	{
 		rayDirection.normalize();
 		
-		int minLevelBlockHeight = levelWrapper.getMinHeight();
-		int maxLevelBlockHeight = levelWrapper.getMaxHeight();
+		int minBlockHeight = levelWrapper.getMinHeight();
+		int maxBlockHeight = levelWrapper.getMaxHeight();
 		
 		
 		
@@ -393,8 +380,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		DhApiRaycastResult closetFoundDataPoint = null;
 		
 		
-		while (blockPos.y >= minLevelBlockHeight 
-				&& blockPos.y < maxLevelBlockHeight
+		while (blockPos.y >= minBlockHeight && blockPos.y < maxBlockHeight
 				&& currentLength <= maxRayBlockLength)
 		{
 			// get the LOD columns around this position
@@ -417,8 +403,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					{
 						// does this LOD contain the given Y position?
 						Vec3i dataPointPos = new Vec3i(columnPos.x, dataPoint.bottomYBlockPos, columnPos.z);
-						if (exactPos.y >= dataPoint.bottomYBlockPos 
-							&& exactPos.y <= dataPoint.topYBlockPos)
+						if (exactPos.y >= dataPoint.bottomYBlockPos && exactPos.y <= dataPoint.topYBlockPos)
 						{
 							if (closetFoundDataPoint == null)
 							{
@@ -518,7 +503,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 		
 		// this will throw a cast exception if the chunk object array isn't correct
 		IChunkWrapper chunk = SingletonInjector.INSTANCE.get(IWrapperFactory.class).createChunkWrapper(chunkObjectArray);
-		SharedApi.INSTANCE.applyChunkUpdate(chunk, dhLevel.getLevelWrapper());
+		SharedApi.INSTANCE.applyChunkUpdate(chunk, dhLevel.getLevelWrapper(), true);
 		
 		
 		return DhApiResult.createSuccess();
@@ -531,7 +516,7 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 	//=============//
 	
 	@Override
-	public IDhApiTerrainDataCache createSoftCache() { return new DhApiTerrainDataCache(); }
+	public IDhApiTerrainDataCache getSoftCache() { return new DhApiTerrainDataCache(); }
 	
 	
 	
@@ -551,10 +536,10 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 			Thread thread = new Thread(() -> {
 				try
 				{
-					DhApiResult<DhApiTerrainDataPoint> single = getTerrainDataAtBlockYPos(levelWrapper, DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ), blockPosY, debugDataCache);
-					DhApiResult<DhApiTerrainDataPoint[]> column = getTerrainDataColumnArray(levelWrapper, DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ), null, debugDataCache);
+					DhApiResult<DhApiTerrainDataPoint> single = getTerrainDataAtBlockYPos(levelWrapper, new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ), blockPosY, debugDataCache);
+					DhApiResult<DhApiTerrainDataPoint[]> column = getTerrainDataColumnArray(levelWrapper, new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ), null, debugDataCache);
 					
-					long chunkPos = DhSectionPos.encodeContaining(LodUtil.CHUNK_DETAIL_LEVEL, new DhChunkPos(blockPosX, blockPosZ));
+					DhLodPos chunkPos = new DhLodPos(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ).convertToDetailLevel(LodUtil.CHUNK_DETAIL_LEVEL);
 					DhApiResult<DhApiTerrainDataPoint[][][]> area = getTerrainDataOverAreaForPositionDetailLevel(levelWrapper, chunkPos, debugDataCache);
 					
 					
@@ -587,16 +572,12 @@ public class DhApiTerrainDataRepo implements IDhApiTerrainDataRepo
 					}
 					
 					// draw raycast position
-					if (rayCast.success 
-						&& rayCast.payload != null)
+					if (rayCast.success && rayCast.payload != null)
 					{
-						DEBUG_RENDERER.makeParticle(
-							new AbstractDebugWireframeRenderer.BoxParticle(
-								new AbstractDebugWireframeRenderer.Box(
-									DhSectionPos.encode((byte) 0, rayCast.payload.pos.x, rayCast.payload.pos.z), 
-										rayCast.payload.dataPoint.bottomYBlockPos, 
-										rayCast.payload.dataPoint.topYBlockPos, 
-										-0.1f, Color.RED),
+						DebugRenderer.makeParticle(
+							new DebugRenderer.BoxParticle(
+								new DebugRenderer.Box(
+									DhSectionPos.encode((byte) 0, rayCast.payload.pos.x, rayCast.payload.pos.z), rayCast.payload.dataPoint.bottomYBlockPos, rayCast.payload.dataPoint.topYBlockPos, -0.1f, Color.RED),
 							1.0, 0f
 							)
 						);

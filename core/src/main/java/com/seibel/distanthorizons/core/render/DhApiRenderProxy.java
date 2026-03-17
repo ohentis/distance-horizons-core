@@ -25,9 +25,11 @@ import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IDhClientLevel;
 import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.RenderUtil;
 import com.seibel.distanthorizons.core.world.AbstractDhWorld;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import org.lwjgl.opengl.GL32;
 
 /**
  * Used to interact with Distant Horizons' rendering systems.
@@ -81,19 +83,16 @@ public class DhApiRenderProxy implements IDhApiRenderProxy
 	}
 	
 	
-	public static int activeOpenGlDhDepthTextureId = -1;
 	@Override
 	public DhApiResult<Integer> getDhDepthTextureId()
 	{
-		int activeTexture = activeOpenGlDhDepthTextureId;
+		int activeTexture = LodRenderer.getActiveDepthTextureId();
 		return (activeTexture == -1) ? DhApiResult.createFail("DH's depth texture hasn't been created and/or bound yet.", -1) : DhApiResult.createSuccess(activeTexture);
 	}
-	
-	public static int activeOpenGlDhColorTextureId = -1;
 	@Override
 	public DhApiResult<Integer> getDhColorTextureId()
 	{
-		int activeTexture = activeOpenGlDhColorTextureId;
+		int activeTexture = LodRenderer.getActiveColorTextureId();
 		return (activeTexture == -1) ? DhApiResult.createFail("DH's color texture hasn't been created and/or bound yet.", -1) : DhApiResult.createSuccess(activeTexture);
 	}
 	
@@ -104,6 +103,6 @@ public class DhApiRenderProxy implements IDhApiRenderProxy
 	public boolean getDeferTransparentRendering() { return this.deferTransparentRendering; }
 	
 	@Override
-	public float getNearClipPlaneDistanceInBlocks(float partialTicks) { return RenderUtil.getNearClipPlaneInBlocks(); }
+	public float getNearClipPlaneDistanceInBlocks(float partialTicks) { return RenderUtil.getNearClipPlaneDistanceInBlocks(partialTicks); }
 	
 }

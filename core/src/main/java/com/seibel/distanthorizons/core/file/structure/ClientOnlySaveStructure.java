@@ -32,7 +32,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSha
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.OverrideInjector;
 import com.seibel.distanthorizons.coreapi.util.StringUtil;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.*;
@@ -47,7 +47,7 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	public static final String REPLAY_SERVER_FOLDER_NAME = "REPLAY";
 	public static final String INVALID_FILE_CHARACTERS_REGEX = "[\\\\/:*?\"<>|]";
 	
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final IMinecraftSharedWrapper MC_SHARED = SingletonInjector.INSTANCE.get(IMinecraftSharedWrapper.class);
@@ -81,20 +81,13 @@ public class ClientOnlySaveStructure implements ISaveStructure
 			{
 				IServerKeyedClientLevel keyedClientLevel = (IServerKeyedClientLevel) newLevelWrapper;
 				LOGGER.info("Loading level [" + newLevelWrapper.getDhIdentifier() + "] with key: [" + keyedClientLevel.getServerLevelKey() + "].");
-				
-				String serverKey = keyedClientLevel.getServerKey();
-				if (serverKey.isEmpty())
-				{
-					serverKey = getServerFolderName();
-				}
-				
-				// This world was identified by the server directly, so we can know for sure which folder to use.				
-				saveFolder = getSaveFolderByLevelId(serverKey, keyedClientLevel.getServerLevelKey());
+				// This world was identified by the server directly, so we can know for sure which folder to use.
+				saveFolder = getSaveFolderByLevelId(keyedClientLevel.getServerLevelKey());
 			}
 			else
 			{
 				// get the default folder
-				saveFolder = getSaveFolderByLevelId(getServerFolderName(), levelWrapper.getDhIdentifier());
+				saveFolder = getSaveFolderByLevelId(levelWrapper.getDhIdentifier());
 			}
 			
 			// Allow API users to override the save folder
@@ -123,7 +116,7 @@ public class ClientOnlySaveStructure implements ISaveStructure
 			return this.getSaveFolder(levelWrapper);
 		}
 		
-		return getSaveFolderByLevelId(getServerFolderName(), levelWrapper.getDimensionType().getName());
+		return getSaveFolderByLevelId(levelWrapper.getDimensionType().getName());
 	}
 	
 	
@@ -180,11 +173,11 @@ public class ClientOnlySaveStructure implements ISaveStructure
 	}
 	
 	
-	private static File getSaveFolderByLevelId(String folderName, String dimensionName)
+	private static File getSaveFolderByLevelId(String dimensionName)
 	{
 		String path = MC_SHARED.getInstallationDirectory().getPath() + File.separatorChar
 				+ SERVER_DATA_FOLDER_NAME + File.separatorChar
-				+ folderName + File.separatorChar
+				+ getServerFolderName() + File.separatorChar
 				+ dimensionName.replaceAll(":", "@@");
 		
 		return new File(path);

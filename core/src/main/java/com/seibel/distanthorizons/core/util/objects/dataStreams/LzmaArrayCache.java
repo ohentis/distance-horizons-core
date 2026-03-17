@@ -2,7 +2,7 @@ package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceArrayMap;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 import org.tukaani.xz.ArrayCache;
 
 import java.util.ArrayList;
@@ -11,11 +11,14 @@ import java.util.function.IntUnaryOperator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** 
- * LZMA requires a custom object to cache its backend arrays. 
+ * LZMA requires a custom object to cache it's backend arrays. 
+ *
+ * TODO there's a lot of duplicate code in this class since it has logic for both
+ *  int[]'s and byte[]'s.
  */
 public class LzmaArrayCache extends ArrayCache
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	/**
 	 * In James' testing the byte and int caches only ever had to store 2 and 4 arrays respectively.
@@ -65,10 +68,8 @@ public class LzmaArrayCache extends ArrayCache
 		// clearing all the time results in unnecessary slowdowns
 		if (fillWithZeros)
 		{
-			// Warning: 
-			// This is extremely memory intensive and can prevent the CPU from working on
-			// other tasks, causing render thread lag even when run on a separate thread.
-			// This is why LZMA has been deprecated in favor of ZStd.
+			// TODO it appears that this can prevent the CPU from working on
+			//  other tasks, thus causing render thread lag even when run on a separate thread 
 			Arrays.fill(array, (byte) 0);
 		}
 		
@@ -119,10 +120,8 @@ public class LzmaArrayCache extends ArrayCache
 		// clearing all the time results in unnecessary slowdowns
 		if (fillWithZeros)
 		{
-			// Warning: 
-			// This is extremely memory intensive and can prevent the CPU from working on
-			// other tasks, causing render thread lag even when run on a separate thread.
-			// This is why LZMA has been deprecated in favor of ZStd.
+			// TODO it appears that this can prevent the CPU from working on
+			//  other tasks, thus causing render thread lag even when run on a separate thread
 			Arrays.fill(array, (byte) 0);
 		}
 		

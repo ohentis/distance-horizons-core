@@ -27,19 +27,10 @@ import com.seibel.distanthorizons.core.config.types.enums.EConfigEntryAppearance
  *
  * @author coolGi
  */
-public class ConfigCategory extends AbstractConfigBase<Class<?>>
+public class ConfigCategory extends AbstractConfigType<Class<?>, ConfigCategory>
 {
-	/** 
-	 * Defines where this category points to. <br>
-	 * May be defined during config setup.
-	 */
-	public String destination;
-	
-	
-	
-	//=============//
-	// constructor //
-	//=============//
+	/** This should not be set by anything other than the config system itself */
+	public String destination;    // Where the category goes to
 	
 	private ConfigCategory(EConfigEntryAppearance appearance, Class<?> value, String destination)
 	{
@@ -47,26 +38,20 @@ public class ConfigCategory extends AbstractConfigBase<Class<?>>
 		this.destination = destination;
 	}
 	
-	
-	
-	//==================//
-	// property getters //
-	//==================//
-	
-	public String getDestination() { return this.destination; }
+	public String getDestination()
+	{
+		return this.destination;
+	}
 	
 	/** Use get() instead for category */
 	@Override
 	@Deprecated
-	public Class<?> getType() { return this.value; }
+	public Class<?> getType()
+	{
+		return value;
+	}
 	
-	
-	
-	//=========//
-	// builder //
-	//=========//
-	
-	public static class Builder extends AbstractConfigBase.Builder<Class<?>, Builder>
+	public static class Builder extends AbstractConfigType.Builder<Class<?>, Builder>
 	{
 		private String tmpDestination = null;
 		

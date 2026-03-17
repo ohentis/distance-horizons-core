@@ -23,32 +23,25 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiWorldCompressionMode;
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.api.objects.data.IDhApiFullDataSource;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.FullDataPointIdMap;
-import com.seibel.distanthorizons.core.dataObjects.transformers.FullDataOcclusionCuller;
 import com.seibel.distanthorizons.core.dataObjects.transformers.LodDataBuilder;
-import com.seibel.distanthorizons.core.enums.EDhDirection;
-import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
+import com.seibel.distanthorizons.core.file.IDataSource;
+import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.objects.pooling.AbstractPhantomArrayList;
-import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListCheckout;
-import com.seibel.distanthorizons.core.util.objects.pooling.PhantomArrayListPool;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListParent;
+import com.seibel.distanthorizons.core.pooling.PhantomArrayListPool;
 import com.seibel.distanthorizons.core.pos.DhSectionPos;
-import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
-import com.seibel.distanthorizons.core.sql.dto.util.FullDataMinMaxPosUtil;
 import com.seibel.distanthorizons.core.util.*;
 import com.seibel.distanthorizons.core.util.objects.DataCorruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -60,10 +53,10 @@ import java.util.List;
  * @see FullDataSourceV1
  */
 public class FullDataSourceV2 
-		extends AbstractPhantomArrayList
-		implements IDhApiFullDataSource
+		extends PhantomArrayListParent
+		implements IDataSource<IDhLevel>, IDhApiFullDataSource
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	/** useful for debugging, but can slow down update operations quite a bit due to being called so often. */
 	private static final boolean RUN_UPDATE_DEV_VALIDATION = false;
 	/** 
@@ -78,15 +71,19 @@ public class FullDataSourceV2
 	/** how many chunks wide this datasource is at detail level 0. */
 	public static final int NUMB_OF_CHUNKS_WIDE = WIDTH / LodUtil.CHUNK_WIDTH;
 	
-	private static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2");
+	public static final byte DATA_FORMAT_VERSION = 1;
 	
-	private static final ThreadLocal<FullDataPointIdMap> DATA_MAP_FOR_REMAPPING_REF = ThreadLocal.withInitial(() -> new FullDataPointIdMap(DhSectionPos.encode((byte)0, 0, 0)));
+	public static final PhantomArrayListPool ARRAY_LIST_POOL = new PhantomArrayListPool("FullDataV2");
 	
 	
 	
 	private int cachedHashCode = 0;
 	
 	private final long pos;
+	@Override
+	public Long getKey() { return this.pos; }
+	@Override
+	public String getKeyDisplayString() { return DhSectionPos.toString(this.pos); }
 	
 	
 	public final FullDataPointIdMap mapping;
@@ -94,6 +91,8 @@ public class FullDataSourceV2
 	
 	public long lastModifiedUnixDateTime;
 	public long createdUnixDateTime;
+	
+	public int levelMinY;
 	
 	/** 
 	 * stores how far each column has been generated should start with {@link EDhApiWorldGenerationStep#EMPTY}
@@ -110,7 +109,9 @@ public class FullDataSourceV2
 	
 	/** 
 	 * stored x/z, y <br>
-	 * The y data should be sorted from top to bottom
+	 * The y data should be sorted from top to bottom <br>
+	 * TODO that ordering feels weird, it'd be nice to reverse that order, unfortunately
+	 *      there's something in the render data logic that expects this order so we can't change it right now
 	 */
 	public final LongArrayList[] dataPoints;
 	
@@ -123,16 +124,15 @@ public class FullDataSourceV2
 	public Boolean applyToChildren = null;
 	
 	/** should only be used by methods exposed via the DH API */
-	private boolean runApiSetterValidation = false;
+	private boolean runApiChunkValidation = false;
 	
 	
 	
 	//==============//
 	// constructors //
 	//==============//
-	//region
 	
-	public static FullDataSourceV2 createFromChunk(ILevelWrapper levelWrapper, IChunkWrapper chunkWrapper) { return LodDataBuilder.createFromChunk(levelWrapper, chunkWrapper); }
+	public static FullDataSourceV2 createFromChunk(IChunkWrapper chunkWrapper) { return LodDataBuilder.createFromChunk(chunkWrapper); }
 	
 	public static FullDataSourceV2 createFromLegacyDataSourceV1(FullDataSourceV1 legacyData)
 	{
@@ -205,9 +205,8 @@ public class FullDataSourceV2
 	
 	public static FullDataSourceV2 createEmpty(long pos)
 	{
-		FullDataPointIdMap map = new FullDataPointIdMap(pos);
 		return new FullDataSourceV2(
-				pos, map,
+				pos, new FullDataPointIdMap(pos),
 				// data points, genSteps, and columnCompression are all null since
 				// nothing has been generated yet.
 				// Using the default value of all 0's is adequate
@@ -222,10 +221,10 @@ public class FullDataSourceV2
 	private FullDataSourceV2(
 			long pos,
 			FullDataPointIdMap mapping, @Nullable LongArrayList[] data,
-			byte @Nullable [] columnGenerationSteps, byte @Nullable [] columnWorldCompressionMode,
+			@Nullable byte[] columnGenerationSteps, @Nullable byte[] columnWorldCompressionMode,
 			boolean empty)
 	{
-		super(ARRAY_LIST_POOL, 2, 0, WIDTH * WIDTH, 0);
+		super(ARRAY_LIST_POOL, 2, 0, WIDTH * WIDTH);
 		
 		LodUtil.assertTrue(data == null || data.length == WIDTH * WIDTH);
 		
@@ -277,101 +276,17 @@ public class FullDataSourceV2
 		}
 	}
 	
-	//endregion
 	
 	
+	//======//
+	// data //
+	//======//
 	
-	//=========//
-	// getters //
-	//=========//
-	//region
+	public LongArrayList get(int relX, int relZ) throws IndexOutOfBoundsException { return this.dataPoints[relativePosToIndex(relX, relZ)]; }
 	
-	public LongArrayList getColumnAtRelPos(int relX, int relZ) throws IndexOutOfBoundsException 
-	{ return this.dataPoints[relativePosToIndex(relX, relZ)]; }
-	
-	@Nullable
-	public LongArrayList tryGetColumnAtRelPos(int relX, int relZ)
-	{
-		int index = tryGetRelativePosToIndex(relX, relZ);
-		if (index == -1)
-		{
-			return null;
-		}
-		
-		return this.dataPoints[index];
-	}
-	
-	/** 
-	 * returns {@link FullDataPointUtil#EMPTY_DATA_POINT} if the given {@link DhBlockPos}
-	 * is outside this data source's boundaries.
-	 */
-	public long getDataPointAtBlockPos(int blockPosX, int blockPosY, int blockPosZ, int levelMinY)
-	{
-		long requestedPos = DhSectionPos.encode(LodUtil.BLOCK_DETAIL_LEVEL, blockPosX, blockPosZ);
-		
-		// stop if the requested blockPos is outside this datasource
-		{
-			long sectionPos =  DhSectionPos.encodeContaining(DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL, new DhBlockPos(blockPosX, blockPosY, blockPosZ));
-			if (!DhSectionPos.contains(this.pos, sectionPos))
-			{
-				return FullDataPointUtil.EMPTY_DATA_POINT;
-			}
-		}
-		
-		
-		// get the relative data source position
-		byte requestDetailLevel = (byte) (DhSectionPos.getDetailLevel(this.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL);
-		long relativePos = DhSectionPos.getDhSectionRelativePositionForDetailLevel(requestedPos, requestDetailLevel);
-		
-		// get the data column
-		LongArrayList dataColumn = this.getColumnAtRelPos(DhSectionPos.getX(relativePos), DhSectionPos.getZ(relativePos));
-		if (dataColumn == null)
-		{
-			return FullDataPointUtil.EMPTY_DATA_POINT;
-		}
-		
-		
-		// search for a datapoint that contains the given block y position
-		int relBlockPosY = blockPosY - levelMinY;
-		long dataPoint;
-		for (int i = 0; i < dataColumn.size(); i++)
-		{
-			dataPoint = dataColumn.getLong(i);
-			
-			// we are looking for a specific datapoint,
-			// don't look at null ones
-			if (dataPoint == FullDataPointUtil.EMPTY_DATA_POINT)
-			{
-				continue;
-			}
-			
-			
-			
-			int bottomY = FullDataPointUtil.getBottomY(dataPoint);
-			int height = FullDataPointUtil.getHeight(dataPoint);
-			int topY = bottomY + height;
-			
-			// does this datapoint contain the requested Y position? 
-			if (bottomY <= relBlockPosY
-				&& relBlockPosY < topY) // blockPositions start from the bottom of the block, thus "<=" for bottomY, just "<" for topY
-			{
-				return dataPoint;
-			}
-		}
-		
-		return FullDataPointUtil.EMPTY_DATA_POINT;
-	}
-	
-	//endregion
-	
-	
-	
-	//==========//
-	// updating //
-	//==========//
-	//region
-	
-	public boolean updateFromDataSource(@NotNull FullDataSourceV2 inputDataSource)
+	@Override
+	public boolean update(@NotNull FullDataSourceV2 inputDataSource, @Nullable IDhLevel level) { return this.update(inputDataSource); }
+	public boolean update(@NotNull FullDataSourceV2 inputDataSource)
 	{
 		// don't try updating if the input is empty
 		if (inputDataSource.mapping.isEmpty())
@@ -399,7 +314,7 @@ public class FullDataSourceV2
 						// copy over application flag if either are set to continue propagating
 						(BoolUtil.falseIfNull(this.applyToParent) || BoolUtil.falseIfNull(inputDataSource.applyToParent))
 						// don't propagate past the top of the tree
-						&& (DhSectionPos.getDetailLevel(this.pos) < FullDataSourceProviderV2.ROOT_SECTION_DETAIL_LEVEL);
+						&& (DhSectionPos.getDetailLevel(this.pos) < AbstractDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
 			}
 			
 			// null check to prevent setting a flag we don't want to save in the DB
@@ -408,7 +323,7 @@ public class FullDataSourceV2
 				this.applyToChildren =
 						(BoolUtil.falseIfNull(this.applyToChildren) || BoolUtil.falseIfNull(inputDataSource.applyToChildren))
 						// don't propagate past the bottom of the tree
-						&& (DhSectionPos.getDetailLevel(this.pos) > FullDataSourceProviderV2.LEAF_SECTION_DETAIL_LEVEL);
+						&& (DhSectionPos.getDetailLevel(this.pos) > AbstractDataSourceHandler.MIN_SECTION_DETAIL_LEVEL);
 			}
 		}
 		else if (inputDetailLevel + 1 == thisDetailLevel)
@@ -419,7 +334,7 @@ public class FullDataSourceV2
 			this.applyToParent =
 					dataChanged
 					&& (BoolUtil.falseIfNull(this.applyToParent) || BoolUtil.falseIfNull(inputDataSource.applyToParent))
-					&& (DhSectionPos.getDetailLevel(this.pos) < FullDataSourceProviderV2.ROOT_SECTION_DETAIL_LEVEL);
+					&& (DhSectionPos.getDetailLevel(this.pos) < AbstractDataSourceHandler.TOP_SECTION_DETAIL_LEVEL);
 			
 		}
 		else if (inputDetailLevel - 1 == thisDetailLevel)
@@ -431,7 +346,7 @@ public class FullDataSourceV2
 			this.applyToChildren =
 					dataChanged
 					&& (BoolUtil.falseIfNull(this.applyToChildren) || BoolUtil.falseIfNull(inputDataSource.applyToChildren))
-					&& (DhSectionPos.getDetailLevel(this.pos) > FullDataSourceProviderV2.LEAF_SECTION_DETAIL_LEVEL);
+					&& (DhSectionPos.getDetailLevel(this.pos) > AbstractDataSourceHandler.MIN_SECTION_DETAIL_LEVEL);
 		}
 		else
 		{
@@ -442,33 +357,8 @@ public class FullDataSourceV2
 			throw new UnsupportedOperationException("Unsupported data source update. Expected input detail level of ["+(thisDetailLevel-1)+"], ["+thisDetailLevel+"], or ["+(thisDetailLevel+1)+"], received detail level ["+inputDetailLevel+"].");
 		}
 		
-		
-		// needed to prevent infinite mapped ID growth
-		this.removeUnusedIdsAndRemap();
-		
-		
-		
 		if (dataChanged)
 		{
-			EDhApiWorldCompressionMode worldCompressionMode = Config.Common.LodBuilding.worldCompression.get();
-			boolean cullHiddenBlocks = (worldCompressionMode != EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
-			if (cullHiddenBlocks)
-			{
-				for (int x = 0; x < WIDTH; x++)
-				{
-					for (int z = 0; z < WIDTH; z++)
-					{
-						LongArrayList dataColumn = this.getColumnAtRelPos(x, z);
-						if (dataColumn != null
-							&& dataColumn.size() > 1)
-						{
-							FullDataOcclusionCuller.cullHiddenDatapointsInColumn(this, x, z);
-						}
-					}
-				}
-			}
-			
-			
 			// update the hash code
 			this.generateHashCode();
 		}
@@ -476,7 +366,7 @@ public class FullDataSourceV2
 		return dataChanged;
 	}
 	
-	private boolean updateFromSameDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
+	public boolean updateFromSameDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
 	{
 		// both data sources should have the same detail level
 		if (DhSectionPos.getDetailLevel(inputDataSource.pos) != DhSectionPos.getDetailLevel(this.pos))
@@ -492,103 +382,96 @@ public class FullDataSourceV2
 			for (int z = 0; z < WIDTH; z++)
 			{
 				int index = relativePosToIndex(x, z);
+				
 				LongArrayList inputDataArray = inputDataSource.dataPoints[index];
-				if (inputDataArray == null)
+				if (inputDataArray != null)
 				{
-					continue;
-				}
+					byte thisGenState = this.columnGenerationSteps.getByte(index);
+					byte inputGenState = inputDataSource.columnGenerationSteps.getByte(index);
 				
-				
-				
-				byte thisGenState = this.columnGenerationSteps.getByte(index);
-				byte inputGenState = inputDataSource.columnGenerationSteps.getByte(index);
-				
-				
-				// determine if this column should be updated
-				boolean genStateAllowsUpdating = false;
-				// if the input is downsampled, we only want to replace empty or downsampled values
-				if (inputGenState == EDhApiWorldGenerationStep.DOWN_SAMPLED.value
-					&&
-					(
-						thisGenState == EDhApiWorldGenerationStep.EMPTY.value
-						|| thisGenState == EDhApiWorldGenerationStep.DOWN_SAMPLED.value
-					))
-				{
-					genStateAllowsUpdating = true;
-				}
-				// if the input is any other non-empty value,
-				// replace anything that is less-complete
-				else if (inputGenState != EDhApiWorldGenerationStep.EMPTY.value
-					&& thisGenState <= inputGenState)
-				{
-					// don't apply less-complete generation data
-					genStateAllowsUpdating = true;
-				}
-				
-				if (!genStateAllowsUpdating)
-				{
-					continue;
-				}
-				
-				
-				
-				// check if the data changed
-				if (this.dataPoints[index] == null)
-				{
-					// no data was present previously
-					this.dataPoints[index] = new LongArrayList(inputDataArray);
-					dataChanged = true;
-				}
-				else if (this.dataPoints[index].size() != inputDataArray.size())
-				{
-					// data is present, but the size is different
-					dataChanged = true;
-				}
-				
-				int oldDataHash = 0;
-				if (!dataChanged)
-				{
-					// some old data existed with the same length,
-					// we'll have to compare the caches
-					oldDataHash = this.dataPoints[index].hashCode();
-				}
-				
-				
-				// copy over the new data
-				this.dataPoints[index].clear();
-				this.dataPoints[index].addAll(inputDataArray);
-				this.remapDataColumn(index, remappedIds);
-				
-				if (RUN_DATA_ORDER_VALIDATION)
-				{
-					throwIfDataColumnInWrongOrder(inputDataSource.pos, this.dataPoints[index]);
-				}
-				
-				
-				
-				if (!dataChanged)
-				{
-					// check if the identical length data column hashes are the same
-					// hashes need to be compared after the ID's have been remapped otherwise the ID's won't match even if the data is the same
-					if (oldDataHash != this.dataPoints[index].hashCode())
+					
+					// determine if this column should be updated
+					boolean genStateAllowsUpdating = false;
+					// if the input is downsampled, we only want to replace empty or downsampled values
+					if (inputGenState == EDhApiWorldGenerationStep.DOWN_SAMPLED.value
+						&&
+						(
+							thisGenState == EDhApiWorldGenerationStep.EMPTY.value
+							|| thisGenState == EDhApiWorldGenerationStep.DOWN_SAMPLED.value
+						))
 					{
-						// the hashes are different, something was changed
-						dataChanged = true;
+						genStateAllowsUpdating = true;
+					}
+					// if the input is any other non-empty value,
+					// replace anything that is less-complete
+					else if (inputGenState != EDhApiWorldGenerationStep.EMPTY.value
+							&& thisGenState <= inputGenState)
+					{
+						// don't apply less-complete generation data
+						genStateAllowsUpdating = true;
+					}
+					
+					
+					if (genStateAllowsUpdating)
+					{
+						// check if the data changed
+						if (this.dataPoints[index] == null)
+						{
+							// no data was present previously
+							this.dataPoints[index] = new LongArrayList(inputDataArray);
+							dataChanged = true;
+						}
+						else if (this.dataPoints[index].size() != inputDataArray.size())
+						{
+							// data is present, but the size is different
+							dataChanged = true;
+						}
+						
+						int oldDataHash = 0;
+						if (!dataChanged)
+						{
+							// some old data existed with the same length,
+							// we'll have to compare the caches
+							oldDataHash = this.dataPoints[index].hashCode();
+						}
+						
+						
+						// copy over the new data
+						this.dataPoints[index].clear();
+						this.dataPoints[index].addAll(inputDataArray);
+						this.remapDataColumn(index, remappedIds);
+						
+						if (RUN_DATA_ORDER_VALIDATION)
+						{
+							throwIfDataColumnInWrongOrder(inputDataSource.pos, this.dataPoints[index]);
+						}
+						
+						
+						
+						if (!dataChanged)
+						{
+							// check if the identical length data column hashes are the same
+							// hashes need to be compared after the ID's have been remapped otherwise the ID's won't match even if the data is the same
+							if (oldDataHash != this.dataPoints[index].hashCode())
+							{
+								// the hashes are different, something was changed
+								dataChanged = true;
+							}
+						}
+						
+						
+						this.columnGenerationSteps.set(index, inputGenState);
+						// always overwrite the compression mode since we're replacing this column
+						this.columnWorldCompressionMode.set(index, inputDataSource.columnWorldCompressionMode.getByte(index));
+						this.isEmpty = false;
 					}
 				}
-				
-				
-				this.columnGenerationSteps.set(index, inputGenState);
-				// always overwrite the compression mode since we're replacing this column
-				this.columnWorldCompressionMode.set(index, inputDataSource.columnWorldCompressionMode.getByte(index));
-				this.isEmpty = false;
 			}
 		}
 		
 		return dataChanged;
 	}
-	
-	private boolean updateFromOneBelowDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
+	public boolean updateFromOneBelowDetailLevel(FullDataSourceV2 inputDataSource, int[] remappedIds)
 	{
 		if (DhSectionPos.getDetailLevel(inputDataSource.pos) + 1 != DhSectionPos.getDetailLevel(this.pos))
 		{
@@ -682,13 +565,13 @@ public class FullDataSourceV2
 		
 		return dataChanged;
 	}
-	
 	/** 
 	 * The minimum value is used because we don't want to accidentally record that
 	 * something was generated when it wasn't.
 	 */
 	private static byte determineMinWorldGenStepForTwoByTwoColumn(ByteArrayList columnGenerationSteps, int relX, int relZ)
 	{
+		// TODO merge similar logic with determineHighestWorldCompressionForTwoByTwoColumn
 		byte minWorldGenStepValue = Byte.MAX_VALUE;
 		for (int x = 0; x < 2; x++)
 		{
@@ -707,6 +590,7 @@ public class FullDataSourceV2
 	 */
 	private static byte determineHighestWorldCompressionForTwoByTwoColumn(ByteArrayList columnCompressionMode, int relX, int relZ)
 	{
+		// TODO merge similar logic with determineMinWorldGenStepForTwoByTwoColumn
 		byte minWorldGenStepValue = Byte.MIN_VALUE;
 		for (int x = 0; x < 2; x++)
 		{
@@ -723,221 +607,176 @@ public class FullDataSourceV2
 	{
 		LongArrayList newColumnList = new LongArrayList();
 		
-		
-		//=========================//
-		// get the 4 input columns //
-		//=========================//
-		
-		LongArrayList[] inputColumns = new LongArrayList[4];
-		int colIndex = 0;
-		for (int inputX = x; inputX < x + 2; inputX++)
-		{
-			for (int inputZ = z; inputZ < z + 2; inputZ++, colIndex++)
-			{
-				inputColumns[colIndex] = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
-				if (inputColumns[colIndex] != null 
-					&& RUN_DATA_ORDER_VALIDATION)
-				{
-					throwIfDataColumnInWrongOrder(inputDataSource.pos, inputColumns[colIndex]);
-				}
-			}
-		}
-		
-		
-		
-		//========================================//
-		// find all y levels where changes happen //
-		//========================================//
-		
-		IntArrayList yTransitions = new IntArrayList();
-		for (int i = 0; i < 4; i++)
-		{
-			if (inputColumns[i] == null 
-				|| inputColumns[i].isEmpty())
-			{
-				continue;
-			}
-			
-			for (int j = 0; j < inputColumns[i].size(); j++)
-			{
-				long datapoint = inputColumns[i].getLong(j);
-				int minY = FullDataPointUtil.getBottomY(datapoint);
-				int maxY = minY + FullDataPointUtil.getHeight(datapoint);
-				
-				if (!yTransitions.contains(minY))
-				{
-					yTransitions.add(minY);
-				}
-				
-				if (!yTransitions.contains(maxY))
-				{
-					yTransitions.add(maxY);
-				}
-			}
-		}
-		
-		// can happen if the columns are empty
-		if (yTransitions.isEmpty())
-		{
-			return newColumnList;
-		}
-		
-		// sort the transitions from bottom to top
-		yTransitions.sort(null);
-		
-		// create index trackers for each column, 
-		// starting with the top-most datapoint
-		int[] currentIndices = new int[4];
-		for (int i = 0; i < 4; i++)
-		{
-			if (inputColumns[i] != null 
-				&& !inputColumns[i].isEmpty())
-			{
-				currentIndices[i] = inputColumns[i].size() - 1;
-			}
-			else
-			{
-				currentIndices[i] = -1;
-			}
-		}
-		
-		
-		
-		//=======================//
-		// process each Y change //
-		//=======================//
+		// special numbers:
+		// -2 = the column's height hasn't been determined yet
+		// -1 = we've reached the end of the column
+		int[] currentDatapointIndex = new int[] { -2, -2, -2, -2 };
 		
 		int lastId = 0;
 		byte lastBlockLight = 0;
 		byte lastSkyLight = 0;
-		int currentMinY = yTransitions.getInt(0);
-		int accumulatedHeight = 0;
+		int height = 0;
+		int minY = 0;
 		
+		
+		// these arrays will be reused quite often, so re-using them helps reduce some GC pressure
+		long[] datapointsForYSlice = new long[4];
 		int[] mergeIds = new int[4];
 		int[] mergeBlockLights = new int[4];
 		int[] mergeSkyLights = new int[4];
 		
-		for (int yIndex = 0; yIndex < yTransitions.size() - 1; yIndex++)
+		
+		for (int blockY = 0; blockY < RenderDataPointUtil.MAX_WORLD_Y_SIZE; blockY++, height++)
 		{
-			int sliceMinY = yTransitions.getInt(yIndex);
-			int sliceMaxY = yTransitions.getInt(yIndex + 1);
-			int sliceHeight = sliceMaxY - sliceMinY;
+			// if each column has reached the end of their data, nothing more needs to be done
+			if (currentDatapointIndex[0] == -1
+				&& currentDatapointIndex[1] == -1
+				&& currentDatapointIndex[2] == -1
+				&& currentDatapointIndex[3] == -1
+				)
+			{
+				break;
+			}
 			
-			// Sample at the midpoint of this slice
-			int sampleY = sliceMinY + (sliceHeight / 2);
 			
-			// Get data from each column at this Y level
+			// scary double loop but, 
+			// this will only ever loop 4 times, 
+			// once for each of the 4 input columns
+			Arrays.fill(datapointsForYSlice, 0L);
+			int colIndex = 0;
+			for (int inputX = x; inputX < x + 2; inputX++)
+			{
+				for (int inputZ = z; inputZ < z + 2; inputZ++, colIndex++)
+				{
+					// TODO throw an assertion if the column isn't in top-down order or just fix it...
+					LongArrayList inputDataArray = inputDataSource.dataPoints[relativePosToIndex(inputX, inputZ)];
+					if (inputDataArray == null || inputDataArray.size() == 0)
+					{
+						currentDatapointIndex[colIndex] = -1;
+						continue;
+					}
+					
+					// determine the last index (the lowest data point) for each column
+					if (currentDatapointIndex[colIndex] == -2)
+					{
+						currentDatapointIndex[colIndex] = inputDataArray.size() - 1;
+						
+						if (RUN_DATA_ORDER_VALIDATION)
+						{
+							throwIfDataColumnInWrongOrder(inputDataSource.pos, inputDataArray);
+						}
+					}
+					
+					
+					int dataPointIndex = currentDatapointIndex[colIndex];
+					if (dataPointIndex == -1)
+					{
+						// went over the end 
+						continue;
+					}
+					long datapoint = inputDataArray.getLong(dataPointIndex);
+					
+					int datapointMinY = FullDataPointUtil.getBottomY(datapoint);
+					int numbOfBlocksTall = FullDataPointUtil.getHeight(datapoint);
+					int datapointMaxY = (datapointMinY + numbOfBlocksTall);
+					
+					
+					// check if y position is inside this datapoint
+					if (blockY < datapointMinY)
+					{
+						// this y-slice is below this datapoint, nothing can be added
+						continue;
+					}
+					else if (blockY >= datapointMaxY)
+					{
+						// this y-slice is above the current datapoint,
+						// try the next data point
+						
+						int newDatapointIndex = currentDatapointIndex[colIndex] - 1;
+						if (newDatapointIndex < 0)
+						{
+							// went to far, no additional data present
+							newDatapointIndex = -1;
+						}
+						currentDatapointIndex[colIndex] = newDatapointIndex;
+						
+						
+						// try again with the next data point
+						inputZ--;
+						colIndex--;
+						continue;
+					}
+					
+					
+					
+					datapointsForYSlice[colIndex] = datapoint;
+				}
+			}
+			
+			
+			
 			Arrays.fill(mergeIds, 0);
 			Arrays.fill(mergeBlockLights, 0);
 			Arrays.fill(mergeSkyLights, 0);
-			
 			for (int i = 0; i < 4; i++)
 			{
-				// skip columns that are empty or where we have already reached the bottom
-				if (currentIndices[i] == -1)
-				{
-					continue;
-				}
-				
-				
-				LongArrayList column = inputColumns[i];
-				if (column == null)
-				{
-					continue;
-				}
-				
-				// move the index down if we've passed the current datapoint
-				while (currentIndices[i] >= 0)
-				{
-					long datapoint = column.getLong(currentIndices[i]);
-					int inputMinY = FullDataPointUtil.getBottomY(datapoint);
-					int inputMaxY = inputMinY + FullDataPointUtil.getHeight(datapoint);
-					
-					if (sampleY >= inputMaxY)
-					{
-						// Sample point is above this datapoint, move to next (lower) one
-						currentIndices[i]--;
-					}
-					else if (sampleY >= inputMinY 
-							&& sampleY < inputMaxY)
-					{
-						// Sample point is within this datapoint
-						mergeIds[i] = FullDataPointUtil.getId(datapoint);
-						mergeBlockLights[i] = FullDataPointUtil.getBlockLight(datapoint);
-						mergeSkyLights[i] = FullDataPointUtil.getSkyLight(datapoint);
-						break;
-					}
-					else
-					{
-						// Sample point is below this datapoint
-						break;
-					}
-				}
+				mergeIds[i] = FullDataPointUtil.getId(datapointsForYSlice[i]);
+				mergeBlockLights[i] = FullDataPointUtil.getBlockLight(datapointsForYSlice[i]);
+				mergeSkyLights[i] = FullDataPointUtil.getSkyLight(datapointsForYSlice[i]);
 			}
 			
 			
-			
-			// Determine merged values for this slice
-			int id = determineMostCommonValueInColumnSlice(mergeIds, inputDataSource.mapping);
+			// determine the most common values for this slice
+			int id = determineMostValueInColumnSlice(mergeIds, inputDataSource.mapping);
 			byte blockLight = (byte) determineAverageValueInColumnSlice(mergeBlockLights);
 			byte skyLight = (byte) determineAverageValueInColumnSlice(mergeSkyLights);
 			
-			// Check if we need to start a new datapoint
-			if (accumulatedHeight == 0)
+			// if this slice is different then the last one, create a new one
+			if (id != lastId
+				// block and sky light might not be necessary
+				|| blockLight != lastBlockLight
+				|| skyLight != lastSkyLight)
 			{
-				// first datapoint
-				lastId = id;
-				lastBlockLight = blockLight;
-				lastSkyLight = skyLight;
-				currentMinY = sliceMinY;
-				accumulatedHeight = sliceHeight;
-			}
-			else if (id != lastId 
-					|| blockLight != lastBlockLight 
-					|| skyLight != lastSkyLight)
-			{
-				// the data changed, create a new datapoint
-				try
+				if (height != 0)
 				{
-					long datapoint = FullDataPointUtil.encode(lastId, accumulatedHeight, currentMinY, lastBlockLight, lastSkyLight);
-					newColumnList.add(datapoint);
-				}
-				catch (DataCorruptedException e)
-				{
-					LOGGER.warn("Skipping corrupt datapoint for pos ["+DhSectionPos.toString(inputDataSource.pos)+"] at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+accumulatedHeight+"], minY["+currentMinY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
+					try
+					{
+						long datapoint = FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight);
+						newColumnList.add(datapoint);
+					}
+					catch (DataCorruptedException e)
+					{
+						// shouldn't happen, (especially if validation is disabled) but just in case
+						LOGGER.warn("Skipping corrupt datapoint for pos "+inputDataSource.pos+" at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+height+"], minY["+minY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
+					}
 				}
 				
-				// start the next datapoint
 				lastId = id;
 				lastBlockLight = blockLight;
 				lastSkyLight = skyLight;
-				currentMinY = sliceMinY;
-				accumulatedHeight = sliceHeight;
-			}
-			else
-			{
-				// this datapoint is the same as the last one, 
-				// just extend it's height
-				accumulatedHeight += sliceHeight;
+				height = 0;
+				minY = blockY;
 			}
 		}
 		
-		
-		// add the final datapoint if needed
-		if (accumulatedHeight > 0)
+		// add the last slice if present
+		if (height != 0)
 		{
 			try
 			{
-				newColumnList.add(FullDataPointUtil.encode(lastId, accumulatedHeight, currentMinY, lastBlockLight, lastSkyLight));
+				newColumnList.add(FullDataPointUtil.encode(lastId, height, minY, lastBlockLight, lastSkyLight));
 			}
 			catch (DataCorruptedException e)
 			{
-				LOGGER.warn("Skipping corrupt datapoint for pos ["+DhSectionPos.toString(inputDataSource.pos)+"] at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+accumulatedHeight+"], minY["+currentMinY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
+				// shouldn't happen, (especially if validation is disabled) but just in case
+				LOGGER.warn("Skipping corrupt datapoint for pos "+inputDataSource.pos+" at relative position ["+x+","+z+"] with data: ID["+lastId+"], Height["+height+"], minY["+minY+"], lastBlockLight["+lastBlockLight+"], lastSkyLight["+lastSkyLight+"].");
 			}
 		}
 		
 		
-		// confirm the array is in the correct order
+		// flip the array if necessary
+		// TODO why is this sometimes necessary? What did I (James) screw up that causes the mergedInputDataArray
+		//  to sometimes be in a different order? Is it potentially related to what detail level is coming in?
 		ensureDataColumnOrder(newColumnList);
 		
 		return newColumnList;
@@ -955,8 +794,23 @@ public class FullDataSourceV2
 			dataColumn.set(i, FullDataPointUtil.remap(remappedIds, dataColumn.getLong(i)));
 		}
 	}
+	private static boolean areDataColumnsDifferent(long[] oldDataArray, long[] newDataArray)
+	{
+		if (oldDataArray == null || oldDataArray.length != newDataArray.length)
+		{
+			// new data was added/removed
+			return true;
+		}
+		else
+		{
+			// check if the new column data is different
+			int oldArrayHash = Arrays.hashCode(oldDataArray);
+			int newArrayHash = Arrays.hashCode(newDataArray);
+			return (newArrayHash != oldArrayHash);
+		}
+	}
 	/** @param mapping can be included to ignore air ID's, otherwise all 4 values are treated equally */
-	private static int determineMostCommonValueInColumnSlice(int[] sliceArray, @Nullable FullDataPointIdMap mapping)
+	private static int determineMostValueInColumnSlice(int[] sliceArray, @Nullable FullDataPointIdMap mapping)
 	{
 		if (RUN_UPDATE_DEV_VALIDATION)
 		{
@@ -1000,7 +854,7 @@ public class FullDataSourceV2
 			}
 		}
 		
-		// return the most common occurrence
+		// return the most common occurance
 		int maxCount = Math.max(count0, Math.max(count1, Math.max(count2, count3)));
 		if (maxCount == count0)
 		// if the max count is 1 then we'll just go with the first column
@@ -1134,128 +988,10 @@ public class FullDataSourceV2
 		return dataChanged;
 	}
 	
-	/**
-	 * Should be run at the end of {@link FullDataSourceV2#updateFromDataSource}
-	 * so the {@link FullDataPointIdMap} will only contain ID's that are actively in use. <br><br>
-	 * 
-	 * This prevents the {@link FullDataPointIdMap} from growing infinitely when merged.
-	 * 
-	 * @see FullDataPointIdMap#mergeAndReturnRemappedEntityIds(FullDataPointIdMap) 
-	 */
-	private void removeUnusedIdsAndRemap()
-	{
-		Int2IntOpenHashMap newIdByOldId = new Int2IntOpenHashMap();
-		FullDataPointIdMap newMap = DATA_MAP_FOR_REMAPPING_REF.get();
-		newMap.clear(this.pos);
-		
-		
-		// find all the IDs that are currently in use
-		for (int x = 0; x < WIDTH; x++)
-		{
-			for (int z = 0; z < WIDTH; z++)
-			{
-				int index = relativePosToIndex(x, z);
-				LongArrayList dataColumn = this.dataPoints[index];
-				for (int i = 0; i < dataColumn.size(); i++)
-				{
-					long dataPoint = dataColumn.getLong(i);
-					int oldId = FullDataPointUtil.getId(dataPoint);
-					
-					int newId = newMap.addIfNotPresentAndGetId(
-						this.mapping.getBiomeWrapper(oldId),
-						this.mapping.getBlockStateWrapper(oldId));
-					
-					newIdByOldId.put(oldId, newId);
-				}
-			}
-		}
-		
-		
-		// replace the old entries to remove any unneeded ones
-		this.mapping.clear(this.pos);
-		this.mapping.addAll(newMap);
-		
-		
-		// remap the data
-		for (int x = 0; x < WIDTH; x++)
-		{
-			for (int z = 0; z < WIDTH; z++)
-			{
-				int index = relativePosToIndex(x, z);
-				LongArrayList dataColumn = this.dataPoints[index];
-				for (int i = 0; i < dataColumn.size(); i++)
-				{
-					long oldDataPoint = dataColumn.getLong(i);
-					int oldId = FullDataPointUtil.getId(oldDataPoint);
-					
-					int newId = newIdByOldId.get(oldId);
-					long newDataPoint = FullDataPointUtil.setId(oldDataPoint, newId);
-					dataColumn.set(i, newDataPoint);
-				}
-			}
-		}
-	}
-	
-	//endregion
-	
-	
-	
-	//===================//
-	// adjacent clearing //
-	//===================//
-	//region
-	
-	/** Removes any non-adjacent data from the given direction. */
-	public void clearAllNonAdjData(EDhDirection direction)
-	{
-		long encodedMinMaxPos = FullDataMinMaxPosUtil.getEncodedMinMaxPos(direction);
-		int minX = FullDataMinMaxPosUtil.getAdjMinX(encodedMinMaxPos);
-		int maxX = FullDataMinMaxPosUtil.getAdjMaxX(encodedMinMaxPos);
-		int minZ = FullDataMinMaxPosUtil.getAdjMinZ(encodedMinMaxPos);
-		int maxZ = FullDataMinMaxPosUtil.getAdjMaxZ(encodedMinMaxPos);
-		
-		for (int relX = 0; relX < FullDataSourceV2.WIDTH; relX++)
-		{
-			for (int relZ = 0; relZ < FullDataSourceV2.WIDTH; relZ++)
-			{
-				// skip non-adjacent data
-				if (relX >= minX && relX < maxX
-						&& relZ >= minZ && relZ < maxZ)
-				{
-					continue;
-				}
-				
-				LongArrayList dataColumn = this.getColumnAtRelPos(relX, relZ);
-				dataColumn.clear();
-				dataColumn.add(FullDataPointUtil.EMPTY_DATA_POINT);
-			}
-		}
-	}
-	
-	//endregion
-	
 	
 	//================//
 	// helper methods //
 	//================//
-	//region
-	
-	/** 
-	 * Usually this should just be used internally, but there may be instances
-	 * where the raw data arrays are available without the data source object.
-	 * 	 
-	 * @return -1 if given an out-of-bounds relative position 
-	 */
-	public static int tryGetRelativePosToIndex(int relX, int relZ)
-	{
-		if (relX < 0 || relZ < 0
-				|| relX >= WIDTH || relZ >= WIDTH)
-		{
-			return -1;
-		}
-		
-		return (relX * WIDTH) + relZ;
-	}
 	
 	/** 
 	 * Usually this should just be used internally, but there may be instances
@@ -1263,13 +999,13 @@ public class FullDataSourceV2
 	 */
 	public static int relativePosToIndex(int relX, int relZ) throws IndexOutOfBoundsException
 	{ 
-		int index = tryGetRelativePosToIndex(relX, relZ);
-		if (index < 0)
+		if (relX < 0 || relZ < 0 ||
+			relX > WIDTH || relZ > WIDTH)
 		{
-			throw new IndexOutOfBoundsException("Relative data source positions must be between [0] (inclusive) and ["+WIDTH+"] (exclusive) the relative pos: ["+relX+","+relZ+"] is outside those boundaries.");
+			throw new IndexOutOfBoundsException("Relative data source positions must be between [0] and ["+WIDTH+"] (inclusive) the relative pos: ["+relX+","+relZ+"] is outside of those boundaries.");
 		}
 		
-		return index; 
+		return (relX * WIDTH) + relZ; 
 	}
 	
 	/** 
@@ -1330,18 +1066,23 @@ public class FullDataSourceV2
 		}
 	}
 	
-	//endregion
-	
 	
 	
 	//=====================//
 	// setters and getters //
 	//=====================//
-	//region
 	
-	public long getPos() { return this.pos; }
+	@Override
+	public Long getPos() { return this.pos; }
 	
+	@Override
 	public byte getDataDetailLevel() { return (byte) (DhSectionPos.getDetailLevel(this.pos) - DhSectionPos.SECTION_MINIMUM_DETAIL_LEVEL); }
+	
+	public EDhApiWorldGenerationStep getWorldGenStepAtRelativePos(int relX, int relZ) 
+	{
+		int index = relativePosToIndex(relX, relZ);
+		return EDhApiWorldGenerationStep.fromValue(this.columnGenerationSteps.getByte(index)); 
+	}
 	
 	public void setSingleColumn(LongArrayList longArray, int relX, int relZ, EDhApiWorldGenerationStep worldGenStep, EDhApiWorldCompressionMode worldCompressionMode)
 	{
@@ -1367,16 +1108,13 @@ public class FullDataSourceV2
 		}
 	}
 	
-	//endregion
-	
 	
 	
 	//=============//
 	// API methods //
 	//=============//
-	//region
 	
-	public void setRunApiSetterValidation(boolean runValidation) { this.runApiSetterValidation = runValidation; }
+	public void setRunApiChunkValidation(boolean runValidation) { this.runApiChunkValidation = runValidation; }
 	
 	@Override
 	public int getWidthInDataColumns() { return WIDTH; }
@@ -1387,14 +1125,15 @@ public class FullDataSourceV2
 	{
 		try
 		{
-			LodDataBuilder.putListInTopDownOrder(columnDataPoints);
-			if (this.runApiSetterValidation)
+			LodDataBuilder.correctDataColumnOrder(columnDataPoints);
+			if (this.runApiChunkValidation)
 			{
 				LodDataBuilder.validateOrThrowApiDataColumn(columnDataPoints);
 			}
 			
-			LongArrayList packedDataPoints = LodDataBuilder.convertApiDataPointListToPackedLongArray(columnDataPoints, this, 0, true);
+			LongArrayList packedDataPoints = LodDataBuilder.convertApiDataPointListToPackedLongArray(columnDataPoints, this, 0);
 			
+			// TODO there should be an "unknown" compression and generation step, or be defined via the datapoints
 			this.setSingleColumn(packedDataPoints, relX, relZ, EDhApiWorldGenerationStep.SURFACE, EDhApiWorldCompressionMode.MERGE_SAME_BLOCKS);
 			
 			return columnDataPoints;
@@ -1408,40 +1147,25 @@ public class FullDataSourceV2
 	@Override 
 	public List<DhApiTerrainDataPoint> getApiDataPointColumn(int relX, int relZ) throws IndexOutOfBoundsException
 	{
-		LongArrayList dataColumn = this.getColumnAtRelPos(relX, relZ);
+		LongArrayList dataColumn = this.get(relX, relZ);
 		
 		ArrayList<DhApiTerrainDataPoint> apiList = new ArrayList<>();
 		for (int i = 0; i < dataColumn.size(); i++)
 		{
 			long datapoint = dataColumn.getLong(i);
 			
-			DhApiTerrainDataPoint apiDataPoint = DhApiTerrainDataPointUtil.createApiDatapoint(0, this.mapping, DhSectionPos.getDetailLevel(this.pos), datapoint);
+			DhApiTerrainDataPoint apiDataPoint = DhApiTerrainDataPointUtil.createApiDatapoint(this.levelMinY, this.mapping, DhSectionPos.getDetailLevel(this.pos), datapoint);
 			apiList.add(apiDataPoint);
 		}
 		
 		return apiList;
 	}
 	
-	//endregion
-	
-	
-	
-	//============//
-	// unit tests //
-	//============//
-	//region
-	
-	public PhantomArrayListCheckout getPhantomArrayCheckoutForUnitTesting()
-	{ return this.pooledArraysCheckout; }
-	
-	//endregion
-	
 	
 	
 	//================//
 	// base overrides //
 	//================//
-	//region
 	
 	@Override
 	public String toString() { return DhSectionPos.toString(this.pos); }
@@ -1487,8 +1211,6 @@ public class FullDataSourceV2
 			return other.hashCode() == this.hashCode();
 		}
 	}
-	
-	//endregion
 	
 	
 	

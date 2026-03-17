@@ -76,7 +76,7 @@ public enum EPlatform
 		{ // For MacOS it should either output "Mac OS X" or "Darwin" depending on the version of MacOS
 			current = MACOS;
 		}
-		else if (osName.startsWith("bsd") || osName.startsWith("freebsd"))
+		else if (osName.startsWith("bsd"))
 		{ // Depending on the BSD distro this will be different
 			current = BSD;
 		}

@@ -19,16 +19,33 @@
 
 package com.seibel.distanthorizons.core.util;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.RejectedExecutionException;
+
+import com.seibel.distanthorizons.api.enums.config.EDhApiVanillaOverdraw;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.render.vertexFormat.DefaultLodVertexFormats;
+import com.seibel.distanthorizons.core.render.vertexFormat.LodVertexFormat;
+import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IDimensionTypeWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class holds methods and constants that may be used in multiple places.
  */
 public class LodUtil
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final IMinecraftRenderWrapper MC_RENDER = SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
 	/**
@@ -80,10 +97,17 @@ public class LodUtil
 	/** the opacity value returned by {@link IBlockStateWrapper#getOpacity()} if a block is fully opaque */
 	public static final int BLOCK_FULLY_OPAQUE = 16;
 	
-	public static final double WALKING_SPEED_IN_BLOCKS_PER_SEC = 4.1;
-	public static final double SPRINTING_SPEED_IN_BLOCKS_PER_SEC = 7.1;
-	public static final double ROCKET_ELYTRA_SPEED_IN_BLOCKS_PER_SEC = 30.0;
-	public static final double MAX_SPECTATOR_SPEED_IN_BLOCKS_PER_SEC = 100.0;
+	/**
+	 * List of every block that can be used in a beacon's base. <br> 
+	 * Should be all lowercase 
+	 */
+	public static final List<String> BEACON_BASE_BLOCK_NAME_LIST = Arrays.asList(
+			"iron_block",
+			"gold_block",
+			"diamond_block",
+			"emerald_block",
+			"netherite_block"
+	);
 	
 	
 	
@@ -106,6 +130,9 @@ public class LodUtil
 	 */
 	public static final int MAX_ALLOCATABLE_DIRECT_MEMORY = 64 * 1024 * 1024;
 	
+	/** the format of data stored in the GPU buffers */
+	public static final LodVertexFormat LOD_VERTEX_FORMAT = DefaultLodVertexFormats.POSITION_COLOR_BLOCK_LIGHT_SKY_LIGHT_MATERIAL_ID_NORMAL_INDEX;
+	
 	
 	
 	//=========//
@@ -122,29 +149,43 @@ public class LodUtil
 	}
 	
 	
-	/**
-	 * Returns true if the requested threshold passes, false otherwise.
-	 * For details, see:
-	 * https://stackoverflow.com/questions/3571203/what-are-runtime-getruntime-totalmemory-and-freememory
-	 */
+	// True if the requested threshold pass, or false otherwise
+	// For details, see:
+	// https://stackoverflow.com/questions/3571203/what-are-runtime-getruntime-totalmemory-and-freememory
 	public static boolean checkRamUsage(double minFreeMemoryPercent, int minFreeMemoryMB)
 	{
 		long freeMem = Runtime.getRuntime().freeMemory() + Runtime.getRuntime().maxMemory() - Runtime.getRuntime().totalMemory();
 		if (freeMem < minFreeMemoryMB * 1024L * 1024L) return false;
-		
 		long maxMem = Runtime.getRuntime().maxMemory();
 		if (freeMem / (double) maxMem < minFreeMemoryPercent) return false;
-		
 		return true;
 	}
+	
+	/**
+	 * Format a given string with params using log4j's MessageFormat
+	 *
+	 * @param str The string to format
+	 * @param param The parameters to use in the string
+	 * @return A message object. Call .toString() to get the string.
+	 * @apiNote <b>This 'format' SHOULD ONLY be used for logging and debugging purposes!
+	 * Do not use it for deserialization or naming of objects.</b>
+	 * @author leetom
+	 */
+	public static String formatLog(String str, Object... param) { return LOGGER.getMessageFactory().newMessage(str, param).getFormattedMessage(); }
 	
 	public static class AssertFailureException extends RuntimeException
 	{
 		public AssertFailureException(String message)
 		{
 			super(message);
+			debugBreak();
 		}
 		
+	}
+	
+	public static void debugBreak()
+	{
+		int a = 0; // Set breakpoint here for auto pause on assert failure
 	}
 	
 	public static void assertTrue(boolean condition)
@@ -161,11 +202,41 @@ public class LodUtil
 			throw new AssertFailureException("Assertion failed:\n " + message);
 		}
 	}
+	public static void assertTrue(boolean condition, String message, Object... args)
+	{
+		if (!condition)
+		{
+			throw new AssertFailureException("Assertion failed:\n " + formatLog(message, args));
+		}
+	}
+	public static void assertNotReach()
+	{
+		throw new AssertFailureException("Assert Not Reach failed");
+	}
 	public static void assertNotReach(String message)
 	{
 		throw new AssertFailureException("Assert Not Reach failed:\n " + message);
 	}
+	public static void assertNotReach(String message, Object... args)
+	{
+		throw new AssertFailureException("Assert Not Reach failed:\n " + formatLog(message, args));
+	}
+	public static void assertToDo()
+	{
+		throw new AssertFailureException("TODO!");
+	}
 	
+	public static Throwable ensureUnwrap(Throwable t)
+	{
+		return t instanceof CompletionException ? ensureUnwrap(t.getCause()) : t;
+	}
 	
+	public static boolean isInterruptOrReject(Throwable t)
+	{
+		Throwable unwrapped = LodUtil.ensureUnwrap(t);
+		return UncheckedInterruptedException.isInterrupt(unwrapped) ||
+				unwrapped instanceof RejectedExecutionException ||
+				unwrapped instanceof CancellationException;
+	}
 	
 }

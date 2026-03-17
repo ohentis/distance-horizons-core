@@ -19,32 +19,34 @@
 
 package com.seibel.distanthorizons.core.level;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiDebugRendering;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.file.fullDatafile.IDataSourceUpdateListenerFunc;
-import com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2;
+import com.seibel.distanthorizons.core.file.AbstractDataSourceHandler;
+import com.seibel.distanthorizons.core.file.fullDatafile.FullDataSourceProviderV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos2D;
-import com.seibel.distanthorizons.core.render.QuadTree.LodQuadTree;
+import com.seibel.distanthorizons.core.render.LodQuadTree;
 import com.seibel.distanthorizons.core.render.RenderBufferHandler;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericObjectRenderer;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.LodUtil;
-import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IProfilerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 
 import javax.annotation.WillNotClose;
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFunc<FullDataSourceV2>
+public class ClientLevelModule implements Closeable, AbstractDataSourceHandler.IDataSourceUpdateFunc<FullDataSourceV2>
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	private static final IWrapperFactory WRAPPER_FACTORY = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 	
 	private final IDhClientLevel clientLevel;
 	
@@ -53,12 +55,12 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 	public final AtomicReference<ClientRenderState> ClientRenderStateRef = new AtomicReference<>();
 	/** 
 	 * This is handled outside of the {@link ClientRenderState} to prevent destroying
-	 * the {@link IDhGenericRenderer} when changing render distances or enabling/disabling rendering. <br><br>
+	 * the {@link GenericObjectRenderer} when changing render distances or enabling/disabling rendering. <br><br>
 	 * 
-	 * Destroying the {@link IDhGenericRenderer} would cause any existing bindings to be 
+	 * Destroying the {@link GenericObjectRenderer} would cause any existing bindings to be 
 	 * erroneously removed.
 	 */
-	public final IDhGenericRenderer genericRenderer = WRAPPER_FACTORY.createGenericRenderer();
+	public final GenericObjectRenderer genericRenderer = new GenericObjectRenderer();
 	
 	
 	
@@ -71,7 +73,7 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		this.clientLevel = clientLevel;
 		
 		this.fullDataSourceProvider = this.clientLevel.getFullDataProvider();
-		this.fullDataSourceProvider.addDataSourceUpdateListener(this);
+		this.fullDataSourceProvider.dateSourceUpdateListeners.add(this);
 	}
 	
 	
@@ -79,6 +81,8 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 	//==============//
 	// tick methods //
 	//==============//
+	
+	private EDhApiDebugRendering lastDebugRendering = EDhApiDebugRendering.OFF;
 	
 	public void clientTick()
 	{
@@ -93,51 +97,114 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		{
 			return;
 		}
-		
+		// TODO this should probably be handled via a config change listener
 		// recreate the RenderState if the render distance changes
-		if (clientRenderState.viewDiameterInBlocks != ClientRenderState.getViewDiameterInBlocks())
+		if (clientRenderState.quadtree.blockRenderDistanceDiameter != Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() * LodUtil.CHUNK_WIDTH * 2)
 		{
-			// close the older renderer
-			clientRenderState.close();
-			this.ClientRenderStateRef.set(null);
+			if (!this.ClientRenderStateRef.compareAndSet(clientRenderState, null))
+			{
+				return;
+			}
 			
-			// create the new renderer
-			clientRenderState = new ClientRenderState(this.clientLevel, this.clientLevel.getFullDataProvider());
-			this.ClientRenderStateRef.set(clientRenderState);
+			IClientLevelWrapper clientLevelWrapper = this.clientLevel.getClientLevelWrapper();
+			if (clientLevelWrapper == null)
+			{
+				return;
+			}
+			
+			clientRenderState.close();
+			clientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider(), this.genericRenderer);
+			if (!this.ClientRenderStateRef.compareAndSet(null, clientRenderState))
+			{
+				//FIXME: How to handle this?
+				LOGGER.warn("Failed to set render state due to concurrency after changing view distance");
+				clientRenderState.close();
+				return;
+			}
 		}
+		clientRenderState.quadtree.tick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
 		
-		clientRenderState.quadtree.tryTick(new DhBlockPos2D(MC_CLIENT.getPlayerBlockPos()));
+		boolean isBuffersDirty = false;
+		EDhApiDebugRendering newDebugRendering = Config.Client.Advanced.Debugging.debugRendering.get();
+		if (newDebugRendering != lastDebugRendering)
+		{
+			lastDebugRendering = newDebugRendering;
+			isBuffersDirty = true;
+		}
+		if (isBuffersDirty)
+		{
+			clientRenderState.lodRenderer.bufferHandler.MarkAllBuffersDirty();
+		}
 	}
-	
 	
 	
 	//========//
 	// render //
 	//========//
 	
-	public void startRenderer()
+	/** @return if the {@link ClientRenderState} was successfully swapped */
+	public boolean startRenderer(IClientLevelWrapper clientLevelWrapper)
 	{
-		ClientRenderState clientRenderState = new ClientRenderState(this.clientLevel, this.clientLevel.getFullDataProvider());
-		if (!this.ClientRenderStateRef.compareAndSet(null, clientRenderState))
+		// TODO why are we passing in a level wrapper? Our client level is already defined.
+		ClientRenderState ClientRenderState = new ClientRenderState(this.clientLevel, clientLevelWrapper, this.clientLevel.getFullDataProvider(), this.genericRenderer);
+		if (!this.ClientRenderStateRef.compareAndSet(null, ClientRenderState))
 		{
-			LOGGER.warn("Renderer already started for ["+this+"].");
-			clientRenderState.close();
+			LOGGER.warn("Failed to start renderer due to concurrency");
+			ClientRenderState.close();
+			return false;
+		}
+		else
+		{
+			return true;
 		}
 	}
 	
-	public boolean isRendering() { return this.ClientRenderStateRef.get() != null; }
+	public boolean isRendering()
+	{
+		return this.ClientRenderStateRef.get() != null;
+	}
+	
+	public void render(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
+	{
+		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
+		if (ClientRenderState == null)
+		{
+			// either the renderer hasn't been started yet, or is being reloaded
+			return;
+		}
+		ClientRenderState.lodRenderer.drawLods(ClientRenderState.clientLevelWrapper, renderEventParam, profiler);
+	}
+	
+	public void renderDeferred(DhApiRenderParam renderEventParam, IProfilerWrapper profiler)
+	{
+		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
+		if (ClientRenderState == null)
+		{
+			// either the renderer hasn't been started yet, or is being reloaded
+			return;
+		}
+		ClientRenderState.lodRenderer.drawDeferredLods(ClientRenderState.clientLevelWrapper, renderEventParam, profiler);
+	}
 	
 	public void stopRenderer()
 	{
-		ClientRenderState clientRenderState = this.ClientRenderStateRef.get();
-		if (clientRenderState == null)
+		LOGGER.info("Stopping renderer for " + this);
+		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
+		if (ClientRenderState == null)
 		{
-			LOGGER.warn("Tried to stop the renderer for [" + this + "] when it was not started.");
+			LOGGER.warn("Tried to stop renderer for " + this + " when it was not started!");
 			return;
 		}
-		
-		this.ClientRenderStateRef.compareAndSet(clientRenderState, null);
-		clientRenderState.close();
+		// stop the render state
+		while (!this.ClientRenderStateRef.compareAndSet(ClientRenderState, null)) // TODO why is there a while loop here?
+		{
+			ClientRenderState = this.ClientRenderStateRef.get();
+			if (ClientRenderState == null)
+			{
+				return;
+			}
+		}
+		ClientRenderState.close();
 	}
 	
 	
@@ -146,8 +213,7 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 	// data handling //
 	//===============//
 	
-	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) 
-	{ return this.clientLevel.getFullDataProvider().updateDataSourceAsync(data); }
+	public CompletableFuture<Void> updateDataSourcesAsync(FullDataSourceV2 data) { return this.clientLevel.getFullDataProvider().updateDataSourceAsync(data); }
 	@Override
 	public void OnDataSourceUpdated(FullDataSourceV2 updatedFullDataSource)
 	{
@@ -155,7 +221,7 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState != null)
 		{
-			ClientRenderState.quadtree.queuePosToReload(updatedFullDataSource.getPos());
+			ClientRenderState.quadtree.reloadPos(updatedFullDataSource.getPos());
 		}
 	}
 	
@@ -165,11 +231,23 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		ClientRenderState ClientRenderState = this.ClientRenderStateRef.get();
 		if (ClientRenderState != null)
 		{
-			this.ClientRenderStateRef.compareAndSet(ClientRenderState, null);
-			ClientRenderState.close();
+			// TODO does this have to be in a while loop, if so why?
+			while (!this.ClientRenderStateRef.compareAndSet(ClientRenderState, null))
+			{
+				ClientRenderState = this.ClientRenderStateRef.get();
+				if (ClientRenderState == null)
+				{
+					break;
+				}
+			}
+			
+			if (ClientRenderState != null)
+			{
+				ClientRenderState.close();
+			}
 		}
 		
-		this.fullDataSourceProvider.removeDataSourceUpdateListener(this);
+		this.fullDataSourceProvider.dateSourceUpdateListeners.remove(this);
 	}
 	
 	
@@ -198,7 +276,7 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		ClientRenderState clientRenderState = this.ClientRenderStateRef.get();
 		if (clientRenderState != null && clientRenderState.quadtree != null)
 		{
-			clientRenderState.quadtree.queuePosToReload(pos);
+			clientRenderState.quadtree.reloadPos(pos);
 		}
 	}
 	
@@ -210,12 +288,12 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 	
 	public static class ClientRenderState implements Closeable
 	{
-		private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+		private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 		
+		public final IClientLevelWrapper clientLevelWrapper;
 		public final LodQuadTree quadtree;
 		public final RenderBufferHandler renderBufferHandler;
-		
-		public final int viewDiameterInBlocks;
+		public final LodRenderer lodRenderer;
 		
 		
 		
@@ -224,30 +302,19 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		//=============//
 		
 		public ClientRenderState(
-				IDhClientLevel dhClientLevel, 
-				FullDataSourceProviderV2 fullDataSourceProvider)
+				IDhClientLevel dhClientLevel, IClientLevelWrapper clientLevelWrapper, 
+				FullDataSourceProviderV2 fullDataSourceProvider,
+				GenericObjectRenderer genericRenderer)
 		{
-			this.viewDiameterInBlocks = getViewDiameterInBlocks();
+			this.clientLevelWrapper = clientLevelWrapper;
 			
-			this.quadtree = new LodQuadTree(
-				dhClientLevel,
-				this.viewDiameterInBlocks,
-				// initial position is (0,0) just in case the player hasn't loaded in yet, the tree will be moved once the level starts ticking
-				0, 0,
-				fullDataSourceProvider);
+			this.quadtree = new LodQuadTree(dhClientLevel, Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() * LodUtil.CHUNK_WIDTH * 2,
+					// initial position is (0,0) just in case the player hasn't loaded in yet, the tree will be moved once the level starts ticking
+					0, 0,
+					fullDataSourceProvider);
 			
 			this.renderBufferHandler = new RenderBufferHandler(this.quadtree);
-		}
-		
-		/**
-		 * Used both during setup and
-		 * to determine if the render distance changed.
-		 */
-		public static int getViewDiameterInBlocks() 
-		{ 
-			return Config.Client.Advanced.Graphics.Quality.lodChunkRenderDistanceRadius.get() 
-				* LodUtil.CHUNK_WIDTH 
-				* 2; 
+			this.lodRenderer = new LodRenderer(this.renderBufferHandler, genericRenderer);
 		}
 		
 		
@@ -260,6 +327,8 @@ public class ClientLevelModule implements Closeable, IDataSourceUpdateListenerFu
 		public void close()
 		{
 			LOGGER.info("Shutting down " + ClientRenderState.class.getSimpleName());
+			
+			this.lodRenderer.close();
 			this.quadtree.close();
 		}
 		

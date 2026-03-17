@@ -19,14 +19,13 @@
 
 package com.seibel.distanthorizons.core.util.objects.dataStreams;
 
-import com.github.luben.zstd.Zstd;
+import com.github.luben.zstd.ZstdOutputStream;
 import com.seibel.distanthorizons.api.enums.config.EDhApiDataCompressionMode;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FrameOutputStream;
 import net.jpountz.xxhash.XXHashFactory;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.tukaani.xz.*;
 
 import java.io.*;
@@ -38,41 +37,26 @@ import java.io.*;
  */
 public class DhDataOutputStream extends DataOutputStream
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = LogManager.getLogger();
 	private static final ThreadLocal<ResettableArrayCache> LZMA_RESETTABLE_ARRAY_CACHE_GETTER = ThreadLocal.withInitial(() -> new ResettableArrayCache(new LzmaArrayCache()));
 	
-	private final ByteArrayList outputByteArray;
-	private final ByteArrayOutputStream wrappedByteStream;
-	private final EDhApiDataCompressionMode compressionMode;
 	
 	
-	
-	//=============//
-	// constructor //
-	//=============//
-	
-	/**
-	 * @param outputByteArray where the contents of this stream will be written to when done
-	 */
-	public static DhDataOutputStream create(EDhApiDataCompressionMode compressionMode, ByteArrayList outputByteArray) throws IOException
-	{ return new DhDataOutputStream(new ByteArrayOutputStream(), compressionMode, outputByteArray); }
-	private DhDataOutputStream(ByteArrayOutputStream wrappedByteStream, EDhApiDataCompressionMode compressionMode, ByteArrayList outputByteArray) throws IOException
+	public DhDataOutputStream(OutputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{ 
-		super(warpStream(wrappedByteStream, compressionMode));
-
-		this.wrappedByteStream = wrappedByteStream;
-		this.outputByteArray = outputByteArray;
-		this.compressionMode = compressionMode;
+		super(warpStream(new BufferedOutputStream(stream), compressionMode)); 
 	}
-	@SuppressWarnings("deprecation")
-	private static OutputStream warpStream(ByteArrayOutputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
+	private static OutputStream warpStream(OutputStream stream, EDhApiDataCompressionMode compressionMode) throws IOException
 	{
 		try
 		{
 			switch (compressionMode)
 			{
 				case UNCOMPRESSED:
-					return stream;	
+					return stream;
+				
+				case Z_STD:
+					return new ZstdOutputStream(stream, 3, true, true);
 				case LZ4:
 					return new LZ4FrameOutputStream(stream, 
 							LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB, -1L,
@@ -83,10 +67,6 @@ public class DhDataOutputStream extends DataOutputStream
 							//LZ4Factory.nativeInstance().fastCompressor(),
 							//XXHashFactory.nativeInstance().hash32(),
 							LZ4FrameOutputStream.FLG.Bits.BLOCK_INDEPENDENCE);
-				case Z_STD_BLOCK:
-					// ZStd compression should be handled after the stream is closed
-					// just return the stream
-					return stream;
 				case LZMA2:
 					// using an array cache significantly reduces GC pressure
 					ResettableArrayCache arrayCache = LZMA_RESETTABLE_ARRAY_CACHE_GETTER.get();
@@ -96,10 +76,6 @@ public class DhDataOutputStream extends DataOutputStream
 					return new XZOutputStream(stream, new LZMA2Options(3),
 							XZ.CHECK_CRC64, arrayCache);
 				
-				case Z_STD_STREAM: // deprecated, only used for legacy support
-					//return new ZstdOutputStream(stream, 3, true, true);
-					throw new UnsupportedOperationException("Z_STD_STREAM is deprecated and shouldn't be used for encoding. The faster block encoding format should be used instead.");
-					
 				default:
 					throw new IllegalArgumentException("No compressor defined for ["+compressionMode+"]");
 				}
@@ -112,30 +88,7 @@ public class DhDataOutputStream extends DataOutputStream
 			}
 	}
 	
-	
-	
-	//================//
-	// base overrides //
-	//================//
-	
 	@Override
-	public void close() throws IOException 
-	{
-		super.close();
-		
-		
-		this.outputByteArray.clear();
-		if (this.compressionMode == EDhApiDataCompressionMode.Z_STD_BLOCK)
-		{
-			this.outputByteArray.addElements(0, Zstd.compress(this.wrappedByteStream.toByteArray(), 3));
-		}
-		else
-		{
-			this.outputByteArray.addElements(0, this.wrappedByteStream.toByteArray());
-		}
-		
-	}
-	
-	
+	public void close() throws IOException { /* Do nothing. */ }
 	
 }

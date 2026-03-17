@@ -23,53 +23,48 @@ import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.core.io.ParsingMode;
 import com.electronwill.nightconfig.json.JsonFormat;
 import com.seibel.distanthorizons.core.jar.JarUtils;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.ILangWrapper;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Locale;
 
 public class LangWrapper implements ILangWrapper
 {
 	public static final LangWrapper INSTANCE = new LangWrapper();
-	
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
-	private static final Config JSON_OBJECT = Config.inMemory();
-	
-	
+	private static final Config jsonObject = Config.inMemory();
+	private static final Logger logger = LogManager.getLogger(LangWrapper.class.getSimpleName());
 	
 	public static void init()
 	{
 		try
 		{
+//            System.out.println(JarUtils.convertInputStreamToString(JarUtils.accessFile("assets/lod/lang/"+ Locale.getDefault().toString().toLowerCase()+".json")).replaceAll(":\\n.+?(?=\")",":"));
 			// FIXME: Is there something in the config that the parser cant read?
 			JsonFormat.fancyInstance().createParser().parse(
 					JarUtils.convertInputStreamToString(JarUtils.accessFile("assets/lod/lang/" + Locale.getDefault().toString().toLowerCase() + ".json")),
-					JSON_OBJECT, ParsingMode.REPLACE
+					jsonObject, ParsingMode.REPLACE
 			);
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("Failed to read lang file, error: ["+e.getMessage()+"]", e);
+			logger.error("Failed to read lang file, error: ["+e.getMessage()+"]", e);
 		}
 	}
 	
 	@Override
-	public boolean langExists(String str) { return JSON_OBJECT.get(str) != null; }
+	public boolean langExists(String str)
+	{
+		return jsonObject.get(str) != null;
+	}
 	
 	@Override
 	public String getLang(String str)
 	{
-		if (JSON_OBJECT.get(str) != null)
-		{
-			return (String) JSON_OBJECT.get(str);
-		}
+		if (jsonObject.get(str) != null)
+			return (String) jsonObject.get(str);
 		else
-		{
 			return str;
-		}
 	}
-	
-	
 	
 }

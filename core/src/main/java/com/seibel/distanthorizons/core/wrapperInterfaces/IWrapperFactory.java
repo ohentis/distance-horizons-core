@@ -23,17 +23,13 @@ import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.objects.IDhGenericObjectVertexBufferContainer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.objects.ILodContainerUniformBufferWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.renderPass.IDhGenericRenderer;
-import com.seibel.distanthorizons.core.wrapperInterfaces.render.objects.IVertexBufferWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration.IBatchGeneratorEnvironmentWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration.AbstractBatchGenerationEnvironmentWrapper;
 import com.seibel.distanthorizons.coreapi.interfaces.dependencyInjection.IBindable;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 import java.io.IOException;
+import java.util.HashSet;
 
 /**
  * This handles creating abstract wrapper objects.
@@ -43,10 +39,10 @@ import java.io.IOException;
  */
 public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 {
-	IBatchGeneratorEnvironmentWrapper createBatchGenerator(IDhLevel targetLevel);
+	AbstractBatchGenerationEnvironmentWrapper createBatchGenerator(IDhLevel targetLevel);
 	
 	IBiomeWrapper deserializeBiomeWrapper(String str, ILevelWrapper levelWrapper) throws IOException;
-	IBiomeWrapper getPlainsBiomeWrapper(ILevelWrapper levelWrapper); 
+	IBiomeWrapper getPlainsBiomeWrapper(ILevelWrapper levelWrapper); // TODO it would be nice to remove the level wrapper if possible to put this in line with getAirBlockStateWrapper() but it isn't necessary 
 	default IBiomeWrapper deserializeBiomeWrapperOrGetDefault(String str, ILevelWrapper levelWrapper)
 	{
 		IBiomeWrapper biome;
@@ -65,7 +61,6 @@ public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 	
 	IBlockStateWrapper deserializeBlockStateWrapper(String str, ILevelWrapper levelWrapper) throws IOException;
 	IBlockStateWrapper getAirBlockStateWrapper();
-	IBlockStateWrapper getWaterBlockStateWrapper(ILevelWrapper levelWrapper);
 	default IBlockStateWrapper deserializeBlockStateWrapperOrGetDefault(String str, ILevelWrapper levelWrapper)
 	{
 		IBlockStateWrapper blockState;
@@ -86,17 +81,17 @@ public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 	 * Returns the set of {@link IBlockStateWrapper}'s that shouldn't be rendered. <br>
 	 * Generally this contains blocks like: air, barriers, light blocks, etc. 
 	 */
-	ObjectOpenHashSet<IBlockStateWrapper> getRendererIgnoredBlocks(ILevelWrapper levelWrapper);
+	HashSet<IBlockStateWrapper> getRendererIgnoredBlocks(ILevelWrapper levelWrapper);
 	/**
 	 * Returns the set of {@link IBlockStateWrapper}'s that shouldn't be rendered in caves. <br>
 	 * Generally this contains blocks like: air, rails, glow lichen, etc. 
 	 */
-	ObjectOpenHashSet<IBlockStateWrapper> getRendererIgnoredCaveBlocks(ILevelWrapper levelWrapper);
+	HashSet<IBlockStateWrapper> getRendererIgnoredCaveBlocks(ILevelWrapper levelWrapper);
 	
-	ObjectOpenHashSet<IBlockStateWrapper> getWaterSubsurfaceReplacementBlocks(ILevelWrapper levelWrapper);
-	ObjectOpenHashSet<IBlockStateWrapper> getWaterSurfaceReplacementBlocks(ILevelWrapper levelWrapper);
 	/** clears the cached values */
-	void resetCachedIgnoredBlocksSets();
+	void resetRendererIgnoredCaveBlocks();
+	/** clears the cached values */
+	void resetRendererIgnoredBlocksSet();
 	
 	
 	/**
@@ -105,14 +100,5 @@ public interface IWrapperFactory extends IDhApiWrapperFactory, IBindable
 	 * @throws ClassCastException with instructions on expected objects if the object couldn't be cast
 	 */
 	IChunkWrapper createChunkWrapper(Object[] objectArray) throws ClassCastException;
-	
-	
-	
-	IVertexBufferWrapper createVboWrapper(String name);
-	ILodContainerUniformBufferWrapper createLodContainerUniformWrapper();
-	
-	IDhGenericObjectVertexBufferContainer createGenericObjectVboContainer();
-	
-	IDhGenericRenderer createGenericRenderer();
 	
 }

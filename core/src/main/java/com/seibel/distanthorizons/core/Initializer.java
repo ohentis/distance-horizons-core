@@ -20,49 +20,36 @@
 package com.seibel.distanthorizons.core;
 
 import com.github.luben.zstd.ZstdOutputStream;
-import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderObjectFactory;
-import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeRenderEvent;
-import com.seibel.distanthorizons.core.api.internal.ClientApi;
-import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.eventHandlers.IgnoredDimensionCsvHandler;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.enums.MinecraftTextFormat;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.render.renderer.generic.GenericRenderObjectFactory;
 import com.seibel.distanthorizons.core.sql.DatabaseUpdater;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.world.DhApiWorldProxy;
 import com.seibel.distanthorizons.core.api.external.methods.config.DhApiConfig;
 import com.seibel.distanthorizons.core.api.external.methods.data.DhApiTerrainDataRepo;
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import net.jpountz.lz4.LZ4FrameOutputStream;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sqlite.SQLiteJDBCLoader;
+import org.sqlite.util.OSInfo;
 import org.tukaani.xz.XZOutputStream;
 
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
-import java.util.List;
+import java.awt.*;
+import java.io.File;
 
 /** Handles first time Core setup. */
 public class Initializer
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
-	
+	private static final Logger LOGGER = LogManager.getLogger(ModInfo.NAME + "-" + Initializer.class.getSimpleName());
 	private static final IMinecraftClientWrapper MC_CLIENT = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	
 	
 	
 	public static void init()
 	{
-		//============================//
-		// check referenced libraries //
-		//============================//
-		//region
-		
-		LOGGER.info("Running library validation...");
-		
 		// confirm that all referenced libraries are available to use
 		try
 		{
@@ -70,17 +57,6 @@ public class Initializer
 			// will throw an error (not an exception)
 			Class<?> lz4Compressor = LZ4FrameOutputStream.class;
 			Class<?> zstdCompressor = ZstdOutputStream.class;
-			
-			{
-				byte[] testCompressByteArray = new byte[1024];
-				for (int i = 0; i < testCompressByteArray.length; i++)
-				{
-					testCompressByteArray[i] = (byte) (i % 126);
-				}
-				byte[] compressedBytes = com.github.luben.zstd.Zstd.compress(testCompressByteArray);
-				com.github.luben.zstd.Zstd.decompress(compressedBytes);
-			}
-			
 			Class<?> lzmaCompressor = XZOutputStream.class;
 			//Class<?> networking = ByteBuf.class;
 			Class<?> config = com.electronwill.nightconfig.core.Config.class;
@@ -97,18 +73,12 @@ public class Initializer
 		}
 		catch (Throwable e)
 		{
-			MC_CLIENT.crashMinecraft("Distant Horizons critical setup error: One or more libraries are either in-accessible, corrupted, or overwritten by another mod. Error: [" + e.getMessage() + "].", e);
+			LOGGER.fatal("Critical programmer error: One or more libraries aren't present. Error: [" + e.getMessage() + "].", e);
+			// throwing here should crash the game, notifying the developer that something is wrong
+			throw new RuntimeException(e);
 		}
 		
-		//endregion
-		
-		
-		
-		//==========================//
-		// check resource directory //
-		//==========================//
-		//region
-		
+		// confirm the resource directory is present
 		try
 		{
 			int scriptCount = DatabaseUpdater.getAutoUpdateScriptCount();
@@ -119,17 +89,9 @@ public class Initializer
 		}
 		catch (Exception e)
 		{
-			MC_CLIENT.crashMinecraft("Critical programmer error: Can't read SQL Scripts resource folder is either missing or malformed. Error: [" + e.getMessage() + "].", e);
+			LOGGER.fatal("Critical programmer error: Can't read SQL Scripts resource folder is either missing or malformed. Error: [" + e.getMessage() + "].");
+			throw new RuntimeException(e);
 		}
-		
-		//endregion
-		
-		
-		
-		//===========================//
-		// Java AWT Headless setting // 
-		//===========================//
-		//region
 		
 		// This code has been disabled since it can cause Mac
 		// to lock up and refuse the load (there's a bug with Java.awt texture loading)
@@ -147,98 +109,17 @@ public class Initializer
 		//	}
 		//}
 		
-		//endregion
-		
-		
-		
-		//===================//
-		// API delayed setup //
-		//===================//
-		//region
-		
 		// link Core's config to the API
 		DhApi.Delayed.configs = DhApiConfig.INSTANCE;
 		DhApi.Delayed.terrainRepo = DhApiTerrainDataRepo.INSTANCE;
 		DhApi.Delayed.worldProxy = DhApiWorldProxy.INSTANCE;
 		DhApi.Delayed.renderProxy = DhApiRenderProxy.INSTANCE;
+		DhApi.Delayed.customRenderObjectFactory = GenericRenderObjectFactory.INSTANCE;
 		DhApi.Delayed.wrapperFactory = SingletonInjector.INSTANCE.get(IWrapperFactory.class);
 		if (DhApi.Delayed.wrapperFactory == null)
 		{
-			MC_CLIENT.crashMinecraft("Programmer Error: No ["+IWrapperFactory.class.getSimpleName()+"] assigned to the DhApi.", new Exception());
+			LOGGER.error("Programmer Error: No ["+IWrapperFactory.class.getSimpleName()+"] assigned to the DhApi.");
 		}
-		
-		DhApi.Delayed.customRenderObjectFactory = SingletonInjector.INSTANCE.get(IDhApiCustomRenderObjectFactory.class);
-		if (DhApi.Delayed.customRenderObjectFactory == null)
-		{
-			MC_CLIENT.crashMinecraft("Programmer Error: No ["+IDhApiCustomRenderObjectFactory.class.getSimpleName()+"] assigned to the DhApi.", new Exception());
-		}
-		
-		DhApi.events.bind(DhApiBeforeRenderEvent.class, IgnoredDimensionCsvHandler.INSTANCE);
-		
-		//endregion
-		
-		
-		
-		//==============================//
-		// G1 Garbage collector warning //
-		//==============================//
-		//region
-		
-		// log a warning if G1GC is being used
-		// (this garbage collector is known to cause stuttering)
-		{
-			boolean g1GcInUse = false;
-			
-			StringBuilder garbageCollectorNames = new StringBuilder();
-			List<GarbageCollectorMXBean> gcMxBeans = ManagementFactory.getGarbageCollectorMXBeans();
-			for (GarbageCollectorMXBean gcMxBean : gcMxBeans)
-			{
-				if (!garbageCollectorNames.toString().isEmpty())
-				{
-					garbageCollectorNames.append(", ");
-				}
-				garbageCollectorNames.append(gcMxBean.getName());
-				
-				// "G1 Young Generation" // "G1 Concurrent GC" // "G1 Old Generation"
-				if (gcMxBean.getName().toLowerCase().contains("g1 "))
-				{
-					g1GcInUse = true;
-				}
-			}
-			LOGGER.info("Garbage collectors: ["+garbageCollectorNames+"]");
-			
-			
-			if (g1GcInUse)
-			{
-				String warningMessageHeader = "Distant Horizons: G1 Garbage collector detected.";
-				String warningMessageBody = 
-					"This can cause FPS stuttering. \n" +
-					"It's recommended to use a concurrent garbage collector \n" +
-					"like ZGC (Java 21+) or Shenandoah (Java 8 through 17) \n" +
-					"for a smoother experience."
-					;
-				
-				if (Config.Common.Logging.Warning.logGarbageCollectorWarning.get())
-				{
-					LOGGER.warn(
-						warningMessageHeader + "\n" +
-						warningMessageBody +
-						"");
-				}
-				
-				if (Config.Common.Logging.Warning.showGarbageCollectorWarning.get())
-				{
-					ClientApi.INSTANCE.showChatMessageNextFrame(
-						MinecraftTextFormat.ORANGE + warningMessageHeader + MinecraftTextFormat.CLEAR_FORMATTING + "\n" +
-						warningMessageBody +
-						"");
-				}
-			}
-		}
-		
-		//endregion
-		
-		
 		
 	}
 	

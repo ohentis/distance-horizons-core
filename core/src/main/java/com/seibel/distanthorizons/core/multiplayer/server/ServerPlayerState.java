@@ -5,7 +5,6 @@ import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.level.AbstractDhServerLevel;
 import com.seibel.distanthorizons.core.multiplayer.config.SessionConfig;
 import com.seibel.distanthorizons.core.multiplayer.fullData.FullDataPayloadSender;
-import com.seibel.distanthorizons.core.multiplayer.fullData.SharedBandwidthLimit;
 import com.seibel.distanthorizons.core.network.event.internal.IncompatibleMessageInternalEvent;
 import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.network.messages.base.LevelInitMessage;
@@ -28,10 +27,6 @@ public class ServerPlayerState implements Closeable
 	private final SessionConfig.AnyChangeListener configAnyChangeListener = new SessionConfig.AnyChangeListener(this::sendConfigMessage);
 	
 	
-	private final String serverKeyWithoutId = Config.Server.serverKey.get();
-	private final String serverKey = (this.serverKeyWithoutId.isEmpty() ? "" : Config.Server.serverId.get() + "_" + this.serverKeyWithoutId.trim())
-			.replaceAll("[^" + LevelInitMessage.ALLOWED_CHARS_REGEX + " ]", "")
-			.replaceAll(" ", "_");
 	private String lastLevelKey = "";
 	
 	
@@ -53,10 +48,10 @@ public class ServerPlayerState implements Closeable
 	// constructors //
 	//==============//
 	
-	public ServerPlayerState(IServerPlayerWrapper serverPlayer, SharedBandwidthLimit sharedBandwidthLimit)
+	public ServerPlayerState(IServerPlayerWrapper serverPlayer)
 	{
 		this.networkSession = new NetworkSession(serverPlayer);
-		this.fullDataPayloadSender = new FullDataPayloadSender(this.networkSession, this.sessionConfig::getPlayerBandwidthLimit, sharedBandwidthLimit);
+		this.fullDataPayloadSender = new FullDataPayloadSender(this.networkSession, this.sessionConfig::getMaxDataTransferSpeed);
 		
 		this.networkSession.registerHandler(SessionConfigMessage.class, (sessionConfigMessage) ->
 		{
@@ -94,7 +89,7 @@ public class ServerPlayerState implements Closeable
 			if (!levelKey.equals(this.lastLevelKey))
 			{
 				this.lastLevelKey = levelKey;
-				this.networkSession.sendMessage(new LevelInitMessage(this.serverKey, levelKey));
+				this.networkSession.sendMessage(new LevelInitMessage(levelKey));
 			}
 		}
 	}
@@ -102,8 +97,8 @@ public class ServerPlayerState implements Closeable
 	private void sendConfigMessage()
 	{
 		double coordinateScale = this.getServerPlayer().getLevel().getDimensionType().getCoordinateScale();
-		this.sessionConfig.constrainValue(Config.Common.WorldGenerator.generationCenterChunkX, (int) (Config.Common.WorldGenerator.generationCenterChunkX.get() / coordinateScale));
-		this.sessionConfig.constrainValue(Config.Common.WorldGenerator.generationCenterChunkZ, (int) (Config.Common.WorldGenerator.generationCenterChunkZ.get() / coordinateScale));
+		this.sessionConfig.constrainValue(Config.Server.generationBoundsX, (int) (Config.Server.generationBoundsX.get() / coordinateScale));
+		this.sessionConfig.constrainValue(Config.Server.generationBoundsZ, (int) (Config.Server.generationBoundsZ.get() / coordinateScale));
 		
 		this.networkSession.sendMessage(new SessionConfigMessage(this.sessionConfig));
 	}

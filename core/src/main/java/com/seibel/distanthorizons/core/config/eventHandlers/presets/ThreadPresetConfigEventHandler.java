@@ -22,12 +22,11 @@ package com.seibel.distanthorizons.core.config.eventHandlers.presets;
 import com.seibel.distanthorizons.api.enums.config.quickOptions.EDhApiThreadPreset;
 import com.seibel.distanthorizons.core.config.listeners.ConfigChangeListener;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.ConfigPresetOptions;
-import com.seibel.distanthorizons.core.config.types.AbstractConfigBase;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.config.ConfigEntryWithPresetOptions;
+import com.seibel.distanthorizons.coreapi.interfaces.config.IConfigEntry;
 import com.seibel.distanthorizons.coreapi.util.MathUtil;
 import org.apache.logging.log4j.LogManager;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,11 +37,11 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 {
 	public static final ThreadPresetConfigEventHandler INSTANCE = new ThreadPresetConfigEventHandler();
 	
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = LogManager.getLogger();
 	
 	
 	public static int getDefaultThreadCount() { return getThreadCountByPercent(0.5); }
-	private final ConfigPresetOptions<EDhApiThreadPreset, Integer> threadCount = new ConfigPresetOptions<>(Config.Common.MultiThreading.numberOfThreads,
+	private final ConfigEntryWithPresetOptions<EDhApiThreadPreset, Integer> threadCount = new ConfigEntryWithPresetOptions<>(Config.Common.MultiThreading.numberOfThreads,
 			new HashMap<EDhApiThreadPreset, Integer>()
 			{{
 				this.put(EDhApiThreadPreset.MINIMAL_IMPACT, getThreadCountByPercent(0.1));
@@ -52,7 +51,7 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 				this.put(EDhApiThreadPreset.I_PAID_FOR_THE_WHOLE_CPU, getThreadCountByPercent(1.0));
 			}});
 	public static double getDefaultRunTimeRatio() { return 1.0; }
-	private final ConfigPresetOptions<EDhApiThreadPreset, Double> threadRunTime = new ConfigPresetOptions<>(Config.Common.MultiThreading.threadRunTimeRatio,
+	private final ConfigEntryWithPresetOptions<EDhApiThreadPreset, Double> threadRunTime = new ConfigEntryWithPresetOptions<>(Config.Common.MultiThreading.threadRunTimeRatio,
 			new HashMap<EDhApiThreadPreset, Double>()
 			{{
 				this.put(EDhApiThreadPreset.MINIMAL_IMPACT, 0.5);
@@ -75,7 +74,7 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 		this.configList.add(this.threadCount);
 		this.configList.add(this.threadRunTime);
 		
-		for (ConfigPresetOptions<EDhApiThreadPreset, ?> config : this.configList)
+		for (ConfigEntryWithPresetOptions<EDhApiThreadPreset, ?> config : this.configList)
 		{
 			// ignore try-using, the listeners should only ever be added once and should never be removed
 			new ConfigChangeListener<>(config.configEntry, (val) -> { this.onConfigValueChanged(); });
@@ -120,7 +119,7 @@ public class ThreadPresetConfigEventHandler extends AbstractPresetConfigEventHan
 	//==============//
 	
 	@Override
-	protected AbstractConfigBase<EDhApiThreadPreset> getPresetConfigEntry() { return Config.Client.threadPresetSetting; }
+	protected IConfigEntry<EDhApiThreadPreset> getPresetConfigEntry() { return Config.Client.threadPresetSetting; }
 	
 	@Override
 	protected List<EDhApiThreadPreset> getPresetEnumList() { return Arrays.asList(EDhApiThreadPreset.values()); }

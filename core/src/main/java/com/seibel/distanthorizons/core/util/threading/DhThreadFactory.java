@@ -25,7 +25,7 @@ import java.util.concurrent.ThreadFactory;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.ThreadUtil;
-import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -34,7 +34,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class DhThreadFactory implements ThreadFactory
 {
-	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	public final String threadName;
 	public final int priority;
